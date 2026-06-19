@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Lex — Словарь{% endblock %}
+{% block content %}
+<h1>Lex</h1>
+<p>Запоминай иностранные слова с интервальными повторениями.</p>
+
+<div class="grid">
+    <a href="/add" class="card">
+        <h2>➕ Добавить слова</h2>
+        <p>Введи новое слово и перевод</p>
+    </a>
+    <a href="/review" class="card">
+        <h2>🔄 Повтор</h2>
+        <p>Проверь выученные слова</p>
+    </a>
+</div>
+{% endblock %}

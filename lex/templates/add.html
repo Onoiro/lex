@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Добавить слово — Lex{% endblock %}
+{% block content %}
+<h1>Добавить слово</h1>
+
+{% if added %}
+<div class="success" style="background:var(--success);color:white;padding:1rem;border-radius:var(--border-radius);margin-bottom:1rem">
+    ✅ Слово добавлено!
+</div>
+{% endif %}
+
+<form method="post" action="/add">
+    <label for="word">
+        Слово
+        <input type="text" id="word" name="word" required placeholder="hello" autofocus>
+    </label>
+
+    <label for="translation">
+        Перевод
+        <input type="text" id="translation" name="translation" required placeholder="привет">
+    </label>
+
+    <button type="submit">Сохранить</button>
+</form>
+
+{% if error %}
+<div style="color:var(--danger);margin-top:1rem">{{ error }}</div>
+{% endif %}
+{% endblock %}

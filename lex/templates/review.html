@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Повтор — Lex{% endblock %}
+{% block content %}
+<h1>Повторение</h1>
+
+{% if message %}
+<p>{{ message }}</p>
+{% else %}
+<div style="text-align:center;margin:2rem 0">
+    <p style="color:var(--muted-color)">Слов готово к повторению: {{ total_due }}</p>
+
+    <h2>{{ word.word }}</h2>
+
+    <details>
+        <summary>Показать перевод</summary>
+        <p style="font-size:1.5rem;font-weight:bold">{{ word.translation }}</p>
+    </details>
+
+    <form method="post" action="/review/result" style="margin-top:1.5rem">
+        <input type="hidden" name="word_id" value="{{ word.id }}">
+        <button type="submit" name="correct" value="1">✓ Знаю</button>
+        <button type="submit" name="correct" value="0">✗ Забыл</button>
+    </form>
+</div>
+{% endif %}
+{% endblock %}
