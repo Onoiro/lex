@@ -9,6 +9,12 @@
 </div>
 {% endif %}
 
+{% if translated %}
+<div style="background:var(--info);color:white;padding:1rem;border-radius:var(--border-radius);margin-bottom:1rem">
+    🔄 Перевод найден
+</div>
+{% endif %}
+
 <form method="post" action="/add">
     <label for="word">
         Слово
@@ -18,6 +24,7 @@
     <label for="translation">
         Перевод
         <input type="text" id="translation" name="translation" required placeholder="привет">
+        <button type="button" id="translate-btn" style="margin-left:0.5rem">🔄 Перевести</button>
     </label>
 
     <button type="submit">Сохранить</button>
@@ -26,4 +33,41 @@
 {% if error %}
 <div style="color:var(--danger);margin-top:1rem">{{ error }}</div>
 {% endif %}
+
+<script>
+document.getElementById("translate-btn").addEventListener("click", async () => {
+    const wordInput = document.getElementById("word");
+    const translationInput = document.getElementById("translation");
+    const btn = document.getElementById("translate-btn");
+
+    if (!wordInput.value.trim()) {
+        return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = "⏳ ...";
+
+    try {
+        const resp = await fetch("/add/translate", {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: "word=" + encodeURIComponent(wordInput.value),
+        });
+        const data = await resp.json();
+        if (data.error) {
+            alert("Ошибка: " + data.error);
+        } else {
+            translationInput.value = data.translation || "";
+            if (!data.translation) {
+                alert("Перевод не найден. Проверьте API ключ.");
+            }
+        }
+    } catch (e) {
+        alert("Ошибка сети: " + e.message);
+    }
+
+    btn.disabled = false;
+    btn.textContent = "🔄 Перевести";
+});
+</script>
 {% endblock %}

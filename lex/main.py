@@ -5,9 +5,14 @@ from datetime import datetime, timezone
 import jinja2
 import random
 import time
+from dotenv import load_dotenv
 
 from database import engine, get_db
 from models import Base, Word
+from translator import translate_word
+
+# Загрузка переменных окружения из .env
+load_dotenv()
 
 Base.metadata.create_all(bind=engine)
 
@@ -30,7 +35,8 @@ async def index(request: Request):
 async def add_page(request: Request):
     tpl = env.get_template("add.html")
     added = request.query_params.get("added") == "1"
-    return tpl.render(added=added)
+    translated = request.query_params.get("translated") == "1"
+    return tpl.render(added=added, translated=translated)
 
 
 @app.post("/add")
@@ -55,7 +61,32 @@ async def add_word(
         next_review=0,
     ))
     db.commit()
-    return RedirectResponse(url="/add?added=1", status_code=303)
+    return RedirectResponse(url="/add?added=1&translated=0", status_code=303)
+
+
+@app.post("/add/translate")
+async def add_translate(
+    word: str = Form(...),
+):
+    """API для автоперевода слова (вызывается с фронтенда)."""
+    word = word.strip()
+    if not word:
+        return {"translation": "", "error": "Введите слово"}
+
+    translation = await translate_word(word)
+    if translation:
+        return {"translation": translation}
+    return {"translation": "", "error": None}
+
+
+@app.get("/debug/translate")
+async def debug_translate():
+    """Отладка: показывает сырой ответ Yandex API."""
+    import asyncio
+    loop = asyncio.get_running_loop()
+    from translator import _translate_sync
+    result, debug = await loop.run_in_executor(None, _translate_sync, "hello")
+    return {"result": result, "debug": debug}
 
 
 @app.get("/review", response_class=HTMLResponse)
