@@ -7,10 +7,12 @@ services:
       - "8003:8003"
     volumes:
       - lex_data:/app/data
-      - ./.env:/.env:ro
+      - ./.env:/app/.env:ro
     environment:
       - PYTHONUNBUFFERED=1
       - LEX_DATA_DIR=/app/data
+    env_file:
+      - ./.env
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8003/')"]
