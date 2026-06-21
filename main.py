@@ -9,6 +9,7 @@ from dotenv import load_dotenv
 from database import engine, get_db
 from models import Base, Word
 from translator import translate_word
+from validators import validate_word, validate_translation
 
 # Загрузка переменных окружения из .env
 load_dotenv()
@@ -45,10 +46,9 @@ async def add_word(
     translation: str = Form(...),
     db: Session = Depends(get_db),
 ):
-    word = word.strip()
-    translation = translation.strip()
-    if not word or not translation:
-        raise HTTPException(400, "Поля не могут быть пустыми")
+    # Валидация входных данных
+    word = validate_word(word)
+    translation = validate_translation(translation)
 
     existing = db.query(Word).filter(Word.word == word).first()
     if existing:
@@ -68,14 +68,15 @@ async def add_translate(
     word: str = Form(...),
 ):
     """API для автоперевода слова (вызывается с фронтенда)."""
-    word = word.strip()
-    if not word:
-        return {"translation": "", "error": "Введите слово"}
+    try:
+        word = validate_word(word)
+    except HTTPException as e:
+        return {"translation": "", "error": e.detail}
 
     translation = await translate_word(word)
     if translation:
         return {"translation": translation}
-    return {"translation": "", "error": None}
+    return {"translation": "", "error": "Перевод не найден. Проверьте API ключ."}
 
 
 @app.get("/debug/translate")
