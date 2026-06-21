@@ -3,6 +3,8 @@ import httpx
 import asyncio
 from fastapi import HTTPException
 
+from cache import translation_cache
+
 API_KEY = os.getenv("YANDEX_API_KEY")
 FOLDER_ID = os.getenv("YANDEX_FOLDER_ID", "b1gqq9rjega7119p3a2f")
 API_URL = "https://translate.api.cloud.yandex.net/translate/v2/translate"
@@ -14,6 +16,11 @@ def _translate_sync(word: str) -> tuple[str | None, str]:
     
     Возвращает (перевод, raw_response для отладки).
     """
+    # Проверяем кэш сначала
+    cached = translation_cache.get(word)
+    if cached:
+        return cached, ""  # Пустая строка означает "из кэша"
+    
     if not API_KEY:
         return None, "API_KEY не установлен"
 
@@ -39,7 +46,10 @@ def _translate_sync(word: str) -> tuple[str | None, str]:
             # Yandex v2: {"translations": [{"text": "...", "detectedLanguageCode": "..."}]}
             translations = data.get("translations", [])
             if translations and translations[0].get("text"):
-                return translations[0]["text"], ""
+                translation = translations[0]["text"]
+                # Сохраняем в кэш
+                translation_cache.set(word, translation)
+                return translation, ""
             return None, f"Пустой ответ: {raw}"
     except httpx.HTTPStatusError as e:
         if e.response.status_code in (401, 403):
