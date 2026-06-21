@@ -1,7 +1,6 @@
 from fastapi import FastAPI, Depends, Form, Request, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.orm import Session
-from datetime import datetime, timezone
 import jinja2
 import random
 import time
@@ -91,21 +90,23 @@ async def debug_translate():
 
 @app.get("/review", response_class=HTMLResponse)
 async def review_page(request: Request, db: Session = Depends(get_db)):
-    now = datetime.now(timezone.utc).timestamp()
-    due = db.query(Word).filter(Word.next_review <= now).all()
+    # Берём все слова из базы
+    all_words = db.query(Word).all()
 
-    if not due:
+    if not all_words:
         tpl = env.get_template("review.html")
-        return tpl.render(message="Все слова выучены! 🎉")
+        return tpl.render(message="Словарь пуст. Добавьте слова для повторения.")
 
-    weights = [max(w.interval, 0.5) for w in due]
+    # Взвешенный выбор: чем меньше интервал (чаще забывал), тем выше шанс
+    # Вес = 1 / (interval + 1) → интервал 0 даёт вес 1, интервал 10 даёт вес ~0.09
+    weights = [1.0 / (w.interval + 1) for w in all_words]
     total = sum(weights)
     weights = [t / total for t in weights]
 
-    chosen = random.choices(due, weights=weights, k=1)[0]
+    chosen = random.choices(all_words, weights=weights, k=1)[0]
 
     tpl = env.get_template("review.html")
-    return tpl.render(word=chosen, total_due=len(due))
+    return tpl.render(word=chosen, total_due=len(all_words))
 
 
 @app.post("/review/result")
