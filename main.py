@@ -11,6 +11,7 @@ from models import Base, Word
 from translator import translate_word
 from validators import validate_word, validate_translation
 from rate_limiter import rate_limit, add_rate_limiter, translate_rate_limiter
+from auth import require_auth
 
 # Загрузка переменных окружения из .env
 load_dotenv()
@@ -42,6 +43,7 @@ async def add_page(request: Request):
 
 @app.post("/add")
 @rate_limit(add_rate_limiter)
+@require_auth
 async def add_word(
     request: Request,
     word: str = Form(...),
@@ -67,6 +69,7 @@ async def add_word(
 
 @app.post("/add/translate")
 @rate_limit(translate_rate_limiter)
+@require_auth
 async def add_translate(
     word: str = Form(...),
 ):
