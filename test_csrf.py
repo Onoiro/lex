@@ -8,7 +8,6 @@ from csrf import (
     verify_token,
     CSRFProtection,
     validate_csrf_form_token,
-    csrf_protection,
 )
 
 
@@ -54,7 +53,7 @@ class TestTokenSigning:
     def test_verify_invalid_signature(self):
         """Проверка токена с неверной подписью."""
         token = generate_csrf_token()
-        signed = sign_token(token)
+        sign_token(token)
         
         # Подменяем подпись
         fake_signed = token + ".fake_signature"
