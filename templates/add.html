@@ -16,6 +16,8 @@
 {% endif %}
 
 <form method="post" action="/add">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    
     <label for="word">
         Слово
         <input type="text" id="word" name="word" required placeholder="hello" autofocus>
@@ -39,6 +41,7 @@ document.getElementById("translate-btn").addEventListener("click", async () => {
     const wordInput = document.getElementById("word");
     const translationInput = document.getElementById("translation");
     const btn = document.getElementById("translate-btn");
+    const csrfInput = document.querySelector('input[name="csrf_token"]');
 
     if (!wordInput.value.trim()) {
         return;
@@ -50,7 +53,10 @@ document.getElementById("translate-btn").addEventListener("click", async () => {
     try {
         const resp = await fetch("/add/translate", {
             method: "POST",
-            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            headers: { 
+                "Content-Type": "application/x-www-form-urlencoded",
+                "X-CSRF-Token": csrfInput.value,
+            },
             body: "word=" + encodeURIComponent(wordInput.value),
         });
         const data = await resp.json();

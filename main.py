@@ -12,6 +12,7 @@ from translator import translate_word
 from validators import validate_word, validate_translation
 from rate_limiter import rate_limit, add_rate_limiter, translate_rate_limiter
 from auth import require_auth
+from csrf import csrf_protect_form, csrf_protection
 
 # Загрузка переменных окружения из .env
 load_dotenv()
@@ -38,12 +39,15 @@ async def add_page(request: Request):
     tpl = env.get_template("add.html")
     added = request.query_params.get("added") == "1"
     translated = request.query_params.get("translated") == "1"
-    return tpl.render(added=added, translated=translated)
+    # Генерируем CSRF токен для формы
+    csrf_token = csrf_protection.get_token_for_form()
+    return tpl.render(added=added, translated=translated, csrf_token=csrf_token)
 
 
 @app.post("/add")
 @rate_limit(add_rate_limiter)
 @require_auth
+@csrf_protect_form
 async def add_word(
     request: Request,
     word: str = Form(...),
@@ -71,9 +75,16 @@ async def add_word(
 @rate_limit(translate_rate_limiter)
 @require_auth
 async def add_translate(
+    request: Request,
     word: str = Form(...),
 ):
     """API для автоперевода слова (вызывается с фронтенда)."""
+    # CSRF проверка через заголовок
+    from csrf import get_csrf_token_from_request, validate_csrf_form_token
+    
+    csrf_token = get_csrf_token_from_request(request)
+    validate_csrf_form_token(csrf_token)
+    
     try:
         word = validate_word(word)
     except HTTPException as e:
