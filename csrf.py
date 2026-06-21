@@ -4,7 +4,7 @@ import os
 import secrets
 import hmac
 from typing import Optional
-from fastapi import HTTPException, status, Request, Form
+from fastapi import HTTPException, status, Request
 
 
 # Секретный ключ для подписи токенов
@@ -180,9 +180,9 @@ class CSRFProtection:
 csrf_protection = CSRFProtection(ttl_seconds=3600)
 
 
-def validate_csrf_form_token(token: str) -> None:
+def validate_csrf_form_token(token):
     """
-    Валидировать CSRF токен из формы.
+    Проверить CSRF токен формы.
     
     Args:
         token: Токен из формы.
@@ -190,17 +190,25 @@ def validate_csrf_form_token(token: str) -> None:
     Raises:
         HTTPException: При невалидном токене (403 Forbidden).
     """
-    if not token:
+    import logging
+    logger = logging.getLogger("csrf")
+    
+    # Проверяем, что токен — строка
+    if not token or not isinstance(token, str):
+        logger.warning(f"CSRF токен отсутствует или не строка: {type(token)}")
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="CSRF токен отсутствует"
         )
     
     if not verify_token(token):
+        logger.warning(f"Неверный CSRF токен: {token[:20]}...")
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Неверный CSRF токен"
         )
+    
+    logger.info(f"CSRF токен валиден: {token[:20]}...")
 
 
 def csrf_protect_form(func):
@@ -210,14 +218,22 @@ def csrf_protect_form(func):
     Usage:
         @app.post("/add")
         @csrf_protect_form
-        async def add_word(..., csrf_token: str = Form(...)):
+        async def add_word(request: Request, ...):
             ...
     """
     from functools import wraps
     
     @wraps(func)
-    async def wrapper(*args, csrf_token: str = Form(None), **kwargs):
+    async def wrapper(request: Request, *args, **kwargs):
+        # Извлекаем токен из form data
+        csrf_token = None
+        try:
+            form_data = await request.form()
+            csrf_token = form_data.get("csrf_token")
+        except Exception:
+            pass
+        
         validate_csrf_form_token(csrf_token)
-        return await func(*args, **kwargs)
+        return await func(request, *args, **kwargs)
     
     return wrapper
