@@ -7,17 +7,6 @@ import random
 import time
 from dotenv import load_dotenv
 
-# Версия проекта из pyproject.toml (до импортов БД)
-def get_version():
-    try:
-        import tomllib
-    except ImportError:
-        import tomli as tomllib
-    with open("pyproject.toml", "rb") as f:
-        return tomllib.load(f)["project"]["version"]
-
-VERSION = get_version()
-
 from database import engine, get_db
 from models import Base, Word
 from translator import translate_word
@@ -28,6 +17,17 @@ from csrf import csrf_protect_form, csrf_protection
 
 # Загрузка переменных окружения из .env
 load_dotenv()
+
+# Версия проекта из pyproject.toml
+def get_version():
+    try:
+        import tomllib
+    except ImportError:
+        import tomli as tomllib
+    with open("pyproject.toml", "rb") as f:
+        return tomllib.load(f)["project"]["version"]
+
+VERSION = get_version()
 
 app = FastAPI()
 
@@ -134,8 +134,28 @@ async def debug_translate():
 async def dictionary_page(request: Request, db: Session = Depends(get_db)):
     """Страница со списком всех слов и переводов."""
     all_words = db.query(Word).order_by(Word.word).all()
+    csrf_token = csrf_protection.get_token_for_form()
     tpl = env.get_template("dictionary.html")
-    return tpl.render(words=all_words, total=len(all_words))
+    return tpl.render(words=all_words, total=len(all_words), csrf_token=csrf_token)
+
+
+@app.post("/dictionary/delete/{word_id}")
+@require_auth
+@csrf_protect_form
+async def delete_word(
+    request: Request,
+    word_id: int,
+    db: Session = Depends(get_db),
+):
+    """Удаление слова из словаря."""
+    w = db.query(Word).get(word_id)
+    if not w:
+        raise HTTPException(404, "Слово не найдено")
+    
+    db.delete(w)
+    db.commit()
+    
+    return RedirectResponse(url="/dictionary", status_code=303)
 
 
 @app.get("/review", response_class=HTMLResponse)

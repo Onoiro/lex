@@ -12,7 +12,8 @@
     <thead>
         <tr>
             <th style="width:40%">Слово</th>
-            <th style="width:60%">Перевод</th>
+            <th style="width:50%">Перевод</th>
+            <th style="width:10%">Действия</th>
         </tr>
     </thead>
     <tbody>
@@ -20,6 +21,12 @@
         <tr>
             <td>{{ w.word }}</td>
             <td>{{ w.translation }}</td>
+            <td>
+                <form method="post" action="/dictionary/delete/{{ w.id }}" style="display:inline" onsubmit="return confirm('Удалить слово «{{ w.word }}»?')">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                    <button type="submit" style="color:var(--pico-danger-color);padding:0.25rem 0.5rem">✕</button>
+                </form>
+            </td>
         </tr>
         {% endfor %}
     </tbody>

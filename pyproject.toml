@@ -1,6 +1,6 @@
 [project]
 name = "lex"
-version = "0.5.1"
+version = "0.6.0"
 description = "Словарь для запоминания иностранных слов с автопереводом через Yandex Translate"
 readme = "README.md"
 requires-python = ">=3.10"
