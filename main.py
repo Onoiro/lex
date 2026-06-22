@@ -1,5 +1,6 @@
 from fastapi import FastAPI, Depends, Form, Request, HTTPException
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
+from sqlalchemy import text, inspect
 from sqlalchemy.orm import Session
 import jinja2
 import random
@@ -18,6 +19,18 @@ from csrf import csrf_protect_form, csrf_protection
 load_dotenv()
 
 Base.metadata.create_all(bind=engine)
+
+# Авто-миграция: добавляем last_direction, если столбца нет
+def auto_migrate():
+    inspector = inspect(engine)
+    columns = [col['name'] for col in inspector.get_columns('words')]
+    if 'last_direction' not in columns:
+        with engine.connect() as conn:
+            conn.execute(text("ALTER TABLE words ADD COLUMN last_direction VARCHAR DEFAULT 'en_ru'"))
+            conn.commit()
+        print("[auto-migrate] Added last_direction column to words table")
+
+auto_migrate()
 
 app = FastAPI()
 
@@ -123,14 +136,18 @@ async def review_page(request: Request, db: Session = Depends(get_db)):
 
     chosen = random.choices(all_words, weights=weights, k=1)[0]
 
+    # Случайный выбор направления: 50/50
+    direction = random.choice(['en_ru', 'ru_en'])
+
     tpl = env.get_template("review.html")
-    return tpl.render(word=chosen, total_due=len(all_words))
+    return tpl.render(word=chosen, total_due=len(all_words), direction=direction)
 
 
 @app.post("/review/result")
 async def review_result(
     word_id: int = Form(...),
     correct: bool = Form(...),
+    direction: str = Form(...),
     db: Session = Depends(get_db),
 ):
     w = db.query(Word).get(word_id)
@@ -150,6 +167,56 @@ async def review_result(
         w.interval = 0
 
     w.next_review = time.time() + w.interval * 86400
+    w.last_direction = direction
     db.commit()
 
     return RedirectResponse(url="/review", status_code=303)
+
+
+@app.post("/review/next")
+async def review_next(
+    word_id: int = Form(...),
+    correct: bool = Form(...),
+    direction: str = Form(...),
+    db: Session = Depends(get_db),
+):
+    """AJAX-маршрут: сохраняет результат и возвращает следующее слово в JSON."""
+    w = db.query(Word).get(word_id)
+    if not w:
+        raise HTTPException(404)
+
+    if correct:
+        if w.repetitions == 0:
+            w.interval = 1
+        elif w.repetitions == 1:
+            w.interval = 6
+        else:
+            w.interval = round(w.interval * 2.5)
+        w.repetitions += 1
+    else:
+        w.repetitions = 0
+        w.interval = 0
+
+    w.next_review = time.time() + w.interval * 86400
+    w.last_direction = direction
+    db.commit()
+
+    # Получить следующее слово
+    all_words = db.query(Word).all()
+    if not all_words:
+        return JSONResponse({"done": True, "message": "Словарь пуст."})
+
+    weights = [1.0 / (wi.interval + 1) for wi in all_words]
+    total = sum(weights)
+    weights = [t / total for t in weights]
+    chosen = random.choices(all_words, weights=weights, k=1)[0]
+    new_direction = random.choice(['en_ru', 'ru_en'])
+
+    return JSONResponse({
+        "done": False,
+        "word": chosen.word,
+        "translation": chosen.translation,
+        "id": chosen.id,
+        "direction": new_direction,
+        "total_due": len(all_words),
+    })

@@ -6,21 +6,134 @@
 {% if message %}
 <p>{{ message }}</p>
 {% else %}
-<div style="text-align:center;margin:2rem 0">
+<div style="text-align:center;margin:2rem 0" id="review-container">
     <p style="color:var(--muted-color)">Всего слов в словаре: {{ total_due }}</p>
 
-    <h2>{{ word.word }}</h2>
+    {% if direction == 'en_ru' %}
+        <p style="color:var(--muted-color)">Вспомните перевод:</p>
+        <h2 id="word-display">{{ word.word }}</h2>
+    {% else %}
+        <p style="color:var(--muted-color)">Вспомните перевод:</p>
+        <h2 id="word-display">{{ word.translation }}</h2>
+    {% endif %}
 
-    <details>
-        <summary>Показать перевод</summary>
-        <p style="font-size:1.5rem;font-weight:bold">{{ word.translation }}</p>
+    <details id="translation-details" style="margin-top:1.5rem">
+        <summary id="translation-summary" style="cursor:pointer;color:var(--link-color)">Показать перевод</summary>
+        <p style="font-size:1.5rem;font-weight:bold" id="translation-display">{{ word.translation }}</p>
     </details>
 
-    <form method="post" action="/review/result" style="margin-top:1.5rem">
+    <form method="post" action="/review" style="margin-top:1.5rem" id="review-form">
         <input type="hidden" name="word_id" value="{{ word.id }}">
-        <button type="submit" name="correct" value="1">✓ Знаю</button>
-        <button type="submit" name="correct" value="0">✗ Забыл</button>
+        <input type="hidden" name="direction" value="{{ direction }}">
+        <input type="hidden" name="correct" value="1" id="correct-input">
+        <button type="submit" name="correct" value="1" id="btn-know">✓ Знаю</button>
+        <button type="submit" name="correct" value="0" id="btn-forgot">✗ Забыл</button>
     </form>
+
+    <button type="button" id="btn-next" style="margin-top:1rem;display:none">Следующее слово →</button>
 </div>
+
+<script>
+(function() {
+    const form = document.getElementById('review-form');
+    const btnKnow = document.getElementById('btn-know');
+    const btnForgot = document.getElementById('btn-forgot');
+    const btnNext = document.getElementById('btn-next');
+    const details = document.getElementById('translation-details');
+    const summary = document.getElementById('translation-summary');
+    const container = document.getElementById('review-container');
+
+    let autoTimer = null;
+    let wordId = parseInt(form.querySelector('[name="word_id"]').value);
+    let direction = form.querySelector('[name="direction"]').value;
+    let currentCorrect = true;
+
+    function startAutoTimer() {
+        clearTimeout(autoTimer);
+        btnNext.style.display = 'none';
+        autoTimer = setTimeout(function() {
+            submitResult(currentCorrect);
+        }, 2000);
+    }
+
+    function showNextWord(data) {
+        wordId = data.id;
+        direction = data.direction;
+
+        form.querySelector('[name="word_id"]').value = data.id;
+        form.querySelector('[name="direction"]').value = data.direction;
+
+        if (data.direction === 'en_ru') {
+            document.getElementById('word-display').textContent = data.word;
+            document.getElementById('translation-display').textContent = data.translation;
+        } else {
+            document.getElementById('word-display').textContent = data.translation;
+            document.getElementById('translation-display').textContent = data.word;
+        }
+
+        // Сброс: перевод скрыт, кнопки видны, ссылка скрыта
+        summary.style.display = 'none';
+        details.removeAttribute('open');
+        btnKnow.style.display = 'inline-block';
+        btnForgot.style.display = 'inline-block';
+        btnNext.style.display = 'none';
+        currentCorrect = true;
+        document.getElementById('correct-input').value = '1';
+        clearTimeout(autoTimer);
+    }
+
+    function submitResult(correct) {
+        currentCorrect = correct;
+        document.getElementById('correct-input').value = correct ? '1' : '0';
+
+        const formData = new FormData(form);
+
+        fetch('/review/next', {
+            method: 'POST',
+            body: formData,
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (data.done) {
+                container.innerHTML = '<p>' + (data.message || 'Повторение завершено!') + '</p>';
+                return;
+            }
+            showNextWord(data);
+        });
+    }
+
+    // Клик "Знаю" → показать ссылку "Показать перевод", скрыть кнопки, запустить таймер 3 сек
+    btnKnow.addEventListener('click', function(e) {
+        e.preventDefault();
+        btnKnow.style.display = 'none';
+        btnForgot.style.display = 'none';
+        btnNext.style.display = 'inline-block';
+        summary.style.display = 'inline';
+        startAutoTimer();
+    });
+
+    // Клик "Забыл" → сразу показать перевод, скрыть кнопки, запустить таймер 2 сек
+    btnForgot.addEventListener('click', function(e) {
+        e.preventDefault();
+        btnKnow.style.display = 'none';
+        btnForgot.style.display = 'none';
+        btnNext.style.display = 'inline-block';
+        summary.style.display = 'none';
+        details.setAttribute('open', 'open');
+        startAutoTimer();
+    });
+
+    // Клик "Следующее слово" → отправить результат, показать следующее слово
+    btnNext.addEventListener('click', function() {
+        clearTimeout(autoTimer);
+        submitResult(currentCorrect);
+    });
+
+    // Инициализация: кнопки видны, перевод скрыт, ссылка скрыта
+    summary.style.display = 'none';
+    btnKnow.style.display = 'inline-block';
+    btnForgot.style.display = 'inline-block';
+})();
+</script>
 {% endif %}
 {% endblock %}

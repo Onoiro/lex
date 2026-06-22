@@ -14,3 +14,5 @@ class Word(Base):
     repetitions = Column(Integer, default=0)
     # Дата следующего повторения
     next_review = Column(Float)  # unix timestamp
+    # Направление последнего повторения: 'en_ru' или 'ru_en'
+    last_direction = Column(String, default='en_ru')
