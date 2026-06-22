@@ -130,6 +130,14 @@ async def debug_translate():
     return {"result": result, "debug": debug}
 
 
+@app.get("/dictionary", response_class=HTMLResponse)
+async def dictionary_page(request: Request, db: Session = Depends(get_db)):
+    """Страница со списком всех слов и переводов."""
+    all_words = db.query(Word).order_by(Word.word).all()
+    tpl = env.get_template("dictionary.html")
+    return tpl.render(words=all_words, total=len(all_words))
+
+
 @app.get("/review", response_class=HTMLResponse)
 async def review_page(request: Request, db: Session = Depends(get_db)):
     # Берём все слова из базы

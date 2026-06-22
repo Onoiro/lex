@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Словарь — Lex{% endblock %}
+{% block content %}
+<h1>Словарь</h1>
+
+{% if not words %}
+<p>Словарь пуст. <a href="/add">Добавьте первое слово</a>.</p>
+{% else %}
+<p style="color:var(--muted-color)">Всего слов: {{ total }}</p>
+
+<table role="grid" style="margin-top:1.5rem">
+    <thead>
+        <tr>
+            <th style="width:40%">Слово</th>
+            <th style="width:60%">Перевод</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for w in words %}
+        <tr>
+            <td>{{ w.word }}</td>
+            <td>{{ w.translation }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endif %}
+{% endblock %}

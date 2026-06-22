@@ -50,7 +50,6 @@
 
     function startAutoTimer() {
         clearTimeout(autoTimer);
-        btnNext.style.display = 'none';
         autoTimer = setTimeout(function() {
             submitResult(currentCorrect);
         }, 2000);
