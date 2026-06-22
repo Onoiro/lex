@@ -1,11 +1,12 @@
 # Lex
 
-Lex is a web application for learning foreign words using spaced repetition.
+Lex is a web application for learning foreign words and translating text using Yandex Translate API.
 
 ## Features
 
 - **Add words** — Add new words with translations manually or get auto-translation via Yandex Translate API
-- **Review mode** — Practice words with bidirectional learning (English→Russian and Russian→English)
+- **Multi-language support** — Translate between Russian and 100+ languages (English, Spanish, French, German, and more)
+- **Review mode** — Practice words with bidirectional learning (any language ↔ Russian)
 - **Dictionary view** — See all your words in a searchable table
 - **Delete words** — Remove words you no longer need
 - **Spaced repetition** — Words you forget more often appear more frequently in reviews
@@ -72,16 +73,16 @@ The app will be available at http://localhost:8003
 ### Adding Words
 
 1. Go to **Добавить** (Add) page
-2. Enter a word in English
+2. Enter a word in any supported language
 3. Either:
-   - Click **Автоперевод** to get automatic translation
+   - Click **Автоперевод** to get automatic translation to Russian
    - Enter translation manually
 4. Click **Добавить** (Add)
 
 ### Reviewing Words
 
 1. Go to **Повтор** (Review) page
-2. You will see a word in English or Russian
+2. You will see a word in any language or Russian
 3. Click:
    - **Знаю** (Know) — if you remember the translation
    - **Забыл** (Forgot) — if you don't remember
