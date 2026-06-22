@@ -1,6 +1,6 @@
 [project]
 name = "lex"
-version = "0.4.2"
+version = "0.5.0"
 description = "Словарь для запоминания иностранных слов с автопереводом через Yandex Translate"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -13,6 +13,7 @@ dependencies = [
     "httpx>=0.28.1",
     "python-dotenv>=1.2.2",
     "passlib[bcrypt]>=1.7.4",
+    "tomli>=2.0.0; python_version<'3.11'",
 ]
 
 [project.optional-dependencies]

@@ -7,6 +7,17 @@ import random
 import time
 from dotenv import load_dotenv
 
+# Версия проекта из pyproject.toml (до импортов БД)
+def get_version():
+    try:
+        import tomllib
+    except ImportError:
+        import tomli as tomllib
+    with open("pyproject.toml", "rb") as f:
+        return tomllib.load(f)["project"]["version"]
+
+VERSION = get_version()
+
 from database import engine, get_db
 from models import Base, Word
 from translator import translate_word
@@ -18,7 +29,7 @@ from csrf import csrf_protect_form, csrf_protection
 # Загрузка переменных окружения из .env
 load_dotenv()
 
-Base.metadata.create_all(bind=engine)
+app = FastAPI()
 
 # Авто-миграция: добавляем last_direction, если столбца нет
 def auto_migrate():
@@ -30,13 +41,13 @@ def auto_migrate():
             conn.commit()
         print("[auto-migrate] Added last_direction column to words table")
 
+Base.metadata.create_all(bind=engine)
 auto_migrate()
-
-app = FastAPI()
 
 # Raw Jinja2 loader — no caching issues
 loader = jinja2.FileSystemLoader("templates")
 env = jinja2.Environment(loader=loader, autoescape=True)
+env.globals["version"] = VERSION
 
 
 # ---------- страницы ----------
