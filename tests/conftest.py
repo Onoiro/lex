@@ -15,12 +15,6 @@ from unittest.mock import patch
 from sqlalchemy import text
 from fastapi.testclient import TestClient
 
-# Import after setting env
-from database import Base, get_db, engine, SessionLocal
-from main import app
-from auth import get_password_hash
-from csrf import sign_token, generate_csrf_token
-
 # Create temporary database file for tests
 # This is needed because main.py creates tables at import time
 TEST_DB_FILE = tempfile.NamedTemporaryFile(delete=False, suffix=".db")
@@ -31,8 +25,15 @@ TEST_DB_FILE.close()
 os.environ["LEX_DATA_DIR"] = os.path.dirname(TEST_DB_PATH)
 os.environ["LEX_DB_NAME"] = os.path.basename(TEST_DB_PATH).replace(".db", "")
 
-# Remove the file so SQLAlchemy creates it fresh
-os.unlink(TEST_DB_PATH)
+# Keep the file so SQLAlchemy can create tables at import time
+# (main.py calls Base.metadata.create_all at module level)
+
+# Import after setting env (must be after env vars are set)
+# ruff: noqa: E402
+from database import Base, get_db, engine, SessionLocal
+from main import app
+from auth import get_password_hash
+from csrf import sign_token, generate_csrf_token
 
 
 # Create tables in test database
@@ -153,9 +154,12 @@ def sample_words(db_session):
     
     db_session.commit()
     
-    # Refresh to get IDs
+    # Refresh to get IDs and ensure data is visible in other transactions
     for word in words:
         db_session.refresh(word)
+    
+    # Expunge all to ensure next query fetches from DB
+    db_session.expunge_all()
     
     return words
 

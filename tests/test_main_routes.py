@@ -274,15 +274,19 @@ class TestReview:
 
     def test_review_shows_word(self, client, sample_words, db_session):
         """Review page shows a word for review."""
-        # sample_words fixture already added words to db_session
+        # Verify words are in database before making request
+        db_words = db_session.query(Word).all()
+        assert len(db_words) == 3, f"Expected 3 words in DB, got {len(db_words)}"
+        
         response = client.get("/review")
         
         assert response.status_code == status.HTTP_200_OK
-        # Should show at least one word from the sample
-        # Check for any of the sample words (use ASCII only for bytes comparison)
+        # Should show at least one word or translation from the sample
         content = response.content.decode('utf-8', errors='ignore')
-        found = any(word.word in content for word in sample_words)
-        assert found
+        
+        # Check for word or its translation (page shows one of them based on direction)
+        found = any(word.word in content or word.translation in content for word in sample_words)
+        assert found, f"None of {sample_words} found in response"
 
     def test_review_has_direction(self, client, sample_words):
         """Review page includes direction (en_ru or ru_en)."""
