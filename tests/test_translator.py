@@ -48,131 +48,131 @@ class TestTranslateSync:
 
     def test_api_error_response(self):
         """Handles API error response."""
-        os.environ["YANDEX_API_KEY"] = "fake_key"
-        os.environ["YANDEX_FOLDER_ID"] = "fake_folder"
-        
-        mock_response = MagicMock()
-        mock_response.status_code = 401
-        mock_response.text = "Unauthorized"
-        mock_response.raise_for_status.side_effect = Exception("HTTP Error")
-        
-        with patch("translator.httpx.Client") as mock_client_class:
-            mock_client = MagicMock()
-            mock_client_class.return_value.__enter__.return_value = mock_client
-            mock_client.post.return_value = mock_response
+        with patch("translator.API_KEY", "fake_key"), \
+             patch("translator.FOLDER_ID", "fake_folder"):
             
-            result, debug = _translate_sync("test_word")
+            mock_response = MagicMock()
+            mock_response.status_code = 401
+            mock_response.text = "Unauthorized"
+            mock_response.raise_for_status.side_effect = Exception("HTTP Error")
             
-            assert result is None
-            assert "HTTP" in debug or "401" in debug or "Unauthorized" in debug
+            with patch("translator.httpx.Client") as mock_client_class:
+                mock_client = MagicMock()
+                mock_client_class.return_value.__enter__.return_value = mock_client
+                mock_client.post.return_value = mock_response
+                
+                result, debug = _translate_sync("test_word")
+                
+                assert result is None
+                assert "HTTP" in debug or "401" in debug or "Unauthorized" in debug
 
     def test_empty_api_response(self):
         """Handles empty API response."""
-        os.environ["YANDEX_API_KEY"] = "fake_key"
-        os.environ["YANDEX_FOLDER_ID"] = "fake_folder"
-        
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.text = '{"translations": []}'
-        mock_response.json.return_value = {"translations": []}
-        mock_response.raise_for_status.return_value = None
-        
-        with patch("translator.httpx.Client") as mock_client_class:
-            mock_client = MagicMock()
-            mock_client_class.return_value.__enter__.return_value = mock_client
-            mock_client.post.return_value = mock_response
+        with patch("translator.API_KEY", "fake_key"), \
+             patch("translator.FOLDER_ID", "fake_folder"):
             
-            result, debug = _translate_sync("test_word")
+            mock_response = MagicMock()
+            mock_response.status_code = 200
+            mock_response.text = '{"translations": []}'
+            mock_response.json.return_value = {"translations": []}
+            mock_response.raise_for_status.return_value = None
             
-            assert result is None
-            assert "Пустой" in debug or "empty" in debug.lower() or "translations" in debug
+            with patch("translator.httpx.Client") as mock_client_class:
+                mock_client = MagicMock()
+                mock_client_class.return_value.__enter__.return_value = mock_client
+                mock_client.post.return_value = mock_response
+                
+                result, debug = _translate_sync("test_word")
+                
+                assert result is None
+                assert "Пустой" in debug or "empty" in debug.lower() or "translations" in debug
 
     def test_successful_api_response(self):
         """Handles successful API response."""
-        os.environ["YANDEX_API_KEY"] = "fake_key"
-        os.environ["YANDEX_FOLDER_ID"] = "fake_folder"
-        
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.text = '{"translations": [{"text": "тест", "detectedLanguageCode": "en"}]}'
-        mock_response.json.return_value = {
-            "translations": [{"text": "тест", "detectedLanguageCode": "en"}]
-        }
-        mock_response.raise_for_status.return_value = None
-        
-        with patch("translator.httpx.Client") as mock_client_class:
-            mock_client = MagicMock()
-            mock_client_class.return_value.__enter__.return_value = mock_client
-            mock_client.post.return_value = mock_response
+        with patch("translator.API_KEY", "fake_key"), \
+             patch("translator.FOLDER_ID", "fake_folder"):
             
-            result, debug = _translate_sync("test")
+            mock_response = MagicMock()
+            mock_response.status_code = 200
+            mock_response.text = '{"translations": [{"text": "тест", "detectedLanguageCode": "en"}]}'
+            mock_response.json.return_value = {
+                "translations": [{"text": "тест", "detectedLanguageCode": "en"}]
+            }
+            mock_response.raise_for_status.return_value = None
             
-            assert result == "тест"
-            assert debug == ""
+            with patch("translator.httpx.Client") as mock_client_class:
+                mock_client = MagicMock()
+                mock_client_class.return_value.__enter__.return_value = mock_client
+                mock_client.post.return_value = mock_response
+                
+                result, debug = _translate_sync("test")
+                
+                assert result == "тест"
+                assert debug == ""
 
     def test_saves_to_cache(self):
         """Saves successful translation to cache."""
-        os.environ["YANDEX_API_KEY"] = "fake_key"
-        os.environ["YANDEX_FOLDER_ID"] = "fake_folder"
-        
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.text = '{"translations": [{"text": "кэш тест", "detectedLanguageCode": "en"}]}'
-        mock_response.json.return_value = {
-            "translations": [{"text": "кэш тест", "detectedLanguageCode": "en"}]
-        }
-        mock_response.raise_for_status.return_value = None
-        
-        with patch("translator.httpx.Client") as mock_client_class:
-            mock_client = MagicMock()
-            mock_client_class.return_value.__enter__.return_value = mock_client
-            mock_client.post.return_value = mock_response
+        with patch("translator.API_KEY", "fake_key"), \
+             patch("translator.FOLDER_ID", "fake_folder"):
             
-            _translate_sync("cache_test_word")
+            mock_response = MagicMock()
+            mock_response.status_code = 200
+            mock_response.text = '{"translations": [{"text": "кэш тест", "detectedLanguageCode": "en"}]}'
+            mock_response.json.return_value = {
+                "translations": [{"text": "кэш тест", "detectedLanguageCode": "en"}]
+            }
+            mock_response.raise_for_status.return_value = None
             
-            # Verify it's in cache now
-            cached = translation_cache.get("cache_test_word")
-            assert cached == "кэш тест"
+            with patch("translator.httpx.Client") as mock_client_class:
+                mock_client = MagicMock()
+                mock_client_class.return_value.__enter__.return_value = mock_client
+                mock_client.post.return_value = mock_response
+                
+                _translate_sync("cache_test_word")
+                
+                # Verify it's in cache now
+                cached = translation_cache.get("cache_test_word")
+                assert cached == "кэш тест"
 
     def test_network_error(self):
         """Handles network errors."""
-        os.environ["YANDEX_API_KEY"] = "fake_key"
-        os.environ["YANDEX_FOLDER_ID"] = "fake_folder"
-        
-        import httpx
-        
-        with patch("translator.httpx.Client") as mock_client_class:
-            mock_client = MagicMock()
-            mock_client_class.return_value.__enter__.return_value = mock_client
-            mock_client.post.side_effect = httpx.RequestError("Network error")
+        with patch("translator.API_KEY", "fake_key"), \
+             patch("translator.FOLDER_ID", "fake_folder"):
             
-            result, debug = _translate_sync("test_word")
+            import httpx
             
-            assert result is None
-            assert "Network" in debug or "network" in debug or "сеть" in debug.lower()
+            with patch("translator.httpx.Client") as mock_client_class:
+                mock_client = MagicMock()
+                mock_client_class.return_value.__enter__.return_value = mock_client
+                mock_client.post.side_effect = httpx.RequestError("Network error")
+                
+                result, debug = _translate_sync("test_word")
+                
+                assert result is None
+                assert "Network" in debug or "network" in debug or "сеть" in debug.lower()
 
     def test_json_parse_error(self):
         """Handles JSON parse errors."""
-        os.environ["YANDEX_API_KEY"] = "fake_key"
-        os.environ["YANDEX_FOLDER_ID"] = "fake_folder"
-        
-        import json
-        
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.text = "not json"
-        mock_response.json.side_effect = json.JSONDecodeError("Invalid JSON", "not json", 0)
-        mock_response.raise_for_status.return_value = None
-        
-        with patch("translator.httpx.Client") as mock_client_class:
-            mock_client = MagicMock()
-            mock_client_class.return_value.__enter__.return_value = mock_client
-            mock_client.post.return_value = mock_response
+        with patch("translator.API_KEY", "fake_key"), \
+             patch("translator.FOLDER_ID", "fake_folder"):
             
-            result, debug = _translate_sync("test_word")
+            import json
             
-            assert result is None
-            assert "парсин" in debug.lower() or "parse" in debug.lower()
+            mock_response = MagicMock()
+            mock_response.status_code = 200
+            mock_response.text = "not json"
+            mock_response.json.side_effect = json.JSONDecodeError("Invalid JSON", "not json", 0)
+            mock_response.raise_for_status.return_value = None
+            
+            with patch("translator.httpx.Client") as mock_client_class:
+                mock_client = MagicMock()
+                mock_client_class.return_value.__enter__.return_value = mock_client
+                mock_client.post.return_value = mock_response
+                
+                result, debug = _translate_sync("test_word")
+                
+                assert result is None
+                assert "парсин" in debug.lower() or "parse" in debug.lower()
 
 
 class TestTranslateWord:
@@ -181,8 +181,6 @@ class TestTranslateWord:
     @pytest.mark.anyio
     async def test_translate_word_calls_sync(self):
         """Async function calls sync version."""
-        os.environ["YANDEX_API_KEY"] = "fake_key"
-        
         with patch("translator._translate_sync") as mock_sync:
             mock_sync.return_value = ("тест", "")
             
@@ -194,8 +192,6 @@ class TestTranslateWord:
     @pytest.mark.anyio
     async def test_translate_word_none_result(self):
         """Async function handles None result."""
-        os.environ["YANDEX_API_KEY"] = "fake_key"
-        
         with patch("translator._translate_sync") as mock_sync:
             mock_sync.return_value = (None, "error")
             
