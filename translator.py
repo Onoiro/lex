@@ -60,7 +60,7 @@ def _translate_sync(word: str) -> tuple[str | None, str]:
         return None, f"HTTP {e.response.status_code}: {e.response.text}"
     except httpx.RequestError as e:
         return None, f"Ошибка сети: {e}"
-    except (KeyError, IndexError, TypeError) as e:
+    except (KeyError, IndexError, TypeError, ValueError) as e:
         return None, f"Ошибка парсинга: {e}"
 
 
