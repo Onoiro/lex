@@ -108,11 +108,25 @@ Lex uses a simplified SM-2 algorithm:
 ### Commands
 
 ```bash
-make run    # Start development server
-make lint   # Run linter (ruff)
-make test   # Run tests
-make clean  # Clean Python cache
+make run       # Start development server
+make lint      # Run linter (ruff)
+make test      # Run tests
+make test-cov  # Run tests with coverage report (XML for SonarQube + HTML)
+make clean     # Clean Python cache and coverage reports
 ```
+
+### Coverage Reports
+
+To generate code coverage reports:
+
+```bash
+make test-cov
+```
+
+This creates:
+- `coverage-reports/coverage.xml` — XML format for SonarQube Cloud
+- `htmlcov/index.html` — Interactive HTML report (open in browser)
+- Terminal output with line-by-line coverage details
 
 ### Project Structure
 
