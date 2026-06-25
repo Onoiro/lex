@@ -21,3 +21,22 @@ clean:
 	find . -type d -name __pycache__ -exec rm -rf {} +
 	find . -type f -name *.pyc -delete
 	rm -rf coverage-reports htmlcov .pytest_cache .ruff_cache
+
+d-build:
+	docker compose build
+
+d-run:
+	docker compose up -d
+
+d-stop:
+	docker compose stop
+
+d-down:
+	docker compose down
+
+d-logs:
+	docker compose logs -f
+
+d-rebuild:
+	docker compose down
+	docker compose up -d --build

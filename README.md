@@ -1,12 +1,12 @@
 # Lex
 
-Lex is a web application for learning foreign words and translating text using Yandex Translate API.
+Lex is a web-based translator and vocabulary assistant. It provides fast translation between Russian and 90+ languages via Yandex Translate API, plus a spaced-repetition tool for learning and retaining foreign words.
 
 ## Features
 
 - **Add words** — Add new words with translations manually or get auto-translation via Yandex Translate API
-- **Multi-language support** — Translate between Russian and 100+ languages (English, Spanish, French, German, and more)
-- **Review mode** — Practice words with bidirectional learning (any language ↔ Russian)
+- **Multi-language translation** — Translate between Russian and 90+ languages (English, Spanish, French, German, Chinese, Arabic, and many more)
+- **Review mode** — Practice words with spaced repetition to retain translations in memory
 - **Dictionary view** — See all your words in a searchable table
 - **Delete words** — Remove words you no longer need
 - **Spaced repetition** — Words you forget more often appear more frequently in reviews
@@ -60,13 +60,46 @@ Lex is a web application for learning foreign words and translating text using Y
 
 ### Docker
 
-Build and run with Docker Compose:
+#### Quick start with Docker Compose
+
+Build and run the app in a container:
 
 ```bash
-docker compose up -d --build
+make d-build  # docker compose build
+make d-run    # docker compose up -d
 ```
 
 The app will be available at http://localhost:8003
+
+Other Docker commands:
+
+```bash
+make d-stop   # docker compose stop
+make d-down   # docker compose down
+make d-logs   # docker compose logs -f
+make d-rebuild # docker compose down && docker compose up -d --build
+```
+
+#### Dockerfile
+
+Build the image manually:
+
+```bash
+docker build -t lex-app .
+```
+
+Run the container:
+
+```bash
+docker run -d --name lex \
+  -p 8003:8003 \
+  -v $(pwd)/data:/app/data \
+  --env-file .env \
+  lex-app
+```
+
+The `-v $(pwd)/data:/app/data` mount persists the SQLite database outside the container.
+
 
 ## Usage
 
@@ -131,7 +164,7 @@ This creates:
 ### Project Structure
 
 ```
-lex/
+.
 ├── main.py           # FastAPI routes
 ├── database.py       # SQLite setup
 ├── models.py         # SQLAlchemy models
@@ -145,9 +178,13 @@ lex/
 │   ├── add.html
 │   ├── review.html
 │   └── dictionary.html
-└── pyproject.toml    # Dependencies
+├── tests/            # Unit tests
+├── Dockerfile        # Docker image definition
+├── docker-compose.yml
+├── pyproject.toml    # Dependencies
+└── Makefile          # Build commands
 ```
 
 ## License
 
-This project is for personal use.
+This project may be used for personal or non-commercial purposes.
