@@ -2,6 +2,8 @@
 
 Lex is a web-based translator and vocabulary assistant. It provides fast translation between Russian and 90+ languages via Yandex Translate API, plus a spaced-repetition tool for learning and retaining foreign words.
 
+**Try it live:** [lex.2-way.ru](https://lex.2-way.ru)
+
 ## Features
 
 - **Add words** — Add new words with translations manually or get auto-translation via Yandex Translate API
