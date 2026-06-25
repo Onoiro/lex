@@ -1,8 +1,11 @@
 [project]
 name = "lex"
 version = "0.6.0"
-description = "Словарь для запоминания иностранных слов с автопереводом через Yandex Translate"
+description = "Web translator and vocabulary assistant with Yandex Translate API"
+authors = [{name = "Andrey Bogatyrev", email = "donoriono@gmail.com"}]
 readme = "README.md"
+homepage = "https://lex.2-way.ru"
+repository = "https://github.com/Onoiro/lex"
 requires-python = ">=3.10"
 dependencies = [
     "fastapi>=0.137",
@@ -14,6 +17,17 @@ dependencies = [
     "python-dotenv>=1.2.2",
     "passlib[bcrypt]>=1.7.4",
     "tomli>=2.0.0; python_version<'3.11'",
+]
+classifiers = [
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.13",
+    "Environment :: Web Environment",
+    "Framework :: FastAPI",
+    "Natural Language :: Russian",
+    "Natural Language :: English",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: MacOS",
+    "Operating System :: Microsoft :: Windows"
 ]
 
 [project.optional-dependencies]
