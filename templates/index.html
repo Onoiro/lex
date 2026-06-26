@@ -1,17 +1,61 @@
 {% extends "base.html" %}
-{% block title %}Lex — Словарь{% endblock %}
-{% block content %}
-<h1>Lex</h1>
-<p>Запоминай иностранные слова с интервальными повторениями.</p>
+{% block title %}Lex — Переводчик и тренер слов{% endblock %}
 
-<div class="grid">
-    <a href="/add" class="card">
-        <h2>➕ Добавить слова</h2>
-        <p>Введи новое слово и перевод</p>
-    </a>
-    <a href="/review" class="card">
-        <h2>🔄 Повтор</h2>
-        <p>Проверь выученные слова</p>
-    </a>
+{% block content %}
+<!-- Блок с описанием приложения (Hero section) -->
+<hgroup style="text-align: center; margin-bottom: 3rem; margin-top: 2rem;">
+    <h1>Lex</h1>
+    <p>Твой личный переводчик и тренер словарного запаса.</p>
+    <small style="color: var(--pico-muted-color);">
+        Переводи слова с 90+ языков, сохраняй их в свой словарь и запоминай навсегда с помощью умных интервальных повторений.
+    </small>
+</hgroup>
+
+<!-- Навигация в виде карточек-дашборда -->
+<div class="grid app-dashboard">
+    
+    <!-- Карточка: Перевод и добавление -->
+    <article>
+        <header style="margin-bottom: 0;">
+            <h2 style="margin-bottom: 0.5rem; font-size: 1.5rem;">🌍 Переводчик</h2>
+        </header>
+        <p style="font-size: 0.9rem; color: var(--pico-muted-color); min-height: 4rem;">
+            Встретил незнакомое слово? Переведи его на русский и сохрани в один клик, чтобы выучить позже.
+        </p>
+        <footer>
+            <a href="/add" role="button" class="outline" style="width: 100%; text-align: center;">Перевести слово</a>
+        </footer>
+    </article>
+
+    <!-- Карточка: Тренировка / Повтор -->
+    <article>
+        <header style="margin-bottom: 0;">
+            <h2 style="margin-bottom: 0.5rem; font-size: 1.5rem;">🧠 Тренировка</h2>
+        </header>
+        <p style="font-size: 0.9rem; color: var(--pico-muted-color); min-height: 4rem;">
+            Повторяй сохраненные слова. Алгоритм сам подберет те, которые ты начал забывать.
+        </p>
+        <footer>
+            <a href="/review" role="button" style="width: 100%; text-align: center;">Начать повтор</a>
+        </footer>
+    </article>
+
 </div>
+
+<!-- Немного стилей для анимации карточек, чтобы они ощущались живыми -->
+<style>
+    .app-dashboard article {
+        transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        display: flex;
+        flex-direction: column;
+    }
+    .app-dashboard article:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+    }
+    .app-dashboard article footer {
+        margin-top: auto; /* Прижимает кнопку к низу карточки */
+        padding-top: 1rem;
+    }
+</style>
 {% endblock %}

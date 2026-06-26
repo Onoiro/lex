@@ -2,27 +2,59 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
+    
+    <!-- Метатеги для мобильных устройств (App-like feel) -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#1095c1"> <!-- Укажи основной цвет Pico или свой -->
+    
     <title>{% block title %}Lex{% endblock %}</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+    
+    <style>
+        /* Делаем так, чтобы контент не перекрывался фиксированным футером */
+        html, body {
+            height: 100%;
+        }
+        body {
+            display: flex;
+            flex-direction: column;
+        }
+        main {
+            flex: 1; /* Растягиваем main, чтобы футер прижался к низу естественным путем */
+            padding-bottom: 4rem; 
+        }
+        /* Улучшаем вид мобильной навигации */
+        nav strong {
+            font-size: 1.2rem;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
-        <nav>
-            <ul>
-                <li><a href="/">Lex</a></li>
-                <li><a href="/add">Добавить</a></li>
-                <li><a href="/review">Повтор</a></li>
-                <li><a href="/dictionary">Словарь</a></li>
-            </ul>
-        </nav>
+        <!-- Шапка приложения -->
+        <header>
+            <nav>
+                <ul>
+                    <li><a href="/" class="contrast"><strong>Lex</strong></a></li>
+                </ul>
+                <ul>
+                    <li><a href="/add" class="secondary">Переводчик</a></li>
+                    <li><a href="/review" class="secondary">Повтор</a></li>
+                    <li><a href="/dictionary" class="secondary">Словарь</a></li>
+                </ul>
+            </nav>
+        </header>
 
-        <main style="padding-bottom:3rem">
+        <!-- Основной контент -->
+        <main>
             {% block content %}{% endblock %}
         </main>
 
-        <footer style="position:fixed;left:0;bottom:0;right:0;margin:0;padding:0.5rem;background:var(--pico-background-color);color:var(--muted-color);text-align:center;border-top:1px solid var(--pico-muted-border-color)">
-            Lex v{{ version }}
+        <!-- Фиксированный подвал -->
+        <footer style="position:fixed;left:0;bottom:0;right:0;margin:0;padding:0.75rem;background:var(--pico-background-color);color:var(--pico-muted-color);text-align:center;border-top:1px solid var(--pico-muted-border-color); font-size: 0.85rem; z-index: 100;">
+            Lex v{{ version | default('0.6.0') }}
         </footer>
     </div>
 </body>
