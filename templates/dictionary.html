@@ -1,35 +1,50 @@
 {% extends "base.html" %}
-{% block title %}Словарь — Lex{% endblock %}
+{% block title %}Мой Словарь — Lex{% endblock %}
+
 {% block content %}
-<h1>Словарь</h1>
+<hgroup style="text-align: center; margin-bottom: 2rem; margin-top: 1rem;">
+    <h1>Мой словарь</h1>
+    <p>Всего сохранено слов: {{ total }}</p>
+</hgroup>
 
 {% if not words %}
-<p>Словарь пуст. <a href="/add">Добавьте первое слово</a>.</p>
+<article style="text-align: center; padding: 3rem 1rem;">
+    <h2 style="margin-bottom: 1rem;">Словарь пока пуст 🍃</h2>
+    <p style="color: var(--pico-muted-color);">Добавь свое первое слово, чтобы начать тренировки.</p>
+    <a href="/add" role="button">Перевести слово</a>
+</article>
 {% else %}
-<p style="color:var(--muted-color)">Всего слов: {{ total }}</p>
-
-<table role="grid" style="margin-top:1.5rem">
-    <thead>
-        <tr>
-            <th style="width:40%">Слово</th>
-            <th style="width:50%">Перевод</th>
-            <th style="width:10%">Действия</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for w in words %}
-        <tr>
-            <td>{{ w.word }}</td>
-            <td>{{ w.translation }}</td>
-            <td>
-                <form method="post" action="/dictionary/delete/{{ w.id }}" style="display:inline" onsubmit="return confirm('Удалить слово «{{ w.word }}»?')">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                    <button type="submit" style="color:var(--pico-danger-color);padding:0.25rem 0.5rem">✕</button>
-                </form>
-            </td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
+<article style="padding: 0;"> <!-- Убираем padding у карточки, чтобы таблица была на всю ширину -->
+    
+    <!-- Тег figure делает таблицу скроллируемой по горизонтали на узких экранах -->
+    <figure style="margin: 0;">
+        <table role="grid" style="margin: 0;">
+            <thead>
+                <tr>
+                    <th style="width: 40%; padding-left: 1.5rem;">Слово</th>
+                    <th style="width: 45%;">Перевод</th>
+                    <th style="width: 15%; text-align: center; padding-right: 1.5rem;">Удалить</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for w in words %}
+                <tr>
+                    <td style="padding-left: 1.5rem;"><strong>{{ w.word }}</strong></td>
+                    <td>{{ w.translation }}</td>
+                    <td style="text-align: center; padding-right: 1.5rem;">
+                        <form method="post" action="/dictionary/delete/{{ w.id }}" style="margin: 0;" onsubmit="return confirm('Точно удалить слово «{{ w.word }}»?')">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                            <!-- Используем outline и class="contrast", чтобы кнопка была аккуратной -->
+                            <button type="submit" class="outline contrast" style="border: none; padding: 0.25rem 0.5rem; font-size: 1.2rem;" title="Удалить">
+                                🗑️
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </figure>
+</article>
 {% endif %}
 {% endblock %}

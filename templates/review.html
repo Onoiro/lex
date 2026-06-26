@@ -1,43 +1,67 @@
 {% extends "base.html" %}
-{% block title %}Повтор — Lex{% endblock %}
+{% block title %}Тренировка — Lex{% endblock %}
+
 {% block content %}
-<h1>Повторение</h1>
+<hgroup style="text-align: center; margin-bottom: 2rem; margin-top: 1rem;">
+    <h1>Тренировка</h1>
+    <p>Слов в очереди: {{ total_due }}</p>
+</hgroup>
 
 {% if message %}
-<p>{{ message }}</p>
+<article style="text-align: center;">
+    <p style="font-size: 1.2rem;">🎉 {{ message }}</p>
+    <a href="/" role="button" class="outline">На главную</a>
+</article>
 {% else %}
-<div style="text-align:center;margin:2rem 0" id="review-container">
-    <p style="color:var(--muted-color)">Всего слов в словаре: {{ total_due }}</p>
+<article id="review-container" style="display: flex; flex-direction: column; min-height: 40vh;">
+    
+    <!-- Верхняя часть карточки (Слово) -->
+    <header style="text-align: center; border-bottom: none; padding-bottom: 0;">
+        <small style="color: var(--pico-muted-color);">Вспомните перевод:</small>
+        {% if direction == 'en_ru' %}
+            <h2 id="word-display" style="font-size: 2.5rem; margin: 1rem 0;">{{ word.word }}</h2>
+        {% else %}
+            <h2 id="word-display" style="font-size: 2.5rem; margin: 1rem 0;">{{ word.translation }}</h2>
+        {% endif %}
+    </header>
 
-    {% if direction == 'en_ru' %}
-        <p style="color:var(--muted-color)">Вспомните перевод:</p>
-        <h2 id="word-display">{{ word.word }}</h2>
-    {% else %}
-        <p style="color:var(--muted-color)">Вспомните перевод:</p>
-        <h2 id="word-display">{{ word.translation }}</h2>
-    {% endif %}
+    <!-- Средняя часть (Перевод, по умолчанию скрыт) -->
+    <div style="text-align: center; flex-grow: 1; display: flex; align-items: center; justify-content: center;">
+        <details id="translation-details" style="width: 100%;">
+            <summary id="translation-summary" style="cursor:pointer; color: var(--pico-primary); font-weight: bold;">
+                Показать перевод
+            </summary>
+            <p style="font-size: 2rem; font-weight: bold; margin: 0; color: var(--pico-color);" id="translation-display">
+                {{ word.translation }}
+            </p>
+        </details>
+    </div>
 
-    <details id="translation-details" style="margin-top:1.5rem">
-        <summary id="translation-summary" style="cursor:pointer;color:var(--link-color)">Показать перевод</summary>
-        <p style="font-size:1.5rem;font-weight:bold" id="translation-display">{{ word.translation }}</p>
-    </details>
+    <!-- Нижняя часть (Кнопки действий) -->
+    <footer style="margin-top: auto;">
+        <form method="post" action="/review" id="review-form" style="margin-bottom: 0;">
+            <input type="hidden" name="word_id" value="{{ word.id }}">
+            <input type="hidden" name="direction" value="{{ direction }}">
+            <input type="hidden" name="correct" value="1" id="correct-input">
+            
+            <div class="grid" id="action-buttons">
+                <!-- Кнопка "Забыл" (Серый/Второстепенный контур) -->
+                <button type="submit" name="correct" value="0" id="btn-forgot" class="outline secondary">✗ Забыл</button>
+                <!-- Кнопка "Знаю" (Основная заливка) -->
+                <button type="submit" name="correct" value="1" id="btn-know">✓ Знаю</button>
+            </div>
+        </form>
 
-    <form method="post" action="/review" style="margin-top:1.5rem" id="review-form">
-        <input type="hidden" name="word_id" value="{{ word.id }}">
-        <input type="hidden" name="direction" value="{{ direction }}">
-        <input type="hidden" name="correct" value="1" id="correct-input">
-        <button type="submit" name="correct" value="1" id="btn-know">✓ Знаю</button>
-        <button type="submit" name="correct" value="0" id="btn-forgot">✗ Забыл</button>
-    </form>
-
-    <button type="button" id="btn-next" style="margin-top:1rem;display:none">Следующее слово →</button>
-</div>
+        <button type="button" id="btn-next" class="outline" style="width: 100%; display: none;">Следующее слово →</button>
+    </footer>
+</article>
 
 <script>
 (function() {
     const form = document.getElementById('review-form');
     const btnKnow = document.getElementById('btn-know');
     const btnForgot = document.getElementById('btn-forgot');
+    const actionButtons = document.getElementById('action-buttons');
     const btnNext = document.getElementById('btn-next');
     const details = document.getElementById('translation-details');
     const summary = document.getElementById('translation-summary');
@@ -70,11 +94,9 @@
             document.getElementById('translation-display').textContent = data.word;
         }
 
-        // Сброс: перевод скрыт, кнопки видны, ссылка скрыта
-        summary.style.display = 'none';
+        summary.style.display = 'block';
         details.removeAttribute('open');
-        btnKnow.style.display = 'inline-block';
-        btnForgot.style.display = 'inline-block';
+        actionButtons.style.display = 'grid';
         btnNext.style.display = 'none';
         currentCorrect = true;
         document.getElementById('correct-input').value = '1';
@@ -94,44 +116,36 @@
         .then(function(r) { return r.json(); })
         .then(function(data) {
             if (data.done) {
-                container.innerHTML = '<p>' + (data.message || 'Повторение завершено!') + '</p>';
+                container.innerHTML = '<div style="text-align:center; padding: 2rem;"><p style="font-size:1.2rem;">🎉 ' + (data.message || 'Повторение завершено!') + '</p><a href="/" role="button" class="outline">На главную</a></div>';
                 return;
             }
             showNextWord(data);
         });
     }
 
-    // Клик "Знаю" → показать ссылку "Показать перевод", скрыть кнопки, запустить таймер 3 сек
     btnKnow.addEventListener('click', function(e) {
         e.preventDefault();
-        btnKnow.style.display = 'none';
-        btnForgot.style.display = 'none';
-        btnNext.style.display = 'inline-block';
-        summary.style.display = 'inline';
+        actionButtons.style.display = 'none';
+        btnNext.style.display = 'block';
+        summary.style.display = 'block';
         startAutoTimer();
     });
 
-    // Клик "Забыл" → сразу показать перевод, скрыть кнопки, запустить таймер 2 сек
     btnForgot.addEventListener('click', function(e) {
         e.preventDefault();
-        btnKnow.style.display = 'none';
-        btnForgot.style.display = 'none';
-        btnNext.style.display = 'inline-block';
+        actionButtons.style.display = 'none';
+        btnNext.style.display = 'block';
         summary.style.display = 'none';
         details.setAttribute('open', 'open');
         startAutoTimer();
     });
 
-    // Клик "Следующее слово" → отправить результат, показать следующее слово
     btnNext.addEventListener('click', function() {
         clearTimeout(autoTimer);
         submitResult(currentCorrect);
     });
 
-    // Инициализация: кнопки видны, перевод скрыт, ссылка скрыта
     summary.style.display = 'none';
-    btnKnow.style.display = 'inline-block';
-    btnForgot.style.display = 'inline-block';
 })();
 </script>
 {% endif %}

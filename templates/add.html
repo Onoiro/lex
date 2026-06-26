@@ -1,40 +1,44 @@
 {% extends "base.html" %}
 {% block title %}Добавить слово — Lex{% endblock %}
+
 {% block content %}
-<h1>Добавить слово</h1>
+<hgroup style="text-align: center; margin-bottom: 2rem; margin-top: 1rem;">
+    <h1>Новое слово</h1>
+    <p>Переведи и сохрани в словарь</p>
+</hgroup>
 
+<!-- Уведомления об успехе/ошибке -->
 {% if added %}
-<div class="success" style="background:var(--success);color:white;padding:1rem;border-radius:var(--border-radius);margin-bottom:1rem">
-    ✅ Слово добавлено!
-</div>
+<article style="background: var(--pico-ins-color); color: var(--pico-primary-inverse); padding: 1rem; margin-bottom: 1rem;">
+    ✅ Слово успешно добавлено в словарь!
+</article>
 {% endif %}
-
-{% if translated %}
-<div style="background:var(--info);color:white;padding:1rem;border-radius:var(--border-radius);margin-bottom:1rem">
-    🔄 Перевод найден
-</div>
-{% endif %}
-
-<form method="post" action="/add">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-    
-    <label for="word">
-        Слово
-        <input type="text" id="word" name="word" required placeholder="hello" autofocus>
-    </label>
-
-    <label for="translation">
-        Перевод
-        <input type="text" id="translation" name="translation" required placeholder="привет">
-        <button type="button" id="translate-btn" style="margin-left:0.5rem">🔄 Перевести</button>
-    </label>
-
-    <button type="submit">Сохранить</button>
-</form>
 
 {% if error %}
-<div style="color:var(--danger);margin-top:1rem">{{ error }}</div>
+<article style="background: var(--pico-del-color); color: var(--pico-primary-inverse); padding: 1rem; margin-bottom: 1rem;">
+    ❌ {{ error }}
+</article>
 {% endif %}
+
+<article>
+    <form method="post" action="/add" style="margin-bottom: 0;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        
+        <!-- Поле ввода -->
+        <label for="word">Иностранное слово</label>
+        <input type="text" id="word" name="word" required placeholder="Например: application" autofocus>
+        <button type="button" id="translate-btn" class="secondary" style="width: 100%; margin-top: 0.5rem;">🔄 Перевести</button>
+
+        <!-- Поле перевода -->
+        <label for="translation">Перевод</label>
+        <input type="text" id="translation" name="translation" required placeholder="Например: приложение">
+
+        <!-- Кнопка сохранения в футере карточки -->
+        <footer style="margin-top: 2rem; padding-bottom: 0;">
+            <button type="submit" style="width: 100%;">Сохранить в словарь</button>
+        </footer>
+    </form>
+</article>
 
 <script>
 document.getElementById("translate-btn").addEventListener("click", async () => {
