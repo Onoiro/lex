@@ -426,3 +426,103 @@ class TestReviewNext:
         )
         
         assert response.status_code == status.HTTP_404_NOT_FOUND
+
+    def test_review_next_saves_best_time(self, client, sample_word, db_session):
+        """Review next saves best_time when elapsed is provided."""
+        response = client.post(
+            "/review/next",
+            data={
+                "word_id": sample_word.id,
+                "correct": True,
+                "direction": "en_ru",
+                "elapsed": 1.5,
+            },
+        )
+        
+        data = response.json()
+        assert data["done"] is False
+        assert data["current_best_time"] == 1.5
+        
+        updated = db_session.query(Word).get(sample_word.id)
+        assert updated.best_time == 1.5
+
+    def test_review_next_updates_avg_time(self, client, sample_word, db_session):
+        """Review next calculates avg_time from multiple elapsed values."""
+        # First response: best=2.0, avg=2.0
+        client.post(
+            "/review/next",
+            data={
+                "word_id": sample_word.id,
+                "correct": True,
+                "direction": "en_ru",
+                "elapsed": 2.0,
+            },
+        )
+        
+        # Second response: best=2.0, avg=(2.0+3.0)/2=2.5
+        client.post(
+            "/review/next",
+            data={
+                "word_id": sample_word.id,
+                "correct": False,
+                "direction": "ru_en",
+                "elapsed": 3.0,
+            },
+        )
+        
+        updated = db_session.query(Word).get(sample_word.id)
+        assert updated.best_time == 2.0
+        assert updated.avg_time == 2.5
+
+    def test_review_next_best_time_improves(self, client, sample_word, db_session):
+        """Review next updates best_time when a faster response is recorded."""
+        # First: 3.0s
+        client.post(
+            "/review/next",
+            data={
+                "word_id": sample_word.id,
+                "correct": True,
+                "direction": "en_ru",
+                "elapsed": 3.0,
+            },
+        )
+        
+        # Second: 1.5s (better)
+        client.post(
+            "/review/next",
+            data={
+                "word_id": sample_word.id,
+                "correct": True,
+                "direction": "en_ru",
+                "elapsed": 1.5,
+            },
+        )
+        
+        updated = db_session.query(Word).get(sample_word.id)
+        assert updated.best_time == 1.5
+
+    def test_review_next_includes_time_data_in_response(self, client, sample_word):
+        """Review next includes current best_time and avg_time in JSON response."""
+        client.post(
+            "/review/next",
+            data={
+                "word_id": sample_word.id,
+                "correct": True,
+                "direction": "en_ru",
+                "elapsed": 2.5,
+            },
+        )
+        
+        response = client.post(
+            "/review/next",
+            data={
+                "word_id": sample_word.id,
+                "correct": True,
+                "direction": "en_ru",
+                "elapsed": 1.8,
+            },
+        )
+        
+        data = response.json()
+        assert data["current_best_time"] == 1.8
+        assert data["current_avg_time"] == 2.15

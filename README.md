@@ -8,8 +8,8 @@ Lex is a web-based translator and vocabulary assistant. It provides fast transla
 
 - **Add words** — Add new words with translations manually or get auto-translation via Yandex Translate API
 - **Multi-language translation** — Translate between Russian and 90+ languages (English, Spanish, French, German, Chinese, Arabic, and many more)
-- **Review mode** — Practice words with spaced repetition to retain translations in memory
-- **Dictionary view** — See all your words in a searchable table
+- **Review mode** — Practice words with spaced repetition, response time tracking with best/avg stats, and live timer
+- **Dictionary view** — See all your words in a table with time stats and intervals
 - **Delete words** — Remove words you no longer need
 - **Spaced repetition** — Words you forget more often appear more frequently in reviews
 
@@ -119,16 +119,17 @@ The `-v $(pwd)/data:/app/data` mount persists the SQLite database outside the co
 1. Go to **Повтор** (Review) page
 2. You will see a word in any language or Russian
 3. Click:
-   - **Знаю** (Know) — if you remember the translation
-   - **Забыл** (Forgot) — if you don't remember
-4. The next word appears automatically after 2 seconds
+   - **Знаю** (Know) — if you remember the translation. The translation is hidden for 3 seconds so you can verify.
+   - **Забыл** (Forgot) — if you don't remember. The translation is shown for 3 seconds to help you remember.
+4. The next word appears automatically after 3 seconds
 5. Click **Следующее слово** (Next word) to skip the wait
+6. Response time is tracked: best and average times are shown above the word, and a live timer runs while you think. If your response is faster than your previous best, the timer turns green.
 
 ### Dictionary
 
 1. Go to **Словарь** (Dictionary) page
-2. See all words sorted alphabetically
-3. Click **✕** to delete a word
+3. See all words sorted alphabetically. Each word shows its best/average response time and interval.
+4. Click **✕** to delete a word.
 
 ## Spaced Repetition Algorithm
 

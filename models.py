@@ -16,3 +16,7 @@ class Word(Base):
     next_review = Column(Float)  # unix timestamp
     # Направление последнего повторения: 'en_ru' или 'ru_en'
     last_direction = Column(String, default='en_ru')
+    # Лучшее время ответа в секундах (None если ещё не повторялся)
+    best_time = Column(Float, default=None)
+    # Среднее время ответа в секундах (None если ещё не повторялся)
+    avg_time = Column(Float, default=None)

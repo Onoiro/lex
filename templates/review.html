@@ -15,9 +15,14 @@
 {% else %}
 <article id="review-container" style="display: flex; flex-direction: column; min-height: 40vh;">
     
-    <!-- Верхняя часть карточки (Слово) -->
-    <header style="text-align: center; border-bottom: none; padding-bottom: 0;">
-        <small style="color: var(--pico-muted-color);">Вспомните перевод:</small>
+    <!-- Верхняя часть: статистика слева, таймер справа -->
+    <header style="text-align: center; border-bottom: none; padding-bottom: 0; position: relative;">
+        <span id="stats-display" style="position: absolute; left: 0; top: 0; color: var(--pico-muted-color); font-size: 0.85rem;">
+        </span>
+        <span id="timer-display" style="position: absolute; right: 0; top: 0; color: var(--pico-muted-color); font-size: 0.95rem; font-weight: bold; font-variant-numeric: tabular-nums;">
+            0.00s
+        </span>
+        <small style="display: block; color: var(--pico-muted-color);">Вспомните перевод:</small>
         {% if direction == 'en_ru' %}
             <h2 id="word-display" style="font-size: 2.5rem; margin: 1rem 0;">{{ word.word }}</h2>
         {% else %}
@@ -66,48 +71,103 @@
     const details = document.getElementById('translation-details');
     const summary = document.getElementById('translation-summary');
     const container = document.getElementById('review-container');
+    const statsDisplay = document.getElementById('stats-display');
+    const timerDisplay = document.getElementById('timer-display');
 
     let autoTimer = null;
+    let timerInterval = null;
+    let startTime = null;
     let wordId = parseInt(form.querySelector('[name="word_id"]').value);
     let direction = form.querySelector('[name="direction"]').value;
     let currentCorrect = true;
+    // Предзагруженное следующее слово (показывается только через 3с или по кнопке)
+    var nextWordData = null;
+
+    // Загрузка статистики из server-side рендера
+    var bestTime = {{ word.best_time if word.best_time is not none else 'null' }};
+    var avgTime = {{ word.avg_time if word.avg_time is not none else 'null' }};
+
+    function formatTime(seconds) {
+        return seconds.toFixed(2) + 's';
+    }
+
+    function updateStats() {
+        if (bestTime !== null && avgTime !== null) {
+            statsDisplay.innerHTML = 'best: ' + formatTime(bestTime) + ' | avg: ' + formatTime(avgTime);
+        } else {
+            statsDisplay.innerHTML = '';
+        }
+    }
+
+    function startTimer() {
+        startTime = Date.now();
+        timerDisplay.textContent = '0.00s';
+        timerDisplay.style.color = 'var(--pico-muted-color)';
+        
+        clearInterval(timerInterval);
+        timerInterval = setInterval(function() {
+            var elapsed = (Date.now() - startTime) / 1000.0;
+            timerDisplay.textContent = formatTime(elapsed);
+        }, 100);
+    }
+
+    function stopTimer() {
+        clearInterval(timerInterval);
+        var elapsed = (Date.now() - startTime) / 1000.0;
+        timerDisplay.textContent = formatTime(elapsed);
+        return Math.round(elapsed * 100) / 100;
+    }
 
     function startAutoTimer() {
         clearTimeout(autoTimer);
         autoTimer = setTimeout(function() {
-            submitResult(currentCorrect);
-        }, 2000);
+            showNextWord();
+        }, 3000);
     }
 
-    function showNextWord(data) {
-        wordId = data.id;
-        direction = data.direction;
+    function showNextWord() {
+        if (!nextWordData) return;
+        
+        var data = nextWordData;
+        wordId = data.next_id;
+        direction = data.next_direction;
 
-        form.querySelector('[name="word_id"]').value = data.id;
-        form.querySelector('[name="direction"]').value = data.direction;
+        form.querySelector('[name="word_id"]').value = data.next_id;
+        form.querySelector('[name="direction"]').value = data.next_direction;
 
-        if (data.direction === 'en_ru') {
-            document.getElementById('word-display').textContent = data.word;
-            document.getElementById('translation-display').textContent = data.translation;
+        if (data.next_direction === 'en_ru') {
+            document.getElementById('word-display').textContent = data.next_word;
+            document.getElementById('translation-display').textContent = data.next_translation;
         } else {
-            document.getElementById('word-display').textContent = data.translation;
-            document.getElementById('translation-display').textContent = data.word;
+            document.getElementById('word-display').textContent = data.next_translation;
+            document.getElementById('translation-display').textContent = data.next_word;
         }
 
-        summary.style.display = 'block';
+        // Обновляем статистику
+        bestTime = data.next_best_time !== undefined ? data.next_best_time : null;
+        avgTime = data.next_avg_time !== undefined ? data.next_avg_time : null;
+        updateStats();
+
+        // Скрываем перевод и кнопки для нового слова
+        summary.style.display = 'none';
         details.removeAttribute('open');
         actionButtons.style.display = 'grid';
         btnNext.style.display = 'none';
         currentCorrect = true;
         document.getElementById('correct-input').value = '1';
         clearTimeout(autoTimer);
+        nextWordData = null;
+        startTimer();
     }
 
     function submitResult(correct) {
         currentCorrect = correct;
         document.getElementById('correct-input').value = correct ? '1' : '0';
 
+        var elapsed = stopTimer();
+
         const formData = new FormData(form);
+        formData.append('elapsed', elapsed.toFixed(2));
 
         fetch('/review/next', {
             method: 'POST',
@@ -119,33 +179,48 @@
                 container.innerHTML = '<div style="text-align:center; padding: 2rem;"><p style="font-size:1.2rem;">🎉 ' + (data.message || 'Повторение завершено!') + '</p><a href="/" role="button" class="outline">На главную</a></div>';
                 return;
             }
-            showNextWord(data);
+            
+            // Проверяем новый рекорд текущего слова
+            var currentBest = data.current_best_time !== undefined ? data.current_best_time : null;
+            if (currentBest !== null && elapsed < currentBest) {
+                timerDisplay.style.color = 'green';
+            }
+            
+            // Предзагружаем следующее слово, но НЕ показываем его сейчас
+            nextWordData = data;
         });
     }
 
     btnKnow.addEventListener('click', function(e) {
         e.preventDefault();
+        stopTimer();
         actionButtons.style.display = 'none';
         btnNext.style.display = 'block';
         summary.style.display = 'block';
+        details.removeAttribute('open');
+        submitResult(true);
         startAutoTimer();
     });
 
     btnForgot.addEventListener('click', function(e) {
         e.preventDefault();
+        stopTimer();
         actionButtons.style.display = 'none';
         btnNext.style.display = 'block';
         summary.style.display = 'none';
         details.setAttribute('open', 'open');
+        submitResult(false);
         startAutoTimer();
     });
 
     btnNext.addEventListener('click', function() {
         clearTimeout(autoTimer);
-        submitResult(currentCorrect);
+        showNextWord();
     });
 
     summary.style.display = 'none';
+    updateStats();
+    startTimer();
 })();
 </script>
 {% endif %}

@@ -21,9 +21,11 @@
         <table role="grid" style="margin: 0;">
             <thead>
                 <tr>
-                    <th style="width: 40%; padding-left: 1.5rem;">Слово</th>
-                    <th style="width: 45%;">Перевод</th>
-                    <th style="width: 15%; text-align: center; padding-right: 1.5rem;">Удалить</th>
+                    <th style="width: 30%; padding-left: 1.5rem;">Слово</th>
+                    <th style="width: 35%;">Перевод</th>
+                    <th style="width: 12%; text-align: center;">Время</th>
+                    <th style="width: 10%; text-align: center;">Интервал</th>
+                    <th style="width: 13%; text-align: center; padding-right: 1.5rem;">Удалить</th>
                 </tr>
             </thead>
             <tbody>
@@ -31,6 +33,20 @@
                 <tr>
                     <td style="padding-left: 1.5rem;"><strong>{{ w.word }}</strong></td>
                     <td>{{ w.translation }}</td>
+                    <td style="text-align: center; font-size: 0.85rem; color: var(--pico-muted-color);">
+                        {% if w.best_time is not none and w.avg_time is not none %}
+                            <span>⚡ {{ "%.2f"|format(w.best_time) }}</span> / <span>{{ "%.2f"|format(w.avg_time) }}</span>
+                        {% else %}
+                            —
+                        {% endif %}
+                    </td>
+                    <td style="text-align: center; font-size: 0.85rem; color: var(--pico-muted-color);">
+                        {% if w.interval > 0 %}
+                            {{ w.interval }}д
+                        {% else %}
+                            —
+                        {% endif %}
+                    </td>
                     <td style="text-align: center; padding-right: 1.5rem;">
                         <form method="post" action="/dictionary/delete/{{ w.id }}" style="margin: 0;" onsubmit="return confirm('Точно удалить слово «{{ w.word }}»?')">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">

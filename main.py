@@ -31,7 +31,7 @@ VERSION = get_version()
 
 app = FastAPI()
 
-# Авто-миграция: добавляем last_direction, если столбца нет
+# Авто-миграция: добавляем недостающие столбцы
 def auto_migrate():
     inspector = inspect(engine)
     columns = [col['name'] for col in inspector.get_columns('words')]
@@ -40,6 +40,13 @@ def auto_migrate():
             conn.execute(text("ALTER TABLE words ADD COLUMN last_direction VARCHAR DEFAULT 'en_ru'"))
             conn.commit()
         print("[auto-migrate] Added last_direction column to words table")
+
+    if 'best_time' not in columns:
+        with engine.connect() as conn:
+            conn.execute(text("ALTER TABLE words ADD COLUMN best_time FLOAT DEFAULT NULL"))
+            conn.execute(text("ALTER TABLE words ADD COLUMN avg_time FLOAT DEFAULT NULL"))
+            conn.commit()
+        print("[auto-migrate] Added best_time and avg_time columns to words table")
 
 Base.metadata.create_all(bind=engine)
 auto_migrate()
@@ -217,6 +224,7 @@ async def review_next(
     word_id: int = Form(...),
     correct: bool = Form(...),
     direction: str = Form(...),
+    elapsed: float = Form(default=0.0),
     db: Session = Depends(get_db),
 ):
     """AJAX-маршрут: сохраняет результат и возвращает следующее слово в JSON."""
@@ -238,9 +246,20 @@ async def review_next(
 
     w.next_review = time.time() + w.interval * 86400
     w.last_direction = direction
+
+    # Обновляем время ответа
+    if elapsed > 0:
+        if w.best_time is None or elapsed < w.best_time:
+            w.best_time = elapsed
+        if w.avg_time is None:
+            w.avg_time = elapsed
+        else:
+            # Простое среднее арифметическое
+            w.avg_time = (w.avg_time + elapsed) / 2.0
+
     db.commit()
 
-    # Получить следующее слово
+    # Получить следующее и следующее+1 слово для предзагрузки
     all_words = db.query(Word).all()
     if not all_words:
         return JSONResponse({"done": True, "message": "Словарь пуст."})
@@ -251,6 +270,12 @@ async def review_next(
     chosen = random.choices(all_words, weights=weights, k=1)[0]
     new_direction = random.choice(['en_ru', 'ru_en'])
 
+    weights2 = [1.0 / (wi.interval + 1) for wi in all_words]
+    total2 = sum(weights2)
+    weights2 = [t / total2 for t in weights2]
+    chosen2 = random.choices(all_words, weights=weights2, k=1)[0]
+    new_direction2 = random.choice(['en_ru', 'ru_en'])
+
     return JSONResponse({
         "done": False,
         "word": chosen.word,
@@ -258,4 +283,14 @@ async def review_next(
         "id": chosen.id,
         "direction": new_direction,
         "total_due": len(all_words),
+        # Статистика текущего слова (только что ответили)
+        "current_best_time": w.best_time,
+        "current_avg_time": w.avg_time,
+        # Предзагруженное следующее слово
+        "next_word": chosen2.word,
+        "next_translation": chosen2.translation,
+        "next_id": chosen2.id,
+        "next_direction": new_direction2,
+        "next_best_time": chosen2.best_time,
+        "next_avg_time": chosen2.avg_time,
     })
