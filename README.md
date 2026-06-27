@@ -128,16 +128,18 @@ The `-v $(pwd)/data:/app/data` mount persists the SQLite database outside the co
 ### Dictionary
 
 1. Go to **Словарь** (Dictionary) page
-3. See all words sorted alphabetically. Each word shows its best/average response time and interval.
+3. See all words sorted alphabetically. Each word shows its best/average response time, interval, and success rate.
 4. Click **✕** to delete a word.
 
 ## Spaced Repetition Algorithm
 
 Lex uses a simplified SM-2 algorithm:
 
-- **Correct answer:** Interval increases (1 → 6 → 15 → 38 → 94 days...)
+- **Correct answer:** Interval increases (1 → 6 → 15 → 30 days...)
 - **Wrong answer:** Interval resets to 0
+- **Interval cap:** Maximum interval is 30 days
 - **Selection:** Words with smaller intervals have higher chance to appear
+- **Know/Forgot tracking:** Each word tracks "Know" and "Forgot" clicks with success percentage shown in the dictionary and during review
 
 ## Development
 

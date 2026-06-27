@@ -22,6 +22,8 @@
         <span id="timer-display" style="position: absolute; right: 0; top: 0; color: var(--pico-muted-color); font-size: 0.95rem; font-weight: bold; font-variant-numeric: tabular-nums;">
             0.00s
         </span>
+        <span id="know-forgot-display" style="display: block; margin-top: 0.5rem; color: var(--pico-muted-color); font-size: 0.85rem;">
+        </span>
         <small style="display: block; color: var(--pico-muted-color);">Вспомните перевод:</small>
         {% if direction == 'en_ru' %}
             <h2 id="word-display" style="font-size: 2.5rem; margin: 1rem 0;">{{ word.word }}</h2>
@@ -73,6 +75,7 @@
     const container = document.getElementById('review-container');
     const statsDisplay = document.getElementById('stats-display');
     const timerDisplay = document.getElementById('timer-display');
+    const knowForgotDisplay = document.getElementById('know-forgot-display');
 
     let autoTimer = null;
     let timerInterval = null;
@@ -80,12 +83,13 @@
     let wordId = parseInt(form.querySelector('[name="word_id"]').value);
     let direction = form.querySelector('[name="direction"]').value;
     let currentCorrect = true;
-    // Предзагруженное следующее слово (показывается только через 3с или по кнопке)
     var nextWordData = null;
 
     // Загрузка статистики из server-side рендера
     var bestTime = {{ word.best_time if word.best_time is not none else 'null' }};
     var avgTime = {{ word.avg_time if word.avg_time is not none else 'null' }};
+    var knowCount = {{ word.know_count if word.know_count is not none else '0' }};
+    var forgotCount = {{ word.forgot_count if word.forgot_count is not none else '0' }};
 
     function formatTime(seconds) {
         return seconds.toFixed(2) + 's';
@@ -96,6 +100,13 @@
             statsDisplay.innerHTML = 'best: ' + formatTime(bestTime) + ' | avg: ' + formatTime(avgTime);
         } else {
             statsDisplay.innerHTML = '';
+        }
+        if (knowCount > 0 || forgotCount > 0) {
+            var total = knowCount + forgotCount;
+            var pct = ((knowCount / total) * 100).toFixed(0);
+            knowForgotDisplay.innerHTML = 'Знаю: ' + knowCount + ' | Забыл: ' + forgotCount + ' (' + pct + '%)';
+        } else {
+            knowForgotDisplay.innerHTML = '';
         }
     }
 
@@ -146,6 +157,8 @@
         // Обновляем статистику
         bestTime = data.next_best_time !== undefined ? data.next_best_time : null;
         avgTime = data.next_avg_time !== undefined ? data.next_avg_time : null;
+        knowCount = data.next_know_count !== undefined ? data.next_know_count : 0;
+        forgotCount = data.next_forgot_count !== undefined ? data.next_forgot_count : 0;
         updateStats();
 
         // Скрываем перевод и кнопки для нового слова

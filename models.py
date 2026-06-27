@@ -8,15 +8,19 @@ class Word(Base):
     id = Column(Integer, primary_key=True, index=True)
     word = Column(String, unique=True, index=True)
     translation = Column(String)
-    # Интервал повторений в днях
-    interval = Column(Float, default=0)
-    # Количество успешных повторов
+    # Repetition interval in days (integer)
+    interval = Column(Integer, default=0)
+    # Number of successful reviews
     repetitions = Column(Integer, default=0)
-    # Дата следующего повторения
+    # Date of next review (unix timestamp)
     next_review = Column(Float)  # unix timestamp
-    # Направление последнего повторения: 'en_ru' или 'ru_en'
+    # Last review direction: 'en_ru' or 'ru_en'
     last_direction = Column(String, default='en_ru')
-    # Лучшее время ответа в секундах (None если ещё не повторялся)
+    # Best response time in seconds (None if not reviewed yet)
     best_time = Column(Float, default=None)
-    # Среднее время ответа в секундах (None если ещё не повторялся)
+    # Average response time in seconds (None if not reviewed yet)
     avg_time = Column(Float, default=None)
+    # Number of "I know" clicks
+    know_count = Column(Integer, default=0)
+    # Number of "I forgot" clicks
+    forgot_count = Column(Integer, default=0)

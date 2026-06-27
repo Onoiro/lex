@@ -526,3 +526,63 @@ class TestReviewNext:
         data = response.json()
         assert data["current_best_time"] == 1.8
         assert data["current_avg_time"] == 2.15
+
+    def test_review_next_tracks_know_count(self, client, sample_word, db_session):
+        """Submitting correct answer increments know_count."""
+        response = client.post(
+            "/review/next",
+            data={
+                "word_id": sample_word.id,
+                "correct": True,
+                "direction": "en_ru",
+                "elapsed": 1.5,
+            },
+        )
+        
+        data = response.json()
+        assert data["current_know_count"] == 1
+        assert data["current_forgot_count"] == 0
+        
+        updated = db_session.query(Word).get(sample_word.id)
+        assert updated.know_count == 1
+        assert updated.forgot_count == 0
+
+    def test_review_next_tracks_forgot_count(self, client, sample_word, db_session):
+        """Submitting incorrect answer increments forgot_count."""
+        response = client.post(
+            "/review/next",
+            data={
+                "word_id": sample_word.id,
+                "correct": False,
+                "direction": "en_ru",
+                "elapsed": 3.0,
+            },
+        )
+        
+        data = response.json()
+        assert data["current_know_count"] == 0
+        assert data["current_forgot_count"] == 1
+        
+        updated = db_session.query(Word).get(sample_word.id)
+        assert updated.know_count == 0
+        assert updated.forgot_count == 1
+
+    def test_review_next_returns_know_forgot_for_next_word(self, client, sample_word, db_session):
+        """Next word response includes know/forgot counts."""
+        sample_word.know_count = 5
+        sample_word.forgot_count = 2
+        db_session.commit()
+        
+        response = client.post(
+            "/review/next",
+            data={
+                "word_id": sample_word.id,
+                "correct": True,
+                "direction": "en_ru",
+                "elapsed": 1.0,
+            },
+        )
+        
+        data = response.json()
+        assert "next_know_count" in data
+        assert "next_forgot_count" in data

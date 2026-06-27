@@ -48,6 +48,13 @@ def auto_migrate():
             conn.commit()
         print("[auto-migrate] Added best_time and avg_time columns to words table")
 
+    if 'know_count' not in columns:
+        with engine.connect() as conn:
+            conn.execute(text("ALTER TABLE words ADD COLUMN know_count INTEGER DEFAULT 0"))
+            conn.execute(text("ALTER TABLE words ADD COLUMN forgot_count INTEGER DEFAULT 0"))
+            conn.commit()
+        print("[auto-migrate] Added know_count and forgot_count columns to words table")
+
 Base.metadata.create_all(bind=engine)
 auto_migrate()
 
@@ -174,19 +181,19 @@ async def review_page(request: Request, db: Session = Depends(get_db)):
         tpl = env.get_template("review.html")
         return tpl.render(message="Словарь пуст. Добавьте слова для повторения.")
 
-    # Взвешенный выбор: чем меньше интервал (чаще забывал), тем выше шанс
-    # Вес = 1 / (interval + 1) → интервал 0 даёт вес 1, интервал 10 даёт вес ~0.09
+    # Weighted selection: lower interval means higher chance of being picked
+    # Weight = 1 / (interval + 1) → interval 0 gives weight 1, interval 10 gives weight ~0.09
     weights = [1.0 / (w.interval + 1) for w in all_words]
     total = sum(weights)
     weights = [t / total for t in weights]
 
     chosen = random.choices(all_words, weights=weights, k=1)[0]
 
-    # Случайный выбор направления: 50/50
+    # Random direction: 50/50
     direction = random.choice(['en_ru', 'ru_en'])
 
     tpl = env.get_template("review.html")
-    return tpl.render(word=chosen, total_due=len(all_words), direction=direction)
+    return tpl.render(word=chosen, total_due=len(all_words), direction=direction, know_count=chosen.know_count, forgot_count=chosen.forgot_count)
 
 
 @app.post("/review/result")
@@ -206,11 +213,16 @@ async def review_result(
         elif w.repetitions == 1:
             w.interval = 6
         else:
-            w.interval = round(w.interval * 2.5)
+            w.interval = int(w.interval * 2.5)
+        # Cap interval to prevent unbounded growth (max 30 days)
+        if w.interval > 30:
+            w.interval = 30
         w.repetitions += 1
+        w.know_count += 1
     else:
         w.repetitions = 0
         w.interval = 0
+        w.forgot_count += 1
 
     w.next_review = time.time() + w.interval * 86400
     w.last_direction = direction
@@ -227,7 +239,7 @@ async def review_next(
     elapsed: float = Form(default=0.0),
     db: Session = Depends(get_db),
 ):
-    """AJAX-маршрут: сохраняет результат и возвращает следующее слово в JSON."""
+    """AJAX route: saves result and returns next word in JSON."""
     w = db.query(Word).get(word_id)
     if not w:
         raise HTTPException(404)
@@ -238,11 +250,16 @@ async def review_next(
         elif w.repetitions == 1:
             w.interval = 6
         else:
-            w.interval = round(w.interval * 2.5)
+            w.interval = int(w.interval * 2.5)
+        # Cap interval to prevent unbounded growth (max 30 days)
+        if w.interval > 30:
+            w.interval = 30
         w.repetitions += 1
+        w.know_count += 1
     else:
         w.repetitions = 0
         w.interval = 0
+        w.forgot_count += 1
 
     w.next_review = time.time() + w.interval * 86400
     w.last_direction = direction
@@ -283,14 +300,18 @@ async def review_next(
         "id": chosen.id,
         "direction": new_direction,
         "total_due": len(all_words),
-        # Статистика текущего слова (только что ответили)
+        # Statistics for the word just reviewed
         "current_best_time": w.best_time,
         "current_avg_time": w.avg_time,
-        # Предзагруженное следующее слово
+        "current_know_count": w.know_count,
+        "current_forgot_count": w.forgot_count,
+        # Preloaded next word
         "next_word": chosen2.word,
         "next_translation": chosen2.translation,
         "next_id": chosen2.id,
         "next_direction": new_direction2,
         "next_best_time": chosen2.best_time,
         "next_avg_time": chosen2.avg_time,
+        "next_know_count": chosen2.know_count,
+        "next_forgot_count": chosen2.forgot_count,
     })
