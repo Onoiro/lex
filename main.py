@@ -1,5 +1,6 @@
 from fastapi import FastAPI, Depends, Form, Request, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text, inspect
 from sqlalchemy.orm import Session
 import jinja2
@@ -30,6 +31,9 @@ def get_version():
 VERSION = get_version()
 
 app = FastAPI()
+
+# Статические файлы (favicon, логотип и др.)
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # Авто-миграция: добавляем недостающие столбцы
 def auto_migrate():

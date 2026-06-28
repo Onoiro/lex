@@ -1,6 +1,6 @@
 [project]
 name = "lex"
-version = "0.7.0"
+version = "0.7.1"
 description = "Web translator and vocabulary assistant with Yandex Translate API"
 authors = [{name = "Andrey Bogatyrev", email = "donoriono@gmail.com"}]
 readme = "README.md"

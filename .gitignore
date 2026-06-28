@@ -73,3 +73,6 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Logo (moved to static/)
+lex-logo.png
