@@ -26,7 +26,93 @@
         
         <!-- Поле ввода -->
         <label for="word">Иностранное слово</label>
-        <input type="text" id="word" name="word" required placeholder="Например: application" autofocus>
+        <div style="display:flex;gap:0.5rem;align-items:start;">
+            <input type="text" id="word" name="word" required placeholder="Например: application" autofocus style="flex:1;">
+            <select id="word-lang" style="width:80px;max-width:100%;margin-top:0.25rem;">
+                <option value="en">en</option>
+                <option value="de">de</option>
+                <option value="fr">fr</option>
+                <option value="es">es</option>
+                <option value="ru">ru</option>
+                <option value="it">it</option>
+                <option value="pt">pt</option>
+                <option value="zh">zh</option>
+                <option value="ja">ja</option>
+                <option value="ko">ko</option>
+                <option value="ar">ar</option>
+                <option value="hi">hi</option>
+                <option value="tr">tr</option>
+                <option value="pl">pl</option>
+                <option value="nl">nl</option>
+                <option value="uk">uk</option>
+                <option value="sv">sv</option>
+                <option value="cs">cs</option>
+                <option value="el">el</option>
+                <option value="fi">fi</option>
+                <option value="no">no</option>
+                <option value="da">da</option>
+                <option value="ro">ro</option>
+                <option value="th">th</option>
+                <option value="vi">vi</option>
+                <option value="id">id</option>
+                <option value="he">he</option>
+                <option value="bg">bg</option>
+                <option value="ca">ca</option>
+                <option value="hr">hr</option>
+                <option value="sk">sk</option>
+                <option value="sr">sr</option>
+                <option value="ms">ms</option>
+                <option value="tl">tl</option>
+                <option value="af">af</option>
+                <option value="sq">sq</option>
+                <option value="am">am</option>
+                <option value="az">az</option>
+                <option value="be">be</option>
+                <option value="bn">bn</option>
+                <option value="bs">bs</option>
+                <option value="cy">cy</option>
+                <option value="et">et</option>
+                <option value="fa">fa</option>
+                <option value="ga">ga</option>
+                <option value="gl">gl</option>
+                <option value="gu">gu</option>
+                <option value="ha">ha</option>
+                <option value="hy">hy</option>
+                <option value="is">is</option>
+                <option value="jw">jw</option>
+                <option value="ka">ka</option>
+                <option value="kk">kk</option>
+                <option value="km">km</option>
+                <option value="kn">kn</option>
+                <option value="ky">ky</option>
+                <option value="lo">lo</option>
+                <option value="la">la</option>
+                <option value="lt">lt</option>
+                <option value="lv">lv</option>
+                <option value="mk">mk</option>
+                <option value="ml">ml</option>
+                <option value="mn">mn</option>
+                <option value="mr">mr</option>
+                <option value="mt">mt</option>
+                <option value="my">my</option>
+                <option value="ne">ne</option>
+                <option value="ps">ps</option>
+                <option value="pa">pa</option>
+                <option value="si">si</option>
+                <option value="so">so</option>
+                <option value="sw">sw</option>
+                <option value="ta">ta</option>
+                <option value="te">te</option>
+                <option value="tg">tg</option>
+                <option value="tk">tk</option>
+                <option value="tlh">tlh</option>
+                <option value="to">to</option>
+                <option value="ur">ur</option>
+                <option value="uz">uz</option>
+                <option value="zu">zu</option>
+            </select>
+        </div>
+        <small style="color:var(--pico-muted-font-color);">Язык слова (по умолчанию — из настроек)</small>
         <button type="button" id="translate-btn" class="secondary" style="width: 100%; margin-top: 0.5rem;">🔄 Перевести</button>
 
         <!-- Поле перевода -->
@@ -47,6 +133,7 @@ document.getElementById("translate-btn").addEventListener("click", async () => {
     const translationInput = document.getElementById("translation");
     const btn = document.getElementById("translate-btn");
     const csrfInput = document.querySelector('input[name="csrf_token"]');
+    const wordLangSelect = document.getElementById("word-lang");
 
     if (!wordInput.value.trim()) {
         return;
@@ -62,7 +149,7 @@ document.getElementById("translate-btn").addEventListener("click", async () => {
                 "Content-Type": "application/x-www-form-urlencoded",
                 "X-CSRF-Token": csrfInput.value,
             },
-            body: "word=" + encodeURIComponent(wordInput.value),
+            body: "word=" + encodeURIComponent(wordInput.value) + "&source_lang=" + encodeURIComponent(wordLangSelect.value),
         });
         const data = await resp.json();
         const langOutput = document.getElementById("detected-lang");
@@ -88,5 +175,31 @@ document.getElementById("translate-btn").addEventListener("click", async () => {
     btn.disabled = false;
     btn.textContent = "🔄 Перевести";
 });
+
+// Sync word-lang select with quick_lang from header
+(function() {
+    const wordLang = document.getElementById("word-lang");
+    const quickLang = document.getElementById("quick_lang");
+    if (!wordLang || !quickLang) return;
+    
+    // Restore saved language from cookie
+    const saved = document.cookie.split(';')
+        .map(c => c.trim())
+        .find(c => c.startsWith('source_lang='));
+    if (saved) {
+        const lang = saved.split('=')[1];
+        if (wordLang.querySelector(`option[value="${lang}"]`)) {
+            wordLang.value = lang;
+        }
+    }
+    
+    // Sync with header selector
+    quickLang.addEventListener('change', function() {
+        wordLang.value = this.value;
+    });
+    wordLang.addEventListener('change', function() {
+        quickLang.value = this.value;
+    });
+})();
 </script>
 {% endblock %}

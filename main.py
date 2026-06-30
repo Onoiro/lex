@@ -157,6 +157,7 @@ async def add_word(
 async def add_translate(
     request: Request,
     word: str = Form(...),
+    source_lang: str = Form(default=""),
 ):
     """API for auto-translating a word (called from frontend)."""
     # CSRF check via header
@@ -170,8 +171,9 @@ async def add_translate(
     except HTTPException as e:
         return {"translation": "", "detected_language": "", "error": e.detail}
 
-    source_lang = _get_source_lang(request)
-    translation, detected = await translate_word(word, source_lang)
+    # Use form source_lang if provided, otherwise fall back to cookie
+    lang = source_lang if source_lang else _get_source_lang(request)
+    translation, detected = await translate_word(word, lang)
     if translation:
         from translator import _get_language_name
         lang_name = _get_language_name(detected) if detected else ""
