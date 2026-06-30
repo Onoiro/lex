@@ -29,8 +29,8 @@ class TestTranslateSync:
 
     def test_cache_hit(self):
         """Returns cached translation without API call."""
-        # Setup cache
-        translation_cache.set("cached_word", "кэшированный перевод")
+        # Setup cache with source language in key
+        translation_cache.set("en:cached_word", "кэшированный перевод")
         
         result, detected, debug = _translate_sync("cached_word")
         
@@ -135,8 +135,8 @@ class TestTranslateSync:
                 
                 _translate_sync("cache_test_word")
                 
-                # Verify it's in cache now
-                cached = translation_cache.get("cache_test_word")
+                # Verify it's in cache now (key includes source language)
+                cached = translation_cache.get("en:cache_test_word")
                 assert cached == "кэш тест"
 
     def test_network_error(self):
@@ -223,8 +223,8 @@ class TestTranslateWord:
     @pytest.mark.anyio
     async def test_translate_word_uses_cache(self):
         """Async function benefits from cache."""
-        # Pre-populate cache
-        translation_cache.set("cached", "из кэша")
+        # Pre-populate cache with source language in key
+        translation_cache.set("en:cached", "из кэша")
         
         result, detected = await translate_word("cached")
         

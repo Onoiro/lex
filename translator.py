@@ -162,8 +162,9 @@ def _translate_sync(word: str, source_language: str = "en") -> tuple[str | None,
     
     Returns (translation, detected_language_code, raw_response_for_debug).
     """
-    # Check cache first
-    cached = translation_cache.get(word)
+    # Check cache first — key includes source language to avoid cross-language collisions
+    cache_key = f"{source_language}:{word}"
+    cached = translation_cache.get(cache_key)
     if cached:
         return cached, None, ""  # None means "from cache, no detected language"
 
@@ -195,8 +196,8 @@ def _translate_sync(word: str, source_language: str = "en") -> tuple[str | None,
             if translations and translations[0].get("text"):
                 translation = translations[0]["text"]
                 detected = translations[0].get("detectedLanguageCode")
-                # Save to cache
-                translation_cache.set(word, translation)
+                # Save to cache with source language in key
+                translation_cache.set(cache_key, translation)
                 return translation, detected, ""
             return None, None, f"Empty response: {raw}"
     except httpx.HTTPStatusError as e:
