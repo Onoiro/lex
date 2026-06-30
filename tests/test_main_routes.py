@@ -598,3 +598,128 @@ class TestReviewNext:
         data = response.json()
         assert "next_know_count" in data
         assert "next_forgot_count" in data
+
+
+class TestSettingsRoutes:
+    """Tests for language settings routes."""
+
+    def test_settings_page_returns_html(self, authenticated_client, csrf_token):
+        """Settings page returns HTML with language selectors."""
+        response = authenticated_client.get(
+            "/settings",
+            headers={"X-CSRF-Token": csrf_token},
+        )
+        
+        assert response.status_code == status.HTTP_200_OK
+        assert "text/html" in response.headers["content-type"]
+        assert b"settings" in response.content.lower() or b"language" in response.content.lower()
+
+    def test_settings_page_requires_auth(self, client):
+        """Settings page requires authentication."""
+        response = client.get("/settings")
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+    def test_settings_page_contains_language_selectors(self, authenticated_client, csrf_token):
+        """Settings page contains language selector elements."""
+        response = authenticated_client.get(
+            "/settings",
+            headers={"X-CSRF-Token": csrf_token},
+        )
+        
+        assert response.status_code == status.HTTP_200_OK
+        # Check for select elements
+        assert b"<select" in response.content
+
+    def test_update_settings_saves_cookie(self, authenticated_client, csrf_token):
+        """Updating settings saves language cookies."""
+        response = authenticated_client.post(
+            "/settings",
+            data={
+                "source_lang": "de",
+                "target_lang": "ru",
+                "csrf_token": csrf_token,
+            },
+            follow_redirects=False,
+        )
+        
+        assert response.status_code == status.HTTP_303_SEE_OTHER
+        # Check that cookies are set
+        set_cookie = response.headers.get("set-cookie", "")
+        assert "source_lang=de" in set_cookie
+        assert "target_lang=ru" in set_cookie
+
+    def test_update_settings_requires_auth(self, client, csrf_token):
+        """Updating settings requires authentication."""
+        response = client.post(
+            "/settings",
+            data={
+                "source_lang": "de",
+                "target_lang": "ru",
+            },
+            headers={"X-CSRF-Token": csrf_token},
+        )
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+    def test_settings_update_api_returns_json(self, authenticated_client, csrf_token):
+        """AJAX settings update returns JSON response."""
+        response = authenticated_client.post(
+            "/settings/update",
+            data={
+                "source_lang": "fr",
+                "target_lang": "ru",
+            },
+            headers={"X-CSRF-Token": csrf_token},
+        )
+        
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert data["source_lang"] == "fr"
+        assert data["target_lang"] == "ru"
+        assert "message" in data
+
+    def test_settings_update_api_requires_auth(self, client, csrf_token):
+        """AJAX settings update requires authentication."""
+        response = client.post(
+            "/settings/update",
+            data={
+                "source_lang": "de",
+                "target_lang": "ru",
+            },
+            headers={"X-CSRF-Token": csrf_token},
+        )
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+
+class TestAddTranslateWithSourceLang:
+    """Tests for /add/translate with source_lang parameter."""
+
+    def test_translate_with_source_lang(self, authenticated_client, mock_translate_success, csrf_token):
+        """Translate endpoint accepts and uses source_lang parameter."""
+        response = authenticated_client.post(
+            "/add/translate",
+            data={
+                "word": "hello",
+                "source_lang": "de",
+            },
+            headers={"X-CSRF-Token": csrf_token},
+        )
+        
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert data["translation"] == "тест"
+        # The mock returns ("тест", "en"), so detected_language should be "English"
+        assert data["detected_language"] == "English"
+
+    def test_translate_without_source_lang_uses_default(self, authenticated_client, mock_translate_success, csrf_token):
+        """Translate endpoint works without source_lang (uses default)."""
+        response = authenticated_client.post(
+            "/add/translate",
+            data={
+                "word": "hello",
+            },
+            headers={"X-CSRF-Token": csrf_token},
+        )
+        
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert data["translation"] == "тест"
