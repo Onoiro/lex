@@ -1,13 +1,14 @@
 # Lex
 
-Lex is a web-based translator and vocabulary assistant. It provides fast translation between Russian and 90+ languages via Yandex Translate API, plus a spaced-repetition tool for learning and retaining foreign words.
+Lex is a web-based translator and vocabulary assistant. It provides fast translation between Russian and 100+ languages via Yandex Translate API, plus a spaced-repetition tool for learning and retaining foreign words.
 
 **Try it live:** [lex.2-way.ru](https://lex.2-way.ru)
 
 ## Features
 
 - **Add words** — Add new words with translations manually or get auto-translation via Yandex Translate API
-- **Multi-language translation** — Translate between Russian and 90+ languages (English, Spanish, French, German, Chinese, Arabic, and many more)
+- **Multi-language translation** — Translate between Russian and 100+ languages (English, Spanish, French, German, Chinese, Arabic, and many more)
+- **Language settings** — Set a default target language globally via Settings page (/settings), and quickly switch source language on the Add page (/add)
 - **Review mode** — Practice words with spaced repetition, response time tracking with best/avg stats, and live timer
 - **Dictionary view** — See all your words in a table with time stats and intervals
 - **Delete words** — Remove words you no longer need
@@ -108,11 +109,14 @@ The `-v $(pwd)/data:/app/data` mount persists the SQLite database outside the co
 ### Adding Words
 
 1. Go to **Добавить** (Add) page
-2. Enter a word in any supported language
-3. Either:
-   - Click **Автоперевод** to get automatic translation to Russian
+2. Use the language selector to choose the source language (defaults to the setting from /settings)
+3. Enter a word in the selected language
+4. Either:
+   - Click **Автоперевод** to get automatic translation to the target language
    - Enter translation manually
-4. Click **Добавить** (Add)
+5. Click **Добавить** (Add)
+
+**Language Settings:** Go to **⚙ Settings** (/settings) to set a default source and target language. These settings persist across sessions via cookies and apply to both the Add page and auto-translation.
 
 ### Reviewing Words
 
