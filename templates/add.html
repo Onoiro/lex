@@ -14,9 +14,9 @@
 </article>
 {% endif %}
 
-{% if error %}
+{% if error_type == 'duplicate' %}
 <article style="background: var(--pico-del-color); color: var(--pico-primary-inverse); padding: 1rem; margin-bottom: 1rem;">
-    ❌ {{ error }}
+    ❌ Слово '{{ error_word }}' уже есть в словаре
 </article>
 {% endif %}
 

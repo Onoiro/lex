@@ -73,7 +73,7 @@ class TestAddWord:
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
     def test_add_duplicate_word(self, authenticated_client, sample_word, csrf_token):
-        """Cannot add duplicate word."""
+        """Cannot add duplicate word, returns redirect with error."""
         response = authenticated_client.post(
             "/add",
             data={
@@ -84,7 +84,17 @@ class TestAddWord:
             follow_redirects=False,
         )
         
-        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert response.status_code == 303
+        assert "error=duplicate" in response.headers["location"]
+        assert "word=" in response.headers["location"]
+
+    def test_add_page_shows_error(self, authenticated_client):
+        """GET /add with error=duplicate&word shows error message."""
+        response = authenticated_client.get("/add?error=duplicate&word=test")
+        assert response.status_code == 200
+        assert "test" in response.text
+        assert "❌" in response.text
+        assert "уже есть в словаре" in response.text
 
     def test_add_word_empty_word(self, authenticated_client, csrf_token):
         """Cannot add word with empty word field."""

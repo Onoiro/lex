@@ -81,9 +81,11 @@ async def add_page(request: Request):
     tpl = env.get_template("add.html")
     added = request.query_params.get("added") == "1"
     translated = request.query_params.get("translated") == "1"
+    error_type = request.query_params.get("error", "")
+    error_word = request.query_params.get("word", "")
     # Генерируем CSRF токен для формы
     csrf_token = csrf_protection.get_token_for_form()
-    return tpl.render(added=added, translated=translated, csrf_token=csrf_token)
+    return tpl.render(added=added, translated=translated, error_type=error_type, error_word=error_word, csrf_token=csrf_token)
 
 
 @app.post("/add")
@@ -102,7 +104,7 @@ async def add_word(
 
     existing = db.query(Word).filter(Word.word == word).first()
     if existing:
-        raise HTTPException(400, f"Слово '{word}' уже есть в словаре")
+        return RedirectResponse(url=f"/add?error=duplicate&word={word}", status_code=303)
 
     db.add(Word(
         word=word,
