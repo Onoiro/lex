@@ -8,7 +8,53 @@ from cache import translation_cache
 API_KEY = os.getenv("YANDEX_API_KEY")
 FOLDER_ID = os.getenv("YANDEX_FOLDER_ID", "b1gqq9rjega7119p3a2f")
 API_URL = "https://translate.api.cloud.yandex.net/translate/v2/translate"
+LANGUAGES_URL = "https://translate.api.cloud.yandex.net/translate/v2/languages"
 TARGET_LANG = "ru"
+
+# Cached list of supported languages: {source_code: target_codes}
+# Populated on startup via get_supported_languages().
+SUPPORTED_LANGUAGES: dict[str, list[str]] = {}
+
+
+def get_supported_languages() -> dict[str, list[str]]:
+    """Fetch supported language pairs from Yandex Translate API.
+    
+    Returns a dict mapping source language codes to lists of target language codes.
+    For example: {"en": ["ru", "de", "fr"], "de": ["ru", "en", "fr"]}
+    
+    Returns an empty dict on any error (API key missing, network issue, etc.).
+    """
+    if not API_KEY:
+        return {}
+
+    try:
+        with httpx.Client(timeout=10.0) as client:
+            response = client.post(
+                LANGUAGES_URL,
+                headers={
+                    "Content-Type": "application/json",
+                    "Authorization": f"Api-Key {API_KEY}",
+                },
+                json={},
+            )
+            if response.status_code >= 400:
+                return {}
+            data = response.json()
+            # Yandex v2: {"codes": ["en_ru", "de_ru", "fr_en", ...]}
+            codes = data.get("codes", [])
+            result: dict[str, list[str]] = {}
+            for pair in codes:
+                # Format is "source_target", e.g. "en_ru"
+                parts = pair.split("_")
+                if len(parts) == 2:
+                    src, tgt = parts
+                    if src not in result:
+                        result[src] = []
+                    if tgt not in result[src]:
+                        result[src].append(tgt)
+            return result
+    except (httpx.RequestError, httpx.HTTPStatusError, KeyError, ValueError):
+        return {}
 
 
 # Mapping of ISO language codes to human-readable names in Russian

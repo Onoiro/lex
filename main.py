@@ -15,6 +15,7 @@ from validators import validate_word, validate_translation
 from rate_limiter import rate_limit, add_rate_limiter, translate_rate_limiter
 from auth import require_auth
 from csrf import csrf_protect_form, csrf_protection
+from translator import get_supported_languages, SUPPORTED_LANGUAGES
 
 # Загрузка переменных окружения из .env
 load_dotenv()
@@ -61,6 +62,13 @@ def auto_migrate():
 
 Base.metadata.create_all(bind=engine)
 auto_migrate()
+
+# Загружаем список поддерживаемых языков Yandex при старте
+SUPPORTED_LANGUAGES.update(get_supported_languages())
+if SUPPORTED_LANGUAGES:
+    print(f"[translator] Loaded {len(SUPPORTED_LANGUAGES)} source languages from Yandex API")
+else:
+    print("[translator] WARNING: Could not load supported languages from Yandex API")
 
 # Raw Jinja2 loader — no caching issues
 loader = jinja2.FileSystemLoader("templates")
@@ -150,6 +158,12 @@ async def debug_translate():
     from translator import _translate_sync
     result, detected, debug = await loop.run_in_executor(None, _translate_sync, "hello")
     return {"result": result, "detected": detected, "debug": debug}
+
+
+@app.get("/api/languages")
+async def get_languages():
+    """Return supported language codes for frontend language selectors."""
+    return JSONResponse({"languages": list(SUPPORTED_LANGUAGES.keys())})
 
 
 @app.get("/dictionary", response_class=HTMLResponse)
