@@ -12,39 +12,30 @@
     <label for="source_lang">
         Исходный язык (с которого переводим)
     </label>
-    <select id="source_lang" name="source_lang" required>
-        {% for code in supported_sources %}
-        <option value="{{ code }}" {% if code == source_lang %}selected{% endif %}>
-            {{ code | upper }} — {{ _get_language_name(code) }}
-        </option>
-        {% endfor %}
-    </select>
+    <div>
+        <select id="source_lang" name="source_lang" required>
+            {% for code in supported_sources %}
+            <option value="{{ code }}" {% if code == source_lang %}selected{% endif %}>
+                {{ code | upper }} — {{ _get_language_name(code) }}
+            </option>
+            {% endfor %}
+        </select>
+    </div>
 
     <label for="target_lang">
         Целевой язык (на который переводим)
     </label>
-    <select id="target_lang" name="target_lang" required>
-        {% for code in supported_targets %}
-        <option value="{{ code }}" {% if code == target_lang %}selected{% endif %}>
-            {{ code | upper }} — {{ _get_language_name(code) }}
-        </option>
-        {% endfor %}
-    </select>
+    <div>
+        <select id="target_lang" name="target_lang" required>
+            {% for code in supported_targets %}
+            <option value="{{ code }}" {% if code == target_lang %}selected{% endif %}>
+                {{ code | upper }} — {{ _get_language_name(code) }}
+            </option>
+            {% endfor %}
+        </select>
+    </div>
 
     <button type="submit">Сохранить</button>
 </form>
-
-<hr>
-
-<h3>Быстрая смена</h3>
-<p>Компактный селектор для повседневного использования:</p>
-<select id="quick_source_lang">
-    {% for code in supported_sources %}
-    <option value="{{ code }}" {% if code == source_lang %}selected{% endif %}>
-        {{ code | upper }} — {{ _get_language_name(code) }}
-    </option>
-    {% endfor %}
-</select>
-</p>
 
 {% endblock %}
