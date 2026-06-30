@@ -168,7 +168,7 @@ def sample_words(db_session):
 def mock_translate_success():
     """Mock translate_word to return a successful translation."""
     with patch("main.translate_word") as mock:
-        mock.return_value = "тест"
+        mock.return_value = ("тест", "en")
         yield mock
 
 
@@ -176,5 +176,5 @@ def mock_translate_success():
 def mock_translate_failure():
     """Mock translate_word to return None (failure)."""
     with patch("main.translate_word") as mock:
-        mock.return_value = None
+        mock.return_value = (None, None)
         yield mock

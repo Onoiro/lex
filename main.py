@@ -120,8 +120,8 @@ async def add_translate(
     request: Request,
     word: str = Form(...),
 ):
-    """API для автоперевода слова (вызывается с фронтенда)."""
-    # CSRF проверка через заголовок
+    """API for auto-translating a word (called from frontend)."""
+    # CSRF check via header
     from csrf import get_csrf_token_from_request, validate_csrf_form_token
     
     csrf_token = get_csrf_token_from_request(request)
@@ -130,22 +130,24 @@ async def add_translate(
     try:
         word = validate_word(word)
     except HTTPException as e:
-        return {"translation": "", "error": e.detail}
+        return {"translation": "", "detected_language": "", "error": e.detail}
 
-    translation = await translate_word(word)
+    translation, detected = await translate_word(word)
     if translation:
-        return {"translation": translation}
-    return {"translation": "", "error": "Перевод не найден. Проверьте API ключ."}
+        from translator import _get_language_name
+        lang_name = _get_language_name(detected) if detected else ""
+        return {"translation": translation, "detected_language": lang_name}
+    return {"translation": "", "detected_language": "", "error": "Translation not found. Check your API key."}
 
 
 @app.get("/debug/translate")
 async def debug_translate():
-    """Отладка: показывает сырой ответ Yandex API."""
+    """Debug: shows raw Yandex API response."""
     import asyncio
     loop = asyncio.get_running_loop()
     from translator import _translate_sync
-    result, debug = await loop.run_in_executor(None, _translate_sync, "hello")
-    return {"result": result, "debug": debug}
+    result, detected, debug = await loop.run_in_executor(None, _translate_sync, "hello")
+    return {"result": result, "detected": detected, "debug": debug}
 
 
 @app.get("/dictionary", response_class=HTMLResponse)

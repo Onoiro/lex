@@ -11,18 +11,114 @@ API_URL = "https://translate.api.cloud.yandex.net/translate/v2/translate"
 TARGET_LANG = "ru"
 
 
-def _translate_sync(word: str) -> tuple[str | None, str]:
-    """Синхронный перевод через Yandex Translate Cloud API v2.
+# Mapping of ISO language codes to human-readable names in Russian
+LANGUAGE_NAMES = {
+    "en": "English",
+    "es": "Spanish",
+    "fr": "French",
+    "de": "German",
+    "it": "Italian",
+    "pt": "Portuguese",
+    "ru": "Russian",
+    "zh": "Chinese",
+    "ja": "Japanese",
+    "ko": "Korean",
+    "ar": "Arabic",
+    "hi": "Hindi",
+    "tr": "Turkish",
+    "pl": "Polish",
+    "nl": "Dutch",
+    "uk": "Ukrainian",
+    "sv": "Swedish",
+    "cs": "Czech",
+    "el": "Greek",
+    "hu": "Hungarian",
+    "fi": "Finnish",
+    "no": "Norwegian",
+    "da": "Danish",
+    "ro": "Romanian",
+    "th": "Thai",
+    "vi": "Vietnamese",
+    "id": "Indonesian",
+    "he": "Hebrew",
+    "bg": "Bulgarian",
+    "ca": "Catalan",
+    "hr": "Croatian",
+    "sk": "Slovak",
+    "sl": "Slovenian",
+    "sr": "Serbian",
+    "ms": "Malay",
+    "tl": "Filipino",
+    "af": "Afrikaans",
+    "sq": "Albanian",
+    "am": "Amharic",
+    "az": "Azerbaijani",
+    "be": "Belarusian",
+    "bn": "Bengali",
+    "bs": "Bosnian",
+    "cy": "Welsh",
+    "et": "Estonian",
+    "fa": "Persian",
+    "ga": "Irish",
+    "gl": "Galician",
+    "gu": "Gujarati",
+    "ha": "Hausa",
+    "hy": "Armenian",
+    "is": "Icelandic",
+    "jw": "Javanese",
+    "ka": "Georgian",
+    "kk": "Kazakh",
+    "km": "Khmer",
+    "kn": "Kannada",
+    "ky": "Kyrgyz",
+    "lo": "Lao",
+    "la": "Latin",
+    "lt": "Lithuanian",
+    "lv": "Latvian",
+    "mk": "Macedonian",
+    "ml": "Malayalam",
+    "mn": "Mongolian",
+    "mr": "Marathi",
+    "mt": "Maltese",
+    "my": "Myanmar",
+    "ne": "Nepali",
+    "ps": "Pashto",
+    "pa": "Punjabi",
+    "si": "Sinhala",
+    "so": "Somali",
+    "sw": "Swahili",
+    "ta": "Tamil",
+    "te": "Telugu",
+    "tg": "Tajik",
+    "tk": "Turkmen",
+    "tlh": "Klingon",
+    "to": "Tongan",
+    "ur": "Urdu",
+    "uz": "Uzbek",
+    "zu": "Zulu",
+}
+
+
+def _get_language_name(code: str) -> str:
+    """Return a human-readable name for a language code.
     
-    Возвращает (перевод, raw_response для отладки).
+    Falls back to the code itself if unknown.
     """
-    # Проверяем кэш сначала
+    return LANGUAGE_NAMES.get(code, code)
+
+
+def _translate_sync(word: str) -> tuple[str | None, str | None, str]:
+    """Sync translation via Yandex Translate Cloud API v2.
+    
+    Returns (translation, detected_language_code, raw_response_for_debug).
+    """
+    # Check cache first
     cached = translation_cache.get(word)
     if cached:
-        return cached, ""  # Пустая строка означает "из кэша"
-    
+        return cached, None, ""  # None means "from cache, no detected language"
+
     if not API_KEY:
-        return None, "API_KEY не установлен"
+        return None, None, "API_KEY not set"
 
     try:
         with httpx.Client(timeout=10.0) as client:
@@ -40,32 +136,36 @@ def _translate_sync(word: str) -> tuple[str | None, str]:
             )
             raw = response.text
             if response.status_code >= 400:
-                return None, f"HTTP {response.status_code}: {raw}"
+                return None, None, f"HTTP {response.status_code}: {raw}"
             response.raise_for_status()
             data = response.json()
             # Yandex v2: {"translations": [{"text": "...", "detectedLanguageCode": "..."}]}
             translations = data.get("translations", [])
             if translations and translations[0].get("text"):
                 translation = translations[0]["text"]
-                # Сохраняем в кэш
+                detected = translations[0].get("detectedLanguageCode")
+                # Save to cache
                 translation_cache.set(word, translation)
-                return translation, ""
-            return None, f"Пустой ответ: {raw}"
+                return translation, detected, ""
+            return None, None, f"Empty response: {raw}"
     except httpx.HTTPStatusError as e:
         if e.response.status_code in (401, 403):
             raise HTTPException(
                 500,
-                "Ошибка Yandex Translate API. Проверьте API ключ.",
+                "Yandex Translate API error. Check your API key.",
             )
-        return None, f"HTTP {e.response.status_code}: {e.response.text}"
+        return None, None, f"HTTP {e.response.status_code}: {e.response.text}"
     except httpx.RequestError as e:
-        return None, f"Ошибка сети: {e}"
+        return None, None, f"Network error: {e}"
     except (KeyError, IndexError, TypeError, ValueError) as e:
-        return None, f"Ошибка парсинга: {e}"
+        return None, None, f"Parse error: {e}"
 
 
-async def translate_word(word: str) -> str | None:
-    """Перевести слово через Yandex Translate Cloud API v2."""
+async def translate_word(word: str) -> tuple[str | None, str | None]:
+    """Translate a word via Yandex Translate Cloud API v2.
+    
+    Returns (translation, detected_language_code).
+    """
     loop = asyncio.get_running_loop()
-    result, _ = await loop.run_in_executor(None, _translate_sync, word)
-    return result
+    result, detected, _ = await loop.run_in_executor(None, _translate_sync, word)
+    return result, detected

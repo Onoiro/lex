@@ -149,6 +149,7 @@ class TestAddTranslate:
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
         assert data["translation"] == "тест"
+        assert data["detected_language"] == "English"
 
     def test_translate_failure(self, authenticated_client, mock_translate_failure, csrf_token):
         """Translate endpoint handles failure."""
@@ -161,6 +162,7 @@ class TestAddTranslate:
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
         assert data["translation"] == ""
+        assert data["detected_language"] == ""
         assert "error" in data
 
     def test_translate_requires_auth(self, client):

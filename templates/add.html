@@ -32,6 +32,7 @@
         <!-- Поле перевода -->
         <label for="translation">Перевод</label>
         <input type="text" id="translation" name="translation" required placeholder="Например: приложение">
+        <output id="detected-lang" style="display:block; margin-top:0.25rem; font-size:0.85rem; color:var(--pico-muted-font-color);"></output>
 
         <!-- Кнопка сохранения в футере карточки -->
         <footer style="margin-top: 2rem; padding-bottom: 0;">
@@ -64,10 +65,18 @@ document.getElementById("translate-btn").addEventListener("click", async () => {
             body: "word=" + encodeURIComponent(wordInput.value),
         });
         const data = await resp.json();
+        const langOutput = document.getElementById("detected-lang");
         if (data.error) {
             alert("Ошибка: " + data.error);
+            langOutput.textContent = "";
         } else {
             translationInput.value = data.translation || "";
+            if (data.detected_language) {
+                langOutput.textContent = "Переведено с: " + data.detected_language;
+                langOutput.style.color = "var(--pico-muted-font-color)";
+            } else {
+                langOutput.textContent = "";
+            }
             if (!data.translation) {
                 alert("Перевод не найден. Проверьте API ключ.");
             }
