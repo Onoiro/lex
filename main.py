@@ -82,6 +82,18 @@ DEFAULT_TARGET_LANG = "ru"
 
 # ---------- helpers ----------
 
+def _get_language_codes() -> list[str]:
+    """Return a list of language codes for UI selectors.
+    
+    Uses SUPPORTED_LANGUAGES from Yandex API if available,
+    otherwise falls back to hardcoded LANGUAGE_NAMES.
+    """
+    from translator import LANGUAGE_NAMES
+    if SUPPORTED_LANGUAGES:
+        return sorted(SUPPORTED_LANGUAGES.keys())
+    return sorted(LANGUAGE_NAMES.keys())
+
+
 def _get_source_lang(request: Request) -> str:
     """Get source language from cookie, fallback to default."""
     return request.cookies.get("source_lang", DEFAULT_SOURCE_LANG)
@@ -121,7 +133,13 @@ async def add_page(request: Request):
     error_word = request.query_params.get("word", "")
     # Генерируем CSRF токен для формы
     csrf_token = csrf_protection.get_token_for_form()
-    return tpl.render(added=added, translated=translated, error_type=error_type, error_word=error_word, csrf_token=csrf_token)
+    # Pass language codes for the selector (with fallback)
+    supported_sources = _get_language_codes()
+    return tpl.render(
+        added=added, translated=translated, error_type=error_type,
+        error_word=error_word, csrf_token=csrf_token,
+        supported_sources=supported_sources,
+    )
 
 
 @app.post("/add")
@@ -199,8 +217,8 @@ async def settings_page(request: Request):
     target_lang = _get_target_lang(request)
     csrf_token = csrf_protection.get_token_for_form()
     
-    # Get all unique source codes from SUPPORTED_LANGUAGES
-    supported_sources = sorted(SUPPORTED_LANGUAGES.keys())
+    # Get all available language codes (API or hardcoded fallback)
+    supported_sources = _get_language_codes()
     # Get target codes for the selected source language
     supported_targets = SUPPORTED_LANGUAGES.get(source_lang, [DEFAULT_TARGET_LANG])
     
