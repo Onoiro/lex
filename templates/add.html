@@ -31,7 +31,7 @@
             <div>
                 <select id="word-lang" style="width:80px;max-width:100%;margin-top:0.25rem;">
                     {% for code in supported_sources %}
-                    <option value="{{ code }}">{{ code }}</option>
+                    <option value="{{ code }}" {% if code == current_source_lang %}selected{% endif %}>{{ code }}</option>
                     {% endfor %}
                 </select>
             </div>
@@ -100,21 +100,6 @@ document.getElementById("translate-btn").addEventListener("click", async () => {
     btn.textContent = "🔄 Перевести";
 });
 
-// Sync word-lang select with cookie
-(function() {
-    const wordLang = document.getElementById("word-lang");
-    if (!wordLang) return;
-    
-    // Restore saved language from cookie
-    const saved = document.cookie.split(';')
-        .map(c => c.trim())
-        .find(c => c.startsWith('source_lang='));
-    if (saved) {
-        const lang = saved.split('=')[1];
-        if (wordLang.querySelector(`option[value="${lang}"]`)) {
-            wordLang.value = lang;
-        }
-    }
-})();
+// No JS needed — language is set server-side from cookie
 </script>
 {% endblock %}

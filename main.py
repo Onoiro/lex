@@ -133,12 +133,14 @@ async def add_page(request: Request):
     error_word = request.query_params.get("word", "")
     # Генерируем CSRF токен для формы
     csrf_token = csrf_protection.get_token_for_form()
-    # Pass language codes for the selector (with fallback)
+    # Pass language codes and current source lang for the selector
     supported_sources = _get_language_codes()
+    current_source_lang = _get_source_lang(request)
     return tpl.render(
         added=added, translated=translated, error_type=error_type,
         error_word=error_word, csrf_token=csrf_token,
         supported_sources=supported_sources,
+        current_source_lang=current_source_lang,
     )
 
 
