@@ -153,8 +153,12 @@ def _get_language_name(code: str) -> str:
     return LANGUAGE_NAMES.get(code, code)
 
 
-def _translate_sync(word: str) -> tuple[str | None, str | None, str]:
+def _translate_sync(word: str, source_language: str = "en") -> tuple[str | None, str | None, str]:
     """Sync translation via Yandex Translate Cloud API v2.
+    
+    Args:
+        word: The word to translate.
+        source_language: Source language code (e.g. 'en', 'de', 'fr').
     
     Returns (translation, detected_language_code, raw_response_for_debug).
     """
@@ -178,6 +182,7 @@ def _translate_sync(word: str) -> tuple[str | None, str | None, str]:
                     "folderId": FOLDER_ID,
                     "texts": [word],
                     "targetLanguageCode": TARGET_LANG,
+                    "sourceLanguageCode": source_language,
                 },
             )
             raw = response.text
@@ -207,11 +212,15 @@ def _translate_sync(word: str) -> tuple[str | None, str | None, str]:
         return None, None, f"Parse error: {e}"
 
 
-async def translate_word(word: str) -> tuple[str | None, str | None]:
+async def translate_word(word: str, source_language: str = "en") -> tuple[str | None, str | None]:
     """Translate a word via Yandex Translate Cloud API v2.
+    
+    Args:
+        word: The word to translate.
+        source_language: Source language code (e.g. 'en', 'de', 'fr').
     
     Returns (translation, detected_language_code).
     """
     loop = asyncio.get_running_loop()
-    result, detected, _ = await loop.run_in_executor(None, _translate_sync, word)
+    result, detected, _ = await loop.run_in_executor(None, _translate_sync, word, source_language)
     return result, detected

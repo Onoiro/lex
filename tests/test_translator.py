@@ -187,7 +187,19 @@ class TestTranslateWord:
 
     @pytest.mark.anyio
     async def test_translate_word_calls_sync(self):
-        """Async function calls sync version."""
+        """Async function calls sync version with source language."""
+        with patch("translator._translate_sync") as mock_sync:
+            mock_sync.return_value = ("тест", "en", "")
+            
+            result, detected = await translate_word("hello", "en")
+            
+            assert result == "тест"
+            assert detected == "en"
+            mock_sync.assert_called_once_with("hello", "en")
+
+    @pytest.mark.anyio
+    async def test_translate_word_default_source(self):
+        """Async function uses default source language 'en'."""
         with patch("translator._translate_sync") as mock_sync:
             mock_sync.return_value = ("тест", "en", "")
             
@@ -195,7 +207,7 @@ class TestTranslateWord:
             
             assert result == "тест"
             assert detected == "en"
-            mock_sync.assert_called_once_with("hello")
+            mock_sync.assert_called_once_with("hello", "en")
 
     @pytest.mark.anyio
     async def test_translate_word_none_result(self):

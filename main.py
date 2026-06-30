@@ -15,7 +15,7 @@ from validators import validate_word, validate_translation
 from rate_limiter import rate_limit, add_rate_limiter, translate_rate_limiter
 from auth import require_auth
 from csrf import csrf_protect_form, csrf_protection
-from translator import get_supported_languages, SUPPORTED_LANGUAGES
+from translator import get_supported_languages, SUPPORTED_LANGUAGES, _get_language_name
 
 # Загрузка переменных окружения из .env
 load_dotenv()
@@ -74,6 +74,34 @@ else:
 loader = jinja2.FileSystemLoader("templates")
 env = jinja2.Environment(loader=loader, autoescape=True)
 env.globals["version"] = VERSION
+env.globals["_get_language_name"] = _get_language_name
+
+# Default language settings
+DEFAULT_SOURCE_LANG = "en"
+DEFAULT_TARGET_LANG = "ru"
+
+# ---------- helpers ----------
+
+def _get_source_lang(request: Request) -> str:
+    """Get source language from cookie, fallback to default."""
+    return request.cookies.get("source_lang", DEFAULT_SOURCE_LANG)
+
+
+def _get_target_lang(request: Request) -> str:
+    """Get target language from cookie, fallback to default."""
+    return request.cookies.get("target_lang", DEFAULT_TARGET_LANG)
+
+
+def _set_lang_cookie(response, key: str, value: str):
+    """Set a language cookie with 365-day expiry."""
+    response.set_cookie(
+        key=key,
+        value=value,
+        max_age=365 * 24 * 3600,
+        path="/",
+        httponly=True,
+        samesite="lax",
+    )
 
 
 # ---------- страницы ----------
@@ -142,7 +170,8 @@ async def add_translate(
     except HTTPException as e:
         return {"translation": "", "detected_language": "", "error": e.detail}
 
-    translation, detected = await translate_word(word)
+    source_lang = _get_source_lang(request)
+    translation, detected = await translate_word(word, source_lang)
     if translation:
         from translator import _get_language_name
         lang_name = _get_language_name(detected) if detected else ""
@@ -156,8 +185,61 @@ async def debug_translate():
     import asyncio
     loop = asyncio.get_running_loop()
     from translator import _translate_sync
-    result, detected, debug = await loop.run_in_executor(None, _translate_sync, "hello")
+    result, detected, debug = await loop.run_in_executor(None, _translate_sync, "hello", "en")
     return {"result": result, "detected": detected, "debug": debug}
+
+
+@app.get("/settings", response_class=HTMLResponse)
+@require_auth
+async def settings_page(request: Request):
+    """Settings page: choose source and target languages."""
+    source_lang = _get_source_lang(request)
+    target_lang = _get_target_lang(request)
+    csrf_token = csrf_protection.get_token_for_form()
+    
+    # Get all unique source codes from SUPPORTED_LANGUAGES
+    supported_sources = sorted(SUPPORTED_LANGUAGES.keys())
+    # Get target codes for the selected source language
+    supported_targets = SUPPORTED_LANGUAGES.get(source_lang, [DEFAULT_TARGET_LANG])
+    
+    tpl = env.get_template("settings.html")
+    return tpl.render(
+        source_lang=source_lang,
+        target_lang=target_lang,
+        csrf_token=csrf_token,
+        supported_sources=supported_sources,
+        supported_targets=supported_targets,
+    )
+
+
+@app.post("/settings")
+@require_auth
+@csrf_protect_form
+async def update_settings(
+    request: Request,
+    source_lang: str = Form(...),
+    target_lang: str = Form(...),
+):
+    """Update language settings via cookies."""
+    response = RedirectResponse(url="/settings", status_code=303)
+    _set_lang_cookie(response, "source_lang", source_lang)
+    _set_lang_cookie(response, "target_lang", target_lang)
+    return response
+
+
+@app.post("/settings/update")
+@require_auth
+async def update_settings_api(
+    request: Request,
+    source_lang: str = Form(...),
+    target_lang: str = Form(...),
+):
+    """AJAX endpoint: update language settings and return JSON."""
+    return JSONResponse({
+        "source_lang": source_lang,
+        "target_lang": target_lang,
+        "message": "Language settings updated.",
+    })
 
 
 @app.get("/api/languages")

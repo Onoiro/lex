@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block title %}Настройки — Lex{% endblock %}
+
+{% block content %}
+<h2>Настройки языков</h2>
+<p>Выберите язык, с которого будет переводиться текст. Эти настройки применяются при автоперевоте слов и в режиме повторения.</p>
+
+<form method="post" action="/settings">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    
+    <label for="source_lang">
+        Исходный язык (с которого переводим)
+    </label>
+    <select id="source_lang" name="source_lang" required>
+        {% for code in supported_sources %}
+        <option value="{{ code }}" {% if code == source_lang %}selected{% endif %}>
+            {{ code | upper }} — {{ _get_language_name(code) }}
+        </option>
+        {% endfor %}
+    </select>
+
+    <label for="target_lang">
+        Целевой язык (на который переводим)
+    </label>
+    <select id="target_lang" name="target_lang" required>
+        {% for code in supported_targets %}
+        <option value="{{ code }}" {% if code == target_lang %}selected{% endif %}>
+            {{ code | upper }} — {{ _get_language_name(code) }}
+        </option>
+        {% endfor %}
+    </select>
+
+    <button type="submit">Сохранить</button>
+</form>
+
+<hr>
+
+<h3>Быстрая смена</h3>
+<p>Компактный селектор для повседневного использования:</p>
+<select id="quick_source_lang">
+    {% for code in supported_sources %}
+    <option value="{{ code }}" {% if code == source_lang %}selected{% endif %}>
+        {{ code | upper }} — {{ _get_language_name(code) }}
+    </option>
+    {% endfor %}
+</select>
+</p>
+
+{% endblock %}
