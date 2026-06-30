@@ -26,10 +26,10 @@
         
         <!-- Поле ввода -->
         <label for="word">Иностранное слово</label>
-        <div style="display:flex;gap:0.5rem;align-items:start;">
+        <div style="display:flex;gap:0.5rem;align-items:center;">
             <input type="text" id="word" name="word" required placeholder="Например: application" autofocus style="flex:1;">
             <div>
-                <select id="word-lang" style="width:80px;max-width:100%;margin-top:0.25rem;">
+                <select id="word-lang">
                     {% for code in supported_sources %}
                     <option value="{{ code }}" {% if code == current_source_lang %}selected{% endif %}>{{ code }}</option>
                     {% endfor %}

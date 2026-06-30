@@ -31,6 +31,14 @@
         nav strong {
             font-size: 1.2rem;
         }
+        /* На десктопе селектор языка шире — для кодов вроде zh-cn, pt-br */
+        @media (min-width: 768px) {
+            #word-lang {
+                width: 110px !important;
+                min-width: 110px !important;
+                height: 2.5rem !important;
+            }
+        }
     </style>
 </head>
 <body>
