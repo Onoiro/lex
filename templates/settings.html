@@ -4,19 +4,19 @@
 
 {% block content %}
 <h2>Настройки языков</h2>
-<p>Выберите язык, с которого будет переводиться текст. Эти настройки применяются при автоперевоте слов и в режиме повторения.</p>
+<p>По умолчанию используется автоопределение языка введённого текста. Вы можете выбрать конкретный язык, если перевод определяется неверно. Целевой язык всегда — русский.</p>
 
 <form method="post" action="/settings">
     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
     
     <label for="source_lang">
-        Исходный язык (с которого переводим)
+        Исходный язык
     </label>
     <div>
         <select id="source_lang" name="source_lang" required>
             {% for code in supported_sources %}
             <option value="{{ code }}" {% if code == source_lang %}selected{% endif %}>
-                {{ code | upper }} — {{ _get_language_name(code) }}
+                {% if code == 'auto' %}Автоопределение{% else %}{{ code | upper }} — {{ _get_language_name(code) }}{% endif %}
             </option>
             {% endfor %}
         </select>

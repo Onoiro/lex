@@ -630,6 +630,17 @@ class TestSettingsRoutes:
         # Check for select elements
         assert b"<select" in response.content
 
+    def test_settings_page_shows_auto_option(self, authenticated_client, csrf_token):
+        """Settings page includes 'auto' as the first source language option."""
+        response = authenticated_client.get(
+            "/settings",
+            headers={"X-CSRF-Token": csrf_token},
+        )
+        
+        assert response.status_code == status.HTTP_200_OK
+        content = response.text
+        assert "auto" in content.lower() or "Автоопределение" in content
+
     def test_update_settings_saves_cookie(self, authenticated_client, csrf_token):
         """Updating settings saves language cookies."""
         response = authenticated_client.post(
@@ -646,6 +657,23 @@ class TestSettingsRoutes:
         # Check that cookies are set
         set_cookie = response.headers.get("set-cookie", "")
         assert "source_lang=de" in set_cookie
+        assert "target_lang=ru" in set_cookie
+
+    def test_update_settings_with_auto(self, authenticated_client, csrf_token):
+        """Updating settings with auto source language saves correctly."""
+        response = authenticated_client.post(
+            "/settings",
+            data={
+                "source_lang": "auto",
+                "target_lang": "ru",
+                "csrf_token": csrf_token,
+            },
+            follow_redirects=False,
+        )
+        
+        assert response.status_code == status.HTTP_303_SEE_OTHER
+        set_cookie = response.headers.get("set-cookie", "")
+        assert "source_lang=auto" in set_cookie
         assert "target_lang=ru" in set_cookie
 
     def test_update_settings_requires_auth(self, client, csrf_token):

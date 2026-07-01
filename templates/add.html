@@ -42,15 +42,8 @@
         
         <!-- Поле ввода -->
         <label for="word">Иностранное слово</label>
-        <textarea id="word" name="word" required placeholder="Например: application" autofocus rows="1"></textarea>
-        <div style="display:flex;gap:0.5rem;align-items:center;margin-top:0.25rem;">
-            <small style="color:var(--pico-muted-font-color);">Язык слова (по умолчанию — из настроек)</small>
-            <select id="word-lang">
-                {% for code in supported_sources %}
-                <option value="{{ code }}" {% if code == current_source_lang %}selected{% endif %}>{{ code }}</option>
-                {% endfor %}
-            </select>
-        </div>
+        <input type="text" id="word" name="word" required placeholder="Например: application" autofocus>
+        <small style="color:var(--pico-muted-font-color);">Язык определяется автоматически (настраивается в /settings)</small>
         <button type="button" id="translate-btn" class="secondary" style="width: 100%; margin-top: 0.5rem;">🔄 Перевести</button>
 
         <!-- Поле перевода -->
@@ -94,7 +87,6 @@ document.getElementById("translate-btn").addEventListener("click", async () => {
     const translationInput = document.getElementById("translation");
     const btn = document.getElementById("translate-btn");
     const csrfInput = document.querySelector('input[name="csrf_token"]');
-    const wordLangSelect = document.getElementById("word-lang");
 
     if (!wordInput.value.trim()) {
         return;
@@ -110,7 +102,7 @@ document.getElementById("translate-btn").addEventListener("click", async () => {
                 "Content-Type": "application/x-www-form-urlencoded",
                 "X-CSRF-Token": csrfInput.value,
             },
-            body: "word=" + encodeURIComponent(wordInput.value) + "&source_lang=" + encodeURIComponent(wordLangSelect.value),
+            body: "word=" + encodeURIComponent(wordInput.value),
         });
         const data = await resp.json();
         const langOutput = document.getElementById("detected-lang");

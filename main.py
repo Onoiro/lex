@@ -77,7 +77,7 @@ env.globals["version"] = VERSION
 env.globals["_get_language_name"] = _get_language_name
 
 # Default language settings
-DEFAULT_SOURCE_LANG = "en"
+DEFAULT_SOURCE_LANG = "auto"
 DEFAULT_TARGET_LANG = "ru"
 
 # ---------- helpers ----------
@@ -87,11 +87,15 @@ def _get_language_codes() -> list[str]:
     
     Uses SUPPORTED_LANGUAGES from Yandex API if available,
     otherwise falls back to hardcoded LANGUAGE_NAMES.
+    Always includes 'auto' as the first option.
     """
     from translator import LANGUAGE_NAMES
+    codes = ["auto"]
     if SUPPORTED_LANGUAGES:
-        return sorted(SUPPORTED_LANGUAGES.keys())
-    return sorted(LANGUAGE_NAMES.keys())
+        codes.extend(sorted(SUPPORTED_LANGUAGES.keys()))
+    else:
+        codes.extend(sorted(LANGUAGE_NAMES.keys()))
+    return codes
 
 
 def _get_source_lang(request: Request) -> str:
@@ -133,14 +137,9 @@ async def add_page(request: Request):
     error_word = request.query_params.get("word", "")
     # Генерируем CSRF токен для формы
     csrf_token = csrf_protection.get_token_for_form()
-    # Pass language codes and current source lang for the selector
-    supported_sources = _get_language_codes()
-    current_source_lang = _get_source_lang(request)
     return tpl.render(
         added=added, translated=translated, error_type=error_type,
         error_word=error_word, csrf_token=csrf_token,
-        supported_sources=supported_sources,
-        current_source_lang=current_source_lang,
     )
 
 
@@ -191,7 +190,7 @@ async def add_translate(
     except HTTPException as e:
         return {"translation": "", "detected_language": "", "error": e.detail}
 
-    # Use form source_lang if provided, otherwise fall back to cookie
+    # Use form source_lang if provided, otherwise fall back to cookie (default is "auto")
     lang = source_lang if source_lang else _get_source_lang(request)
     translation, detected = await translate_word(word, lang)
     if translation:

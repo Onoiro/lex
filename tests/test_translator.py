@@ -115,6 +115,59 @@ class TestTranslateSync:
                 assert detected == "en"
                 assert debug == ""
 
+    def test_auto_source_language_no_source_code_in_payload(self):
+        """Auto-detect mode does not send sourceLanguageCode in API request."""
+        with patch("translator.API_KEY", "fake_key"), \
+             patch("translator.FOLDER_ID", "fake_folder"):
+            
+            mock_response = MagicMock()
+            mock_response.status_code = 200
+            mock_response.text = '{"translations": [{"text": "тест", "detectedLanguageCode": "fr"}]}'
+            mock_response.json.return_value = {
+                "translations": [{"text": "тест", "detectedLanguageCode": "fr"}]
+            }
+            mock_response.raise_for_status.return_value = None
+            
+            with patch("translator.httpx.Client") as mock_client_class:
+                mock_client = MagicMock()
+                mock_client_class.return_value.__enter__.return_value = mock_client
+                mock_client.post.return_value = mock_response
+                
+                result, detected, debug = _translate_sync("test", source_language="auto")
+                
+                assert result == "тест"
+                assert detected == "fr"
+                # Verify the API call did NOT include sourceLanguageCode
+                call_args = mock_client.post.call_args
+                payload = call_args.kwargs["json"]
+                assert "sourceLanguageCode" not in payload
+
+    def test_explicit_source_language_includes_source_code_in_payload(self):
+        """Explicit source language sends sourceLanguageCode in API request."""
+        with patch("translator.API_KEY", "fake_key"), \
+             patch("translator.FOLDER_ID", "fake_folder"):
+            
+            mock_response = MagicMock()
+            mock_response.status_code = 200
+            mock_response.text = '{"translations": [{"text": "тест", "detectedLanguageCode": "en"}]}'
+            mock_response.json.return_value = {
+                "translations": [{"text": "тест", "detectedLanguageCode": "en"}]
+            }
+            mock_response.raise_for_status.return_value = None
+            
+            with patch("translator.httpx.Client") as mock_client_class:
+                mock_client = MagicMock()
+                mock_client_class.return_value.__enter__.return_value = mock_client
+                mock_client.post.return_value = mock_response
+                
+                result, detected, debug = _translate_sync("test", source_language="en")
+                
+                assert result == "тест"
+                assert detected == "en"
+                call_args = mock_client.post.call_args
+                payload = call_args.kwargs["json"]
+                assert payload["sourceLanguageCode"] == "en"
+
     def test_saves_to_cache(self):
         """Saves successful translation to cache."""
         with patch("translator.API_KEY", "fake_key"), \
@@ -230,6 +283,18 @@ class TestTranslateWord:
         
         assert result == "из кэша"
         assert detected is None  # Cache hits have no detected language
+
+    @pytest.mark.anyio
+    async def test_translate_word_auto_source(self):
+        """Async function works with auto source language."""
+        with patch("translator._translate_sync") as mock_sync:
+            mock_sync.return_value = ("тест", "fr", "")
+            
+            result, detected = await translate_word("bonjour", "auto")
+            
+            assert result == "тест"
+            assert detected == "fr"
+            mock_sync.assert_called_once_with("bonjour", "auto")
 
 
 class TestTranslationCache:

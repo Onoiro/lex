@@ -158,7 +158,7 @@ def _translate_sync(word: str, source_language: str = "en") -> tuple[str | None,
     
     Args:
         word: The word to translate.
-        source_language: Source language code (e.g. 'en', 'de', 'fr').
+        source_language: Source language code (e.g. 'en', 'de', 'fr') or 'auto' for auto-detection.
     
     Returns (translation, detected_language_code, raw_response_for_debug).
     """
@@ -173,18 +173,22 @@ def _translate_sync(word: str, source_language: str = "en") -> tuple[str | None,
 
     try:
         with httpx.Client(timeout=10.0) as client:
+            payload = {
+                "folderId": FOLDER_ID,
+                "texts": [word],
+                "targetLanguageCode": TARGET_LANG,
+            }
+            # Only send sourceLanguageCode if not auto-detect
+            if source_language != "auto":
+                payload["sourceLanguageCode"] = source_language
+            
             response = client.post(
                 API_URL,
                 headers={
                     "Content-Type": "application/json",
                     "Authorization": f"Api-Key {API_KEY}",
                 },
-                json={
-                    "folderId": FOLDER_ID,
-                    "texts": [word],
-                    "targetLanguageCode": TARGET_LANG,
-                    "sourceLanguageCode": source_language,
-                },
+                json=payload,
             )
             raw = response.text
             if response.status_code >= 400:
