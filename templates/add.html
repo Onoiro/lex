@@ -2,6 +2,22 @@
 {% block title %}Добавить слово — Lex{% endblock %}
 
 {% block content %}
+<style>
+    /* Адаптивные поля — многострочный текст, авто-высота */
+    #word, #translation {
+        width: 100%;
+        white-space: pre-wrap;
+        word-break: break-word;
+        box-sizing: border-box;
+        overflow-y: auto;
+    }
+    #detected-lang {
+        display: block;
+        white-space: pre-wrap;
+        word-break: break-word;
+        min-height: 1rem;
+    }
+</style>
 <hgroup style="text-align: center; margin-bottom: 2rem; margin-top: 1rem;">
     <h1>Новое слово</h1>
     <p>Переведи и сохрани в словарь</p>
@@ -26,23 +42,21 @@
         
         <!-- Поле ввода -->
         <label for="word">Иностранное слово</label>
-        <div style="display:flex;gap:0.5rem;align-items:center;">
-            <input type="text" id="word" name="word" required placeholder="Например: application" autofocus style="flex:1;">
-            <div>
-                <select id="word-lang">
-                    {% for code in supported_sources %}
-                    <option value="{{ code }}" {% if code == current_source_lang %}selected{% endif %}>{{ code }}</option>
-                    {% endfor %}
-                </select>
-            </div>
+        <textarea id="word" name="word" required placeholder="Например: application" autofocus rows="1"></textarea>
+        <div style="display:flex;gap:0.5rem;align-items:center;margin-top:0.25rem;">
+            <small style="color:var(--pico-muted-font-color);">Язык слова (по умолчанию — из настроек)</small>
+            <select id="word-lang">
+                {% for code in supported_sources %}
+                <option value="{{ code }}" {% if code == current_source_lang %}selected{% endif %}>{{ code }}</option>
+                {% endfor %}
+            </select>
         </div>
-        <small style="color:var(--pico-muted-font-color);">Язык слова (по умолчанию — из настроек)</small>
         <button type="button" id="translate-btn" class="secondary" style="width: 100%; margin-top: 0.5rem;">🔄 Перевести</button>
 
         <!-- Поле перевода -->
         <label for="translation">Перевод</label>
-        <input type="text" id="translation" name="translation" required placeholder="Например: приложение">
-        <output id="detected-lang" style="display:block; margin-top:0.25rem; font-size:0.85rem; color:var(--pico-muted-font-color);"></output>
+        <textarea id="translation" name="translation" required placeholder="Например: приложение" rows="1"></textarea>
+        <output id="detected-lang" style="display:block; margin-top:0.25rem; font-size:0.85rem; color:var(--pico-muted-font-color); white-space:pre-wrap; word-break:break-word;"></output>
 
         <!-- Кнопка сохранения в футере карточки -->
         <footer style="margin-top: 2rem; padding-bottom: 0;">
@@ -52,6 +66,29 @@
 </article>
 
 <script>
+// Auto-resize textarea on input
+function resizeTextarea(el) {
+    el.style.height = "auto";
+    setTimeout(() => {
+        el.style.height = Math.min(el.scrollHeight, 128) + "px";
+    }, 0);
+}
+
+const wordInput = document.getElementById("word");
+const translationInput = document.getElementById("translation");
+
+// Use MutationObserver to detect value changes
+const observer = new MutationObserver(() => {
+    resizeTextarea(wordInput);
+    resizeTextarea(translationInput);
+});
+
+wordInput.addEventListener("input", () => resizeTextarea(wordInput));
+translationInput.addEventListener("input", () => resizeTextarea(translationInput));
+
+// Observe value changes via attribute
+observer.observe(translationInput, { attributes: true, attributeFilter: ["value"] });
+
 document.getElementById("translate-btn").addEventListener("click", async () => {
     const wordInput = document.getElementById("word");
     const translationInput = document.getElementById("translation");
@@ -99,7 +136,5 @@ document.getElementById("translate-btn").addEventListener("click", async () => {
     btn.disabled = false;
     btn.textContent = "🔄 Перевести";
 });
-
-// No JS needed — language is set server-side from cookie
 </script>
 {% endblock %}
