@@ -10,6 +10,7 @@
         word-break: break-word;
         box-sizing: border-box;
         overflow-y: auto;
+        resize: vertical;
     }
     #detected-lang {
         display: block;
@@ -42,7 +43,7 @@
         
         <!-- Поле ввода -->
         <label for="word">Иностранное слово</label>
-        <input type="text" id="word" name="word" required placeholder="Например: application" autofocus>
+        <textarea id="word" name="word" required placeholder="Например: application" rows="1"></textarea>
         <small style="color:var(--pico-muted-font-color);">Язык определяется автоматически (настраивается в /settings)</small>
         <button type="button" id="translate-btn" class="secondary" style="width: 100%; margin-top: 0.5rem;">🔄 Перевести</button>
 
@@ -70,17 +71,8 @@ function resizeTextarea(el) {
 const wordInput = document.getElementById("word");
 const translationInput = document.getElementById("translation");
 
-// Use MutationObserver to detect value changes
-const observer = new MutationObserver(() => {
-    resizeTextarea(wordInput);
-    resizeTextarea(translationInput);
-});
-
 wordInput.addEventListener("input", () => resizeTextarea(wordInput));
 translationInput.addEventListener("input", () => resizeTextarea(translationInput));
-
-// Observe value changes via attribute
-observer.observe(translationInput, { attributes: true, attributeFilter: ["value"] });
 
 document.getElementById("translate-btn").addEventListener("click", async () => {
     const wordInput = document.getElementById("word");
@@ -111,6 +103,7 @@ document.getElementById("translate-btn").addEventListener("click", async () => {
             langOutput.textContent = "";
         } else {
             translationInput.value = data.translation || "";
+            translationInput.dispatchEvent(new Event("input"));
             if (data.detected_language) {
                 langOutput.textContent = "Переведено с: " + data.detected_language;
                 langOutput.style.color = "var(--pico-muted-font-color)";
