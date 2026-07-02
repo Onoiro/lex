@@ -18,6 +18,16 @@
         word-break: break-word;
         min-height: 1rem;
     }
+
+    /* Fade-out animation for success message */
+    .fade-out {
+        animation: fadeOut 3s forwards;
+    }
+    @keyframes fadeOut {
+        0%   { opacity: 1; }
+        80%  { opacity: 1; }
+        100% { opacity: 0; }
+    }
 </style>
 <hgroup style="text-align: center; margin-bottom: 2rem; margin-top: 1rem;">
     <h1>Новое слово</h1>
@@ -26,7 +36,7 @@
 
 <!-- Уведомления об успехе/ошибке -->
 {% if added %}
-<article style="background: var(--pico-ins-color); color: var(--pico-primary-inverse); padding: 1rem; margin-bottom: 1rem;">
+<article class="fade-out" style="background: var(--pico-ins-color); color: var(--pico-primary-inverse); padding: 1rem; margin-bottom: 1rem;">
     ✅ Слово успешно добавлено в словарь!
 </article>
 {% endif %}
@@ -60,6 +70,14 @@
 </article>
 
 <script>
+// Auto-remove success message after animation
+document.addEventListener("DOMContentLoaded", () => {
+    const msg = document.querySelector(".fade-out");
+    if (msg) {
+        msg.addEventListener("animationend", () => msg.remove());
+    }
+});
+
 // Auto-resize textarea on input
 function resizeTextarea(el) {
     el.style.height = "auto";
