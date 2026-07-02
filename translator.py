@@ -17,10 +17,10 @@ SUPPORTED_LANGUAGES: dict[str, list[str]] = {}
 
 
 def get_supported_languages() -> dict[str, list[str]]:
-    """Fetch supported language pairs from Yandex Translate API.
+    """Fetch supported source languages from Yandex Translate API.
     
     Returns a dict mapping source language codes to lists of target language codes.
-    For example: {"en": ["ru", "de", "fr"], "de": ["ru", "en", "fr"]}
+    For example: {"en": ["ru"], "de": ["ru"], "fr": ["ru"]}
     
     Returns an empty dict on any error (API key missing, network issue, etc.).
     """
@@ -40,18 +40,13 @@ def get_supported_languages() -> dict[str, list[str]]:
             if response.status_code >= 400:
                 return {}
             data = response.json()
-            # Yandex v2: {"codes": ["en_ru", "de_ru", "fr_en", ...]}
-            codes = data.get("codes", [])
+            # Yandex v2: {"languages": [{"code": "en", "name": "English"}, ...]}
+            languages = data.get("languages", [])
             result: dict[str, list[str]] = {}
-            for pair in codes:
-                # Format is "source_target", e.g. "en_ru"
-                parts = pair.split("_")
-                if len(parts) == 2:
-                    src, tgt = parts
-                    if src not in result:
-                        result[src] = []
-                    if tgt not in result[src]:
-                        result[src].append(tgt)
+            for lang in languages:
+                code = lang.get("code")
+                if code:
+                    result[code] = [TARGET_LANG]
             return result
     except (httpx.RequestError, httpx.HTTPStatusError, KeyError, ValueError):
         return {}
