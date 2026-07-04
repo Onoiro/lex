@@ -123,13 +123,16 @@ The `-v $(pwd)/data:/app/data` mount persists the SQLite database outside the co
 ### Reviewing Words
 
 1. Go to **Повтор** (Review) page
-2. You will see a word in any language or Russian
-3. Click:
+2. Click **Начать тренировку** (Start training) to begin the session
+3. You will see a word in any language or Russian
+4. Click:
    - **Знаю** (Know) — if you remember the translation. The translation is hidden for 3 seconds so you can verify.
    - **Забыл** (Forgot) — if you don't remember. The translation is shown for 3 seconds to help you remember.
-4. The next word appears automatically after 3 seconds
-5. Click **Следующее слово** (Next word) to skip the wait
-6. Response time is tracked: best and average times are shown above the word, and a live timer runs while you think. If your response is faster than your previous best, the timer turns green.
+5. The next word appears automatically after 3 seconds
+6. Click **Следующее слово** (Next word) to skip the wait
+7. Response time is tracked: best and average times are shown above the word, and a live timer runs while you think. If your response is faster than your previous best, the timer turns green.
+8. **Auto-answer:** If you don't respond within 10 seconds, the answer is automatically recorded as "Forgot" and the translation is shown. The timer turns orange after 5 seconds and red after 10 seconds.
+9. **Pause on inactivity:** If you miss 3 answers in a row (auto-answers) or remain inactive for 30 seconds after an auto-answer, training pauses. Click **Продолжить тренировку** (Resume training) to continue.
 
 ### Dictionary
 
