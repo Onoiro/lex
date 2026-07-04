@@ -676,6 +676,23 @@ class TestSettingsRoutes:
         assert "source_lang=auto" in set_cookie
         assert "target_lang=ru" in set_cookie
 
+    def test_update_settings_with_custom_target(self, authenticated_client, csrf_token):
+        """Updating settings with custom target language saves correctly."""
+        response = authenticated_client.post(
+            "/settings",
+            data={
+                "source_lang": "en",
+                "target_lang": "de",
+                "csrf_token": csrf_token,
+            },
+            follow_redirects=False,
+        )
+        
+        assert response.status_code == status.HTTP_303_SEE_OTHER
+        set_cookie = response.headers.get("set-cookie", "")
+        assert "source_lang=en" in set_cookie
+        assert "target_lang=de" in set_cookie
+
     def test_update_settings_requires_auth(self, client, csrf_token):
         """Updating settings requires authentication."""
         response = client.post(
@@ -751,3 +768,35 @@ class TestAddTranslateWithSourceLang:
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
         assert data["translation"] == "тест"
+
+    def test_translate_with_target_lang(self, authenticated_client, mock_translate_success, csrf_token):
+        """Translate endpoint accepts and uses target_lang parameter."""
+        response = authenticated_client.post(
+            "/add/translate",
+            data={
+                "word": "hello",
+                "source_lang": "en",
+                "target_lang": "de",
+            },
+            headers={"X-CSRF-Token": csrf_token},
+        )
+        
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert data["translation"] == "тест"
+        # Verify the mock was called with target_lang="de"
+        mock_translate_success.assert_called_once_with("hello", "en", "de")
+
+    def test_translate_without_target_lang_uses_default(self, authenticated_client, mock_translate_success, csrf_token):
+        """Translate endpoint without target_lang falls back to cookie/default."""
+        response = authenticated_client.post(
+            "/add/translate",
+            data={
+                "word": "hello",
+            },
+            headers={"X-CSRF-Token": csrf_token},
+        )
+        
+        assert response.status_code == status.HTTP_200_OK
+        # Default target_lang is "ru" (from cookie default)
+        mock_translate_success.assert_called_once_with("hello", "auto", "ru")

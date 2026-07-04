@@ -61,7 +61,7 @@
   "dictionary.confirm_delete": "Are you sure you want to delete the word '{word}'?",
   "settings.title": "Settings — Lex",
   "settings.heading": "Language settings",
-  "settings.description": "By default, the language of the entered text is auto-detected. You can select a specific language if the translation is detected incorrectly. The target language is always Russian.",
+  "settings.description": "By default, the language of the entered text is auto-detected. You can select a specific source language if detection is incorrect. You can also choose any target language for translation.",
   "settings.source_lang": "Source language",
   "settings.target_lang": "Target language (translate to)",
   "settings.save": "Save",
@@ -69,5 +69,6 @@
   "settings.lang_updated": "Language settings updated.",
   "settings.app_language": "App language",
   "settings.translate": "Translation",
+  "settings.same_lang_warning": "Source and target languages are the same. Translation may not produce useful results.",
   "footer.version": "Lex v{version}"
 }

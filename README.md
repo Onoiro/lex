@@ -7,7 +7,7 @@ Lex is a web-based translator and vocabulary assistant. It provides fast transla
 ## Features
 
 - **Add words** — Add new words with translations manually or get auto-translation via Yandex Translate API
-- **Multi-language translation** — Translate between Russian and 100+ languages (English, Spanish, French, German, Chinese, Arabic, and many more)
+- **Multi-language translation** — Translate between any of 100+ languages (English, Spanish, French, German, Chinese, Arabic, Russian, and many more). Choose both source and target languages on the Settings page
 - **Internationalization** — Switch between English and Russian UI languages via Settings page (/settings)
 - **Language settings** — Set default source and target languages globally via Settings page (/settings), and quickly switch source language on the Add page (/add)
 - **Language display** — Language selectors show full names with native names and codes, e.g. "Arabic (العربية, ar)" or "Английский (English, en)"
@@ -118,7 +118,7 @@ The `-v $(pwd)/data:/app/data` mount persists the SQLite database outside the co
    - Enter translation manually
 5. Click **Добавить** (Add)
 
-**Language Settings:** Go to **⚙ Settings** (/settings) to set a default source and target language. These settings persist across sessions via cookies and apply to both the Add page and auto-translation.
+**Language Settings:** Go to **⚙ Settings** (/settings) to set a default source and target language. Both source and target can be any of the 100+ supported languages. These settings persist across sessions via cookies and apply to both the Add page and auto-translation.
 
 ### Reviewing Words
 

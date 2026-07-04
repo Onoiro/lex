@@ -166,9 +166,10 @@ async def add_page(request: Request):
     error_word = request.query_params.get("word", "")
     # Генерируем CSRF токен для формы
     csrf_token = csrf_protection.get_token_for_form()
+    target_lang = _get_target_lang(request)
     return tpl.render(
         added=added, translated=translated, error_type=error_type,
-        error_word=error_word, csrf_token=csrf_token,
+        error_word=error_word, csrf_token=csrf_token, target_lang=target_lang,
     )
 
 
@@ -206,6 +207,7 @@ async def add_translate(
     request: Request,
     word: str = Form(...),
     source_lang: str = Form(default=""),
+    target_lang: str = Form(default=""),
 ):
     """API for auto-translating a word (called from frontend)."""
     # CSRF check via header
@@ -219,9 +221,10 @@ async def add_translate(
     except HTTPException as e:
         return {"translation": "", "detected_language": "", "error": e.detail}
 
-    # Use form source_lang if provided, otherwise fall back to cookie (default is "auto")
-    lang = source_lang if source_lang else _get_source_lang(request)
-    translation, detected = await translate_word(word, lang)
+    # Use form values if provided, otherwise fall back to cookies
+    src = source_lang if source_lang else _get_source_lang(request)
+    tgt = target_lang if target_lang else _get_target_lang(request)
+    translation, detected = await translate_word(word, src, tgt)
     if translation:
         from translator import _get_language_name
         lang_name = _get_language_name(detected) if detected else ""
@@ -249,8 +252,8 @@ async def settings_page(request: Request):
     
     # Get all available language codes (API or hardcoded fallback)
     supported_sources = _get_language_codes()
-    # Get target codes for the selected source language
-    supported_targets = SUPPORTED_LANGUAGES.get(source_lang, [DEFAULT_TARGET_LANG])
+    # Target can be any language except 'auto'
+    supported_targets = [c for c in supported_sources if c != "auto"]
     
     # Get current locale
     current_locale = request.cookies.get("locale", DEFAULT_LOCALE)

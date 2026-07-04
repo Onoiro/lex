@@ -57,4 +57,29 @@
     <button type="submit">{{ _t('settings.save') }}</button>
 </form>
 
+<script>
+// Warn user when source and target languages are the same
+(function() {
+    var src = document.getElementById("source_lang");
+    var tgt = document.getElementById("target_lang");
+    var warning = document.createElement("small");
+    warning.style.color = "var(--pico-del-color)";
+    warning.style.display = "none";
+    warning.id = "same-lang-warning";
+    tgt.parentElement.appendChild(warning);
+
+    function check() {
+        if (src.value !== "auto" && src.value === tgt.value) {
+            warning.textContent = "{{ _t('settings.same_lang_warning') }}";
+            warning.style.display = "block";
+        } else {
+            warning.style.display = "none";
+        }
+    }
+    src.addEventListener("change", check);
+    tgt.addEventListener("change", check);
+    check();
+})();
+</script>
+
 {% endblock %}

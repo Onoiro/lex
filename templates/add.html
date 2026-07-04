@@ -70,6 +70,9 @@
 </article>
 
 <script>
+// Target language passed from server (cookie is httponly)
+var targetLang = "{{ target_lang }}";
+
 // Auto-remove success message after animation
 document.addEventListener("DOMContentLoaded", () => {
     const msg = document.querySelector(".fade-out");
@@ -112,7 +115,7 @@ document.getElementById("translate-btn").addEventListener("click", async () => {
                 "Content-Type": "application/x-www-form-urlencoded",
                 "X-CSRF-Token": csrfInput.value,
             },
-            body: "word=" + encodeURIComponent(wordInput.value),
+            body: "word=" + encodeURIComponent(wordInput.value) + "&target_lang=" + encodeURIComponent(targetLang),
         });
         const data = await resp.json();
         const langOutput = document.getElementById("detected-lang");

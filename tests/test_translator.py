@@ -29,21 +29,31 @@ class TestTranslateSync:
 
     def test_cache_hit(self):
         """Returns cached translation without API call."""
-        # Setup cache with source language in key
-        translation_cache.set("en:cached_word", "кэшированный перевод")
-        
+        # Cache key format: "{source}:{target}:{word}"
+        translation_cache.set("en:ru:cached_word", "кэшированный перевод")
+
         result, detected, debug = _translate_sync("cached_word")
-        
+
         assert result == "кэшированный перевод"
         assert detected is None  # None means "from cache, no detected language"
         assert debug == ""  # Empty debug means cache hit
+
+    def test_cache_hit_with_custom_target(self):
+        """Cache works with non-default target language."""
+        translation_cache.set("en:de:cached_word", "Kacheladen")
+
+        result, detected, debug = _translate_sync("cached_word", target_language="de")
+
+        assert result == "Kacheladen"
+        assert detected is None
+        assert debug == ""
 
     def test_api_key_missing(self):
         """Returns error when API key is missing."""
         # Patch API_KEY to None to simulate missing key
         with patch("translator.API_KEY", None):
             result, detected, debug = _translate_sync("word_no_key_test_xyz")
-            
+
             assert result is None
             assert detected is None
             assert "API_KEY" in debug
@@ -52,19 +62,19 @@ class TestTranslateSync:
         """Handles API error response."""
         with patch("translator.API_KEY", "fake_key"), \
              patch("translator.FOLDER_ID", "fake_folder"):
-            
+
             mock_response = MagicMock()
             mock_response.status_code = 401
             mock_response.text = "Unauthorized"
             mock_response.raise_for_status.side_effect = Exception("HTTP Error")
-            
+
             with patch("translator.httpx.Client") as mock_client_class:
                 mock_client = MagicMock()
                 mock_client_class.return_value.__enter__.return_value = mock_client
                 mock_client.post.return_value = mock_response
-                
+
                 result, detected, debug = _translate_sync("test_word")
-                
+
                 assert result is None
                 assert detected is None
                 assert "HTTP" in debug or "401" in debug or "Unauthorized" in debug
@@ -73,20 +83,20 @@ class TestTranslateSync:
         """Handles empty API response."""
         with patch("translator.API_KEY", "fake_key"), \
              patch("translator.FOLDER_ID", "fake_folder"):
-            
+
             mock_response = MagicMock()
             mock_response.status_code = 200
             mock_response.text = '{"translations": []}'
             mock_response.json.return_value = {"translations": []}
             mock_response.raise_for_status.return_value = None
-            
+
             with patch("translator.httpx.Client") as mock_client_class:
                 mock_client = MagicMock()
                 mock_client_class.return_value.__enter__.return_value = mock_client
                 mock_client.post.return_value = mock_response
-                
+
                 result, detected, debug = _translate_sync("test_word")
-                
+
                 assert result is None
                 assert detected is None
                 assert "Пустой" in debug or "empty" in debug.lower() or "translations" in debug
@@ -95,7 +105,7 @@ class TestTranslateSync:
         """Handles successful API response."""
         with patch("translator.API_KEY", "fake_key"), \
              patch("translator.FOLDER_ID", "fake_folder"):
-            
+
             mock_response = MagicMock()
             mock_response.status_code = 200
             mock_response.text = '{"translations": [{"text": "тест", "detectedLanguageCode": "en"}]}'
@@ -103,23 +113,51 @@ class TestTranslateSync:
                 "translations": [{"text": "тест", "detectedLanguageCode": "en"}]
             }
             mock_response.raise_for_status.return_value = None
-            
+
             with patch("translator.httpx.Client") as mock_client_class:
                 mock_client = MagicMock()
                 mock_client_class.return_value.__enter__.return_value = mock_client
                 mock_client.post.return_value = mock_response
-                
+
                 result, detected, debug = _translate_sync("test")
-                
+
                 assert result == "тест"
                 assert detected == "en"
                 assert debug == ""
+
+    def test_successful_api_response_with_custom_target(self):
+        """Sends targetLanguageCode in API request when target_language is set."""
+        with patch("translator.API_KEY", "fake_key"), \
+             patch("translator.FOLDER_ID", "fake_folder"):
+
+            mock_response = MagicMock()
+            mock_response.status_code = 200
+            mock_response.text = '{"translations": [{"text": "Hallo", "detectedLanguageCode": "en"}]}'
+            mock_response.json.return_value = {
+                "translations": [{"text": "Hallo", "detectedLanguageCode": "en"}]
+            }
+            mock_response.raise_for_status.return_value = None
+
+            with patch("translator.httpx.Client") as mock_client_class:
+                mock_client = MagicMock()
+                mock_client_class.return_value.__enter__.return_value = mock_client
+                mock_client.post.return_value = mock_response
+
+                result, detected, debug = _translate_sync("hello", target_language="de")
+
+                assert result == "Hallo"
+                assert detected == "en"
+                assert debug == ""
+                # Verify the API call used the custom target language
+                call_args = mock_client.post.call_args
+                payload = call_args.kwargs["json"]
+                assert payload["targetLanguageCode"] == "de"
 
     def test_auto_source_language_no_source_code_in_payload(self):
         """Auto-detect mode does not send sourceLanguageCode in API request."""
         with patch("translator.API_KEY", "fake_key"), \
              patch("translator.FOLDER_ID", "fake_folder"):
-            
+
             mock_response = MagicMock()
             mock_response.status_code = 200
             mock_response.text = '{"translations": [{"text": "тест", "detectedLanguageCode": "fr"}]}'
@@ -127,14 +165,14 @@ class TestTranslateSync:
                 "translations": [{"text": "тест", "detectedLanguageCode": "fr"}]
             }
             mock_response.raise_for_status.return_value = None
-            
+
             with patch("translator.httpx.Client") as mock_client_class:
                 mock_client = MagicMock()
                 mock_client_class.return_value.__enter__.return_value = mock_client
                 mock_client.post.return_value = mock_response
-                
+
                 result, detected, debug = _translate_sync("test", source_language="auto")
-                
+
                 assert result == "тест"
                 assert detected == "fr"
                 # Verify the API call did NOT include sourceLanguageCode
@@ -146,7 +184,7 @@ class TestTranslateSync:
         """Explicit source language sends sourceLanguageCode in API request."""
         with patch("translator.API_KEY", "fake_key"), \
              patch("translator.FOLDER_ID", "fake_folder"):
-            
+
             mock_response = MagicMock()
             mock_response.status_code = 200
             mock_response.text = '{"translations": [{"text": "тест", "detectedLanguageCode": "en"}]}'
@@ -154,14 +192,14 @@ class TestTranslateSync:
                 "translations": [{"text": "тест", "detectedLanguageCode": "en"}]
             }
             mock_response.raise_for_status.return_value = None
-            
+
             with patch("translator.httpx.Client") as mock_client_class:
                 mock_client = MagicMock()
                 mock_client_class.return_value.__enter__.return_value = mock_client
                 mock_client.post.return_value = mock_response
-                
+
                 result, detected, debug = _translate_sync("test", source_language="en")
-                
+
                 assert result == "тест"
                 assert detected == "en"
                 call_args = mock_client.post.call_args
@@ -172,7 +210,7 @@ class TestTranslateSync:
         """Saves successful translation to cache."""
         with patch("translator.API_KEY", "fake_key"), \
              patch("translator.FOLDER_ID", "fake_folder"):
-            
+
             mock_response = MagicMock()
             mock_response.status_code = 200
             mock_response.text = '{"translations": [{"text": "кэш тест", "detectedLanguageCode": "en"}]}'
@@ -180,32 +218,55 @@ class TestTranslateSync:
                 "translations": [{"text": "кэш тест", "detectedLanguageCode": "en"}]
             }
             mock_response.raise_for_status.return_value = None
-            
+
             with patch("translator.httpx.Client") as mock_client_class:
                 mock_client = MagicMock()
                 mock_client_class.return_value.__enter__.return_value = mock_client
                 mock_client.post.return_value = mock_response
-                
+
                 _translate_sync("cache_test_word")
-                
-                # Verify it's in cache now (key includes source language)
-                cached = translation_cache.get("en:cache_test_word")
+
+                # Verify it's in cache now (key includes source and target language)
+                cached = translation_cache.get("en:ru:cache_test_word")
                 assert cached == "кэш тест"
+
+    def test_saves_to_cache_with_custom_target(self):
+        """Cache key includes target language for non-default target."""
+        with patch("translator.API_KEY", "fake_key"), \
+             patch("translator.FOLDER_ID", "fake_folder"):
+
+            mock_response = MagicMock()
+            mock_response.status_code = 200
+            mock_response.text = '{"translations": [{"text": "Hallo", "detectedLanguageCode": "en"}]}'
+            mock_response.json.return_value = {
+                "translations": [{"text": "Hallo", "detectedLanguageCode": "en"}]
+            }
+            mock_response.raise_for_status.return_value = None
+
+            with patch("translator.httpx.Client") as mock_client_class:
+                mock_client = MagicMock()
+                mock_client_class.return_value.__enter__.return_value = mock_client
+                mock_client.post.return_value = mock_response
+
+                _translate_sync("cache_test_word_de", target_language="de")
+
+                cached = translation_cache.get("en:de:cache_test_word_de")
+                assert cached == "Hallo"
 
     def test_network_error(self):
         """Handles network errors."""
         with patch("translator.API_KEY", "fake_key"), \
              patch("translator.FOLDER_ID", "fake_folder"):
-            
+
             import httpx
-            
+
             with patch("translator.httpx.Client") as mock_client_class:
                 mock_client = MagicMock()
                 mock_client_class.return_value.__enter__.return_value = mock_client
                 mock_client.post.side_effect = httpx.RequestError("Network error")
-                
+
                 result, detected, debug = _translate_sync("test_word")
-                
+
                 assert result is None
                 assert detected is None
                 assert "Network" in debug or "network" in debug or "сеть" in debug.lower()
@@ -214,22 +275,22 @@ class TestTranslateSync:
         """Handles JSON parse errors."""
         with patch("translator.API_KEY", "fake_key"), \
              patch("translator.FOLDER_ID", "fake_folder"):
-            
+
             import json
-            
+
             mock_response = MagicMock()
             mock_response.status_code = 200
             mock_response.text = "not json"
             mock_response.json.side_effect = json.JSONDecodeError("Invalid JSON", "not json", 0)
             mock_response.raise_for_status.return_value = None
-            
+
             with patch("translator.httpx.Client") as mock_client_class:
                 mock_client = MagicMock()
                 mock_client_class.return_value.__enter__.return_value = mock_client
                 mock_client.post.return_value = mock_response
-                
+
                 result, detected, debug = _translate_sync("test_word")
-                
+
                 assert result is None
                 assert detected is None
                 assert "парсин" in debug.lower() or "parse" in debug.lower()
@@ -240,47 +301,59 @@ class TestTranslateWord:
 
     @pytest.mark.anyio
     async def test_translate_word_calls_sync(self):
-        """Async function calls sync version with source language."""
+        """Async function calls sync version with source and target language."""
         with patch("translator._translate_sync") as mock_sync:
             mock_sync.return_value = ("тест", "en", "")
-            
+
             result, detected = await translate_word("hello", "en")
-            
+
             assert result == "тест"
             assert detected == "en"
-            mock_sync.assert_called_once_with("hello", "en")
+            mock_sync.assert_called_once_with("hello", "en", "ru")
 
     @pytest.mark.anyio
     async def test_translate_word_default_source(self):
-        """Async function uses default source language 'en'."""
+        """Async function uses default source language 'en' and target 'ru'."""
         with patch("translator._translate_sync") as mock_sync:
             mock_sync.return_value = ("тест", "en", "")
-            
+
             result, detected = await translate_word("hello")
-            
+
             assert result == "тест"
             assert detected == "en"
-            mock_sync.assert_called_once_with("hello", "en")
+            mock_sync.assert_called_once_with("hello", "en", "ru")
+
+    @pytest.mark.anyio
+    async def test_translate_word_custom_target(self):
+        """Async function passes custom target language to sync version."""
+        with patch("translator._translate_sync") as mock_sync:
+            mock_sync.return_value = ("Hallo", "en", "")
+
+            result, detected = await translate_word("hello", "en", "de")
+
+            assert result == "Hallo"
+            assert detected == "en"
+            mock_sync.assert_called_once_with("hello", "en", "de")
 
     @pytest.mark.anyio
     async def test_translate_word_none_result(self):
         """Async function handles None result."""
         with patch("translator._translate_sync") as mock_sync:
             mock_sync.return_value = (None, None, "error")
-            
+
             result, detected = await translate_word("unknown")
-            
+
             assert result is None
             assert detected is None
 
     @pytest.mark.anyio
     async def test_translate_word_uses_cache(self):
         """Async function benefits from cache."""
-        # Pre-populate cache with source language in key
-        translation_cache.set("en:cached", "из кэша")
-        
+        # Cache key format: "{source}:{target}:{word}"
+        translation_cache.set("en:ru:cached", "из кэша")
+
         result, detected = await translate_word("cached")
-        
+
         assert result == "из кэша"
         assert detected is None  # Cache hits have no detected language
 
@@ -289,12 +362,12 @@ class TestTranslateWord:
         """Async function works with auto source language."""
         with patch("translator._translate_sync") as mock_sync:
             mock_sync.return_value = ("тест", "fr", "")
-            
+
             result, detected = await translate_word("bonjour", "auto")
-            
+
             assert result == "тест"
             assert detected == "fr"
-            mock_sync.assert_called_once_with("bonjour", "auto")
+            mock_sync.assert_called_once_with("bonjour", "auto", "ru")
 
 
 class TestTranslationCache:
@@ -304,14 +377,14 @@ class TestTranslationCache:
         """Cache works correctly with translation workflow."""
         # First call - not in cache
         translation_cache.set("word", "перевод")
-        
+
         # Second call - should be in cache
         assert translation_cache.get("word") == "перевод"
-        
+
         # Test TTL works with short-lived cache entry
         import time
         from cache import TranslationCache
-        
+
         # Create a short-lived cache for testing
         short_cache = TranslationCache(ttl_seconds=1)
         short_cache.set("temp", "временный")

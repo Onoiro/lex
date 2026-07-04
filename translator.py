@@ -182,17 +182,20 @@ def _get_language_name(code: str) -> str:
     return LANGUAGE_NAMES.get(code, code)
 
 
-def _translate_sync(word: str, source_language: str = "en") -> tuple[str | None, str | None, str]:
+def _translate_sync(
+    word: str, source_language: str = "en", target_language: str = "ru"
+) -> tuple[str | None, str | None, str]:
     """Sync translation via Yandex Translate Cloud API v2.
     
     Args:
         word: The word to translate.
         source_language: Source language code (e.g. 'en', 'de', 'fr') or 'auto' for auto-detection.
+        target_language: Target language code (e.g. 'ru', 'en', 'de').
     
     Returns (translation, detected_language_code, raw_response_for_debug).
     """
-    # Check cache first — key includes source language to avoid cross-language collisions
-    cache_key = f"{source_language}:{word}"
+    # Check cache first — key includes source and target to avoid cross-language collisions
+    cache_key = f"{source_language}:{target_language}:{word}"
     cached = translation_cache.get(cache_key)
     if cached:
         return cached, None, ""  # None means "from cache, no detected language"
@@ -205,7 +208,7 @@ def _translate_sync(word: str, source_language: str = "en") -> tuple[str | None,
             payload = {
                 "folderId": FOLDER_ID,
                 "texts": [word],
-                "targetLanguageCode": TARGET_LANG,
+                "targetLanguageCode": target_language,
             }
             # Only send sourceLanguageCode if not auto-detect
             if source_language != "auto":
@@ -229,7 +232,7 @@ def _translate_sync(word: str, source_language: str = "en") -> tuple[str | None,
             if translations and translations[0].get("text"):
                 translation = translations[0]["text"]
                 detected = translations[0].get("detectedLanguageCode")
-                # Save to cache with source language in key
+                # Save to cache with source and target language in key
                 translation_cache.set(cache_key, translation)
                 return translation, detected, ""
             return None, None, f"Empty response: {raw}"
@@ -246,15 +249,20 @@ def _translate_sync(word: str, source_language: str = "en") -> tuple[str | None,
         return None, None, f"Parse error: {e}"
 
 
-async def translate_word(word: str, source_language: str = "en") -> tuple[str | None, str | None]:
+async def translate_word(
+    word: str, source_language: str = "en", target_language: str = "ru"
+) -> tuple[str | None, str | None]:
     """Translate a word via Yandex Translate Cloud API v2.
     
     Args:
         word: The word to translate.
         source_language: Source language code (e.g. 'en', 'de', 'fr').
+        target_language: Target language code (e.g. 'ru', 'en', 'de').
     
     Returns (translation, detected_language_code).
     """
     loop = asyncio.get_running_loop()
-    result, detected, _ = await loop.run_in_executor(None, _translate_sync, word, source_language)
+    result, detected, _ = await loop.run_in_executor(
+        None, _translate_sync, word, source_language, target_language
+    )
     return result, detected
