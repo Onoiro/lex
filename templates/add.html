@@ -54,12 +54,17 @@
         <!-- Поле ввода -->
         <label for="word">{{ _t('add.word_label') }}</label>
         <textarea id="word" name="word" required placeholder="{{ _t('add.word_placeholder') }}" rows="1"></textarea>
+        {% if source_lang == "auto" %}
         <small style="color:var(--pico-muted-font-color);">{{ _t('add.word_hint') }}</small>
+        {% else %}
+        <small style="color:var(--pico-muted-font-color);">{{ _t('add.word_hint_lang', lang=_get_language_name(source_lang)) }}</small>
+        {% endif %}
         <button type="button" id="translate-btn" class="secondary" style="width: 100%; margin-top: 0.5rem;">{{ _t('add.translate_btn') }}</button>
 
         <!-- Поле перевода -->
         <label for="translation">{{ _t('add.translation_label') }}</label>
         <textarea id="translation" name="translation" required placeholder="{{ _t('add.translation_placeholder') }}" rows="1"></textarea>
+        <small style="color:var(--pico-muted-font-color);">{{ _t('add.translation_hint', lang=_get_language_name(target_lang)) }}</small>
         <output id="detected-lang" style="display:block; margin-top:0.25rem; font-size:0.85rem; color:var(--pico-muted-font-color); white-space:pre-wrap; word-break:break-word;"></output>
 
         <!-- Кнопка сохранения в футере карточки -->

@@ -166,10 +166,12 @@ async def add_page(request: Request):
     error_word = request.query_params.get("word", "")
     # Генерируем CSRF токен для формы
     csrf_token = csrf_protection.get_token_for_form()
+    source_lang = _get_source_lang(request)
     target_lang = _get_target_lang(request)
     return tpl.render(
         added=added, translated=translated, error_type=error_type,
-        error_word=error_word, csrf_token=csrf_token, target_lang=target_lang,
+        error_word=error_word, csrf_token=csrf_token,
+        source_lang=source_lang, target_lang=target_lang,
     )
 
 
