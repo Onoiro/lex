@@ -66,12 +66,12 @@
 <script>
 // Translations for JS
 var _strings = {
-    "best": "{{ _t('review.stats_best', time='{{ time }}') }}",
-    "avg": "{{ _t('review.stats_avg', time='{{ time }}') }}",
-    "known": "{{ _t('review.stats_known', count='{{ count }}') }}",
-    "forgotten": "{{ _t('review.stats_forgotten', count='{{ count }}') }}",
-    "pct": "{{ _t('review.stats_pct', pct='{{ pct }}') }}",
-    "done": "{{ _t('review.done', message='{{ message }}') }}",
+    "best": "{{ _t('review.stats_best', time='{time}') }}",
+    "avg": "{{ _t('review.stats_avg', time='{time}') }}",
+    "known": "{{ _t('review.stats_known', count='{count}') }}",
+    "forgotten": "{{ _t('review.stats_forgotten', count='{count}') }}",
+    "pct": "{{ _t('review.stats_pct', pct='{pct}') }}",
+    "done": "{{ _t('review.done', message='{message}') }}",
     "home": "{{ _t('review.home') }}",
     "next_word": "{{ _t('review.next_word') }}"
 };
@@ -109,14 +109,14 @@ var _strings = {
 
     function updateStats() {
         if (bestTime !== null && avgTime !== null) {
-            statsDisplay.innerHTML = _strings.best.replace('{{ time }}', formatTime(bestTime)) + ' | ' + _strings.avg.replace('{{ time }}', formatTime(avgTime));
+            statsDisplay.innerHTML = _strings.best.replace('{time}', formatTime(bestTime)) + ' | ' + _strings.avg.replace('{time}', formatTime(avgTime));
         } else {
             statsDisplay.innerHTML = '';
         }
         if (knowCount > 0 || forgotCount > 0) {
             var total = knowCount + forgotCount;
             var pct = ((knowCount / total) * 100).toFixed(0);
-            knowForgotDisplay.innerHTML = _strings.known.replace('{{ count }}', knowCount) + ' | ' + _strings.forgotten.replace('{{ count }}', forgotCount) + ' ' + _strings.pct.replace('{{ pct }}', pct);
+            knowForgotDisplay.innerHTML = _strings.known.replace('{count}', knowCount) + ' | ' + _strings.forgotten.replace('{count}', forgotCount) + ' ' + _strings.pct.replace('{pct}', pct);
         } else {
             knowForgotDisplay.innerHTML = '';
         }
@@ -201,7 +201,7 @@ var _strings = {
         .then(function(r) { return r.json(); })
         .then(function(data) {
             if (data.done) {
-                container.innerHTML = '<div style="text-align:center; padding: 2rem;"><p style="font-size:1.2rem;">' + _strings.done.replace('{{ message }}', data.message || '') + '</p><a href="/" role="button" class="outline">' + _strings.home + '</a></div>';
+                container.innerHTML = '<div style="text-align:center; padding: 2rem;"><p style="font-size:1.2rem;">' + _strings.done.replace('{message}', data.message || '') + '</p><a href="/" role="button" class="outline">' + _strings.home + '</a></div>';
                 return;
             }
             
