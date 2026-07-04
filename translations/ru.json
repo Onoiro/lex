@@ -9,7 +9,7 @@
   "index.subtitle": "Твой личный переводчик и тренер словарного запаса.",
   "index.subtitle_detail": "Переводи слова с 90+ языков, сохраняй их в словарь и запоминай навсегда с помощью умных интервальных повторений.",
   "index.translate_card.title": "🌍 Переводчик",
-  "index.translate_card.description": "Встретил незнакомое слово? Переведи его на русский и сохрани в один клик, чтобы выучить позже.",
+  "index.translate_card.description": "Встретил незнакомое слово? Переведи его на родной язык и сохрани в один клик, чтобы выучить позже.",
   "index.translate_card.button": "Перевести слово",
   "index.review_card.title": "🧠 Тренировка",
   "index.review_card.description": "Повторяй сохранённые слова. Алгоритм сам подберёт те, которые ты начал забывать.",
@@ -69,6 +69,7 @@
   "settings.lang_updated": "Настройки языков обновлены.",
   "footer.version": "Lex v{version}",
   "settings.app_language": "Язык приложения",
+  "settings.choose_app_language": "Выберите язык интерфейса",
   "settings.translate": "Перевод",
   "settings.same_lang_warning": "Исходный и целевой языки совпадают. Перевод может не дать полезного результата."
 }
