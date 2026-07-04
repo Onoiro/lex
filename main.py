@@ -252,6 +252,11 @@ async def settings_page(request: Request):
     # Get target codes for the selected source language
     supported_targets = SUPPORTED_LANGUAGES.get(source_lang, [DEFAULT_TARGET_LANG])
     
+    # Get current locale
+    current_locale = request.cookies.get("locale", DEFAULT_LOCALE)
+    if current_locale not in SUPPORTED_LOCALES:
+        current_locale = DEFAULT_LOCALE
+    
     tpl = env.get_template("settings.html")
     return tpl.render(
         source_lang=source_lang,
@@ -259,6 +264,8 @@ async def settings_page(request: Request):
         csrf_token=csrf_token,
         supported_sources=supported_sources,
         supported_targets=supported_targets,
+        current_locale=current_locale,
+        supported_locales=SUPPORTED_LOCALES,
     )
 
 
@@ -269,11 +276,14 @@ async def update_settings(
     request: Request,
     source_lang: str = Form(...),
     target_lang: str = Form(...),
+    locale: str = Form(default=""),
 ):
     """Update language settings via cookies."""
     response = RedirectResponse(url="/settings", status_code=303)
     _set_lang_cookie(response, "source_lang", source_lang)
     _set_lang_cookie(response, "target_lang", target_lang)
+    if locale and locale in SUPPORTED_LOCALES:
+        _set_lang_cookie(response, "locale", locale)
     return response
 
 

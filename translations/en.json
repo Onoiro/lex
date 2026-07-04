@@ -67,5 +67,7 @@
   "settings.save": "Save",
   "settings.auto_detect": "Auto-detect",
   "settings.lang_updated": "Language settings updated.",
+  "settings.app_language": "App language",
+  "settings.translate": "Translation",
   "footer.version": "Lex v{version}"
 }

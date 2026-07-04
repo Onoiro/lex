@@ -123,7 +123,7 @@ document.getElementById("translate-btn").addEventListener("click", async () => {
             translationInput.value = data.translation || "";
             translationInput.dispatchEvent(new Event("input"));
             if (data.detected_language) {
-                langOutput.textContent = "{{ _t('add.detected_lang', lang='{{ lang }}') }}".replace("{{ lang }}", data.detected_language);
+                langOutput.textContent = "{{ _t('add.detected_lang') }}".replace("{lang}", data.detected_language);
                 langOutput.style.color = "var(--pico-muted-font-color)";
             } else {
                 langOutput.textContent = "";

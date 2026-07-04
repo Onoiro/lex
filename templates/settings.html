@@ -9,31 +9,50 @@
 <form method="post" action="/settings">
     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
     
-    <label for="source_lang">
-        {{ _t('settings.source_lang') }}
-    </label>
-    <div>
-        <select id="source_lang" name="source_lang" required>
-            {% for code in supported_sources %}
-            <option value="{{ code }}" {% if code == source_lang %}selected{% endif %}>
-                {% if code == 'auto' %}{{ _t('settings.auto_detect') }}{% else %}{{ _get_language_name(code) }} ({{ code | upper }}){% endif %}
-            </option>
-            {% endfor %}
-        </select>
-    </div>
+    <fieldset>
+        <legend>{{ _t('settings.app_language') }}</legend>
+        <label for="locale">
+            {{ _t('settings.app_language') }}
+        </label>
+        <div>
+            <select id="locale" name="locale" required>
+                {% for code in supported_locales %}
+                <option value="{{ code }}" {% if code == current_locale %}selected{% endif %}>
+                    {{ _get_language_name(code) }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+    </fieldset>
 
-    <label for="target_lang">
-        {{ _t('settings.target_lang') }}
-    </label>
-    <div>
-        <select id="target_lang" name="target_lang" required>
-            {% for code in supported_targets %}
-            <option value="{{ code }}" {% if code == target_lang %}selected{% endif %}>
-                {{ _get_language_name(code) }} ({{ code | upper }})
-            </option>
-            {% endfor %}
-        </select>
-    </div>
+    <fieldset>
+        <legend>{{ _t('settings.translate') }}</legend>
+        <label for="source_lang">
+            {{ _t('settings.source_lang') }}
+        </label>
+        <div>
+            <select id="source_lang" name="source_lang" required>
+                {% for code in supported_sources %}
+                <option value="{{ code }}" {% if code == source_lang %}selected{% endif %}>
+                    {% if code == 'auto' %}{{ _t('settings.auto_detect') }}{% else %}{{ _get_language_name(code) }} ({{ code | upper }}){% endif %}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <label for="target_lang">
+            {{ _t('settings.target_lang') }}
+        </label>
+        <div>
+            <select id="target_lang" name="target_lang" required>
+                {% for code in supported_targets %}
+                <option value="{{ code }}" {% if code == target_lang %}selected{% endif %}>
+                    {{ _get_language_name(code) }} ({{ code | upper }})
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+    </fieldset>
 
     <button type="submit">{{ _t('settings.save') }}</button>
 </form>

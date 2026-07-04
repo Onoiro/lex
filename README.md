@@ -8,7 +8,8 @@ Lex is a web-based translator and vocabulary assistant. It provides fast transla
 
 - **Add words** — Add new words with translations manually or get auto-translation via Yandex Translate API
 - **Multi-language translation** — Translate between Russian and 100+ languages (English, Spanish, French, German, Chinese, Arabic, and many more)
-- **Language settings** — Set a default target language globally via Settings page (/settings), and quickly switch source language on the Add page (/add)
+- **Internationalization** — Switch between English and Russian UI languages via Settings page (/settings)
+- **Language settings** — Set default source and target languages globally via Settings page (/settings), and quickly switch source language on the Add page (/add)
 - **Review mode** — Practice words with spaced repetition, response time tracking with best/avg stats, and live timer
 - **Dictionary view** — See all your words in a table with time stats and intervals
 - **Delete words** — Remove words you no longer need
@@ -186,7 +187,8 @@ This creates:
 │   ├── index.html
 │   ├── add.html
 │   ├── review.html
-│   └── dictionary.html
+│   ├── dictionary.html
+│   └── settings.html
 ├── tests/            # Unit tests
 ├── Dockerfile        # Docker image definition
 ├── docker-compose.yml
