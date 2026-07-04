@@ -34,7 +34,7 @@
             <select id="source_lang" name="source_lang" required>
                 {% for code in supported_sources %}
                 <option value="{{ code }}" {% if code == source_lang %}selected{% endif %}>
-                    {% if code == 'auto' %}{{ _t('settings.auto_detect') }}{% else %}{{ _get_language_name(code) }} ({{ code | upper }}){% endif %}
+                    {% if code == 'auto' %}{{ _t('settings.auto_detect') }}{% else %}{{ _get_language_name(code) }}{% endif %}
                 </option>
                 {% endfor %}
             </select>
@@ -47,7 +47,7 @@
             <select id="target_lang" name="target_lang" required>
                 {% for code in supported_targets %}
                 <option value="{{ code }}" {% if code == target_lang %}selected{% endif %}>
-                    {{ _get_language_name(code) }} ({{ code | upper }})
+                    {{ _get_language_name(code) }}
                 </option>
                 {% endfor %}
             </select>
