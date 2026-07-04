@@ -308,6 +308,47 @@ class TestReview:
         # Direction should be present in the response
         assert b"en_ru" in response.content or b"ru_en" in response.content
 
+    def test_review_has_start_screen(self, client, sample_words):
+        """Review page includes start screen with start button."""
+        response = client.get("/review")
+        
+        assert response.status_code == status.HTTP_200_OK
+        assert b"start-screen" in response.content
+        assert b"btn-start" in response.content
+
+    def test_review_has_pause_screen(self, client, sample_words):
+        """Review page includes pause screen with resume button."""
+        response = client.get("/review")
+        
+        assert response.status_code == status.HTTP_200_OK
+        assert b"pause-screen" in response.content
+        assert b"btn-resume" in response.content
+
+    def test_review_has_answer_timeout(self, client, sample_words):
+        """Review page includes answer timeout constant in JS."""
+        response = client.get("/review")
+        
+        assert response.status_code == status.HTTP_200_OK
+        assert b"ANSWER_TIMEOUT" in response.content
+        assert b"10" in response.content
+
+    def test_review_has_timer_color_thresholds(self, client, sample_words):
+        """Review page includes timer color change logic (orange at 5s, red at 10s)."""
+        response = client.get("/review")
+        
+        assert response.status_code == status.HTTP_200_OK
+        assert b"WARNING_THRESHOLD" in response.content
+        assert b"orange" in response.content
+        assert b"red" in response.content
+
+    def test_review_has_inactivity_pause(self, client, sample_words):
+        """Review page includes inactivity timeout and consecutive auto-answer pause."""
+        response = client.get("/review")
+        
+        assert response.status_code == status.HTTP_200_OK
+        assert b"INACTIVITY_TIMEOUT" in response.content
+        assert b"MAX_CONSECUTIVE_AUTO" in response.content
+
 
 class TestReviewResult:
     """Tests for POST /review/result route."""
