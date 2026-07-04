@@ -94,7 +94,7 @@ class TestAddWord:
         assert response.status_code == 200
         assert "test" in response.text
         assert "❌" in response.text
-        assert "уже есть в словаре" in response.text
+        assert "already in the dictionary" in response.text
 
     def test_add_word_empty_word(self, authenticated_client, csrf_token):
         """Cannot add word with empty word field."""

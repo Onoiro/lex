@@ -1,16 +1,16 @@
 {% extends "base.html" %}
-{% block title %}Тренировка — Lex{% endblock %}
+{% block title %}{{ _t('review.title') }}{% endblock %}
 
 {% block content %}
 <hgroup style="text-align: center; margin-bottom: 2rem; margin-top: 1rem;">
-    <h1>Тренировка</h1>
-    <p>Слов в очереди: {{ total_due }}</p>
+    <h1>{{ _t('review.heading') }}</h1>
+    <p>{{ _t('review.queue', total_due=total_due) }}</p>
 </hgroup>
 
 {% if message %}
 <article style="text-align: center;">
-    <p style="font-size: 1.2rem;">🎉 {{ message }}</p>
-    <a href="/" role="button" class="outline">На главную</a>
+    <p style="font-size: 1.2rem;">{{ _t('review.empty', message=message) }}</p>
+    <a href="/" role="button" class="outline">{{ _t('review.home') }}</a>
 </article>
 {% else %}
 <article id="review-container" style="display: flex; flex-direction: column; min-height: 40vh;">
@@ -24,7 +24,7 @@
         </span>
         <span id="know-forgot-display" style="display: block; margin-top: 0.5rem; color: var(--pico-muted-color); font-size: 0.85rem;">
         </span>
-        <small style="display: block; color: var(--pico-muted-color);">Вспомните перевод:</small>
+        <small style="display: block; color: var(--pico-muted-color);">{{ _t('review.remember') }}</small>
         {% if direction == 'en_ru' %}
             <h2 id="word-display" style="font-size: 2.5rem; margin: 1rem 0;">{{ word.word }}</h2>
         {% else %}
@@ -36,7 +36,7 @@
     <div style="text-align: center; flex-grow: 1; display: flex; align-items: center; justify-content: center;">
         <details id="translation-details" style="width: 100%;">
             <summary id="translation-summary" style="cursor:pointer; color: var(--pico-primary); font-weight: bold;">
-                Показать перевод
+                {{ _t('review.show_translation') }}
             </summary>
             <p style="font-size: 2rem; font-weight: bold; margin: 0; color: var(--pico-color);" id="translation-display">
                 {{ word.translation }}
@@ -53,17 +53,29 @@
             
             <div class="grid" id="action-buttons">
                 <!-- Кнопка "Забыл" (Серый/Второстепенный контур) -->
-                <button type="submit" name="correct" value="0" id="btn-forgot" class="outline secondary">✗ Не помню</button>
+                <button type="submit" name="correct" value="0" id="btn-forgot" class="outline secondary">{{ _t('review.btn_forgot') }}</button>
                 <!-- Кнопка "Знаю" (Основная заливка) -->
-                <button type="submit" name="correct" value="1" id="btn-know">✓ Знаю</button>
+                <button type="submit" name="correct" value="1" id="btn-know">{{ _t('review.btn_know') }}</button>
             </div>
         </form>
 
-        <button type="button" id="btn-next" class="outline" style="width: 100%; display: none;">Следующее слово →</button>
+        <button type="button" id="btn-next" class="outline" style="width: 100%; display: none;">{{ _t('review.next_word') }}</button>
     </footer>
 </article>
 
 <script>
+// Translations for JS
+var _strings = {
+    "best": "{{ _t('review.stats_best', time='{{ time }}') }}",
+    "avg": "{{ _t('review.stats_avg', time='{{ time }}') }}",
+    "known": "{{ _t('review.stats_known', count='{{ count }}') }}",
+    "forgotten": "{{ _t('review.stats_forgotten', count='{{ count }}') }}",
+    "pct": "{{ _t('review.stats_pct', pct='{{ pct }}') }}",
+    "done": "{{ _t('review.done', message='{{ message }}') }}",
+    "home": "{{ _t('review.home') }}",
+    "next_word": "{{ _t('review.next_word') }}"
+};
+
 (function() {
     const form = document.getElementById('review-form');
     const btnKnow = document.getElementById('btn-know');
@@ -97,14 +109,14 @@
 
     function updateStats() {
         if (bestTime !== null && avgTime !== null) {
-            statsDisplay.innerHTML = 'best: ' + formatTime(bestTime) + ' | avg: ' + formatTime(avgTime);
+            statsDisplay.innerHTML = _strings.best.replace('{{ time }}', formatTime(bestTime)) + ' | ' + _strings.avg.replace('{{ time }}', formatTime(avgTime));
         } else {
             statsDisplay.innerHTML = '';
         }
         if (knowCount > 0 || forgotCount > 0) {
             var total = knowCount + forgotCount;
             var pct = ((knowCount / total) * 100).toFixed(0);
-            knowForgotDisplay.innerHTML = 'Знаю: ' + knowCount + ' | Забыл: ' + forgotCount + ' (' + pct + '%)';
+            knowForgotDisplay.innerHTML = _strings.known.replace('{{ count }}', knowCount) + ' | ' + _strings.forgotten.replace('{{ count }}', forgotCount) + ' ' + _strings.pct.replace('{{ pct }}', pct);
         } else {
             knowForgotDisplay.innerHTML = '';
         }
@@ -189,7 +201,7 @@
         .then(function(r) { return r.json(); })
         .then(function(data) {
             if (data.done) {
-                container.innerHTML = '<div style="text-align:center; padding: 2rem;"><p style="font-size:1.2rem;">🎉 ' + (data.message || 'Повторение завершено!') + '</p><a href="/" role="button" class="outline">На главную</a></div>';
+                container.innerHTML = '<div style="text-align:center; padding: 2rem;"><p style="font-size:1.2rem;">' + _strings.done.replace('{{ message }}', data.message || '') + '</p><a href="/" role="button" class="outline">' + _strings.home + '</a></div>';
                 return;
             }
             

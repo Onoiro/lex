@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Добавить слово — Lex{% endblock %}
+{% block title %}{{ _t('add.title') }}{% endblock %}
 
 {% block content %}
 <style>
@@ -25,25 +25,25 @@
     }
     @keyframes fadeOut {
         0%   { opacity: 1; }
-        80%  { opacity: 1; }
-        100% { opacity: 0; }
+        80%   { opacity: 1; }
+        100%  { opacity: 0; }
     }
 </style>
 <hgroup style="text-align: center; margin-bottom: 2rem; margin-top: 1rem;">
-    <h1>Новое слово</h1>
-    <p>Переведи и сохрани в словарь</p>
+    <h1>{{ _t('add.heading') }}</h1>
+    <p>{{ _t('add.subheading') }}</p>
 </hgroup>
 
 <!-- Уведомления об успехе/ошибке -->
 {% if added %}
 <article class="fade-out" style="background: var(--pico-ins-color); color: var(--pico-primary-inverse); padding: 1rem; margin-bottom: 1rem;">
-    ✅ Слово успешно добавлено в словарь!
+    {{ _t('add.success') }}
 </article>
 {% endif %}
 
 {% if error_type == 'duplicate' %}
 <article style="background: var(--pico-del-color); color: var(--pico-primary-inverse); padding: 1rem; margin-bottom: 1rem;">
-    ❌ Слово '{{ error_word }}' уже есть в словаре
+    {{ _t('add.error_duplicate', error_word=error_word) }}
 </article>
 {% endif %}
 
@@ -52,19 +52,19 @@
         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
         
         <!-- Поле ввода -->
-        <label for="word">Иностранное слово</label>
-        <textarea id="word" name="word" required placeholder="Например: application" rows="1"></textarea>
-        <small style="color:var(--pico-muted-font-color);">Язык определяется автоматически (настраивается в /settings)</small>
-        <button type="button" id="translate-btn" class="secondary" style="width: 100%; margin-top: 0.5rem;">🔄 Перевести</button>
+        <label for="word">{{ _t('add.word_label') }}</label>
+        <textarea id="word" name="word" required placeholder="{{ _t('add.word_placeholder') }}" rows="1"></textarea>
+        <small style="color:var(--pico-muted-font-color);">{{ _t('add.word_hint') }}</small>
+        <button type="button" id="translate-btn" class="secondary" style="width: 100%; margin-top: 0.5rem;">{{ _t('add.translate_btn') }}</button>
 
         <!-- Поле перевода -->
-        <label for="translation">Перевод</label>
-        <textarea id="translation" name="translation" required placeholder="Например: приложение" rows="1"></textarea>
+        <label for="translation">{{ _t('add.translation_label') }}</label>
+        <textarea id="translation" name="translation" required placeholder="{{ _t('add.translation_placeholder') }}" rows="1"></textarea>
         <output id="detected-lang" style="display:block; margin-top:0.25rem; font-size:0.85rem; color:var(--pico-muted-font-color); white-space:pre-wrap; word-break:break-word;"></output>
 
         <!-- Кнопка сохранения в футере карточки -->
         <footer style="margin-top: 2rem; padding-bottom: 0;">
-            <button type="submit" style="width: 100%;">Сохранить в словарь</button>
+            <button type="submit" style="width: 100%;">{{ _t('add.save_btn') }}</button>
         </footer>
     </form>
 </article>
@@ -117,27 +117,27 @@ document.getElementById("translate-btn").addEventListener("click", async () => {
         const data = await resp.json();
         const langOutput = document.getElementById("detected-lang");
         if (data.error) {
-            alert("Ошибка: " + data.error);
+            alert("{{ _t('add.error_translation') }}: " + data.error);
             langOutput.textContent = "";
         } else {
             translationInput.value = data.translation || "";
             translationInput.dispatchEvent(new Event("input"));
             if (data.detected_language) {
-                langOutput.textContent = "Переведено с: " + data.detected_language;
+                langOutput.textContent = "{{ _t('add.detected_lang', lang='{{ lang }}') }}".replace("{{ lang }}", data.detected_language);
                 langOutput.style.color = "var(--pico-muted-font-color)";
             } else {
                 langOutput.textContent = "";
             }
             if (!data.translation) {
-                alert("Перевод не найден. Проверьте API ключ.");
+                alert("{{ _t('add.error_translation') }}");
             }
         }
     } catch (e) {
-        alert("Ошибка сети: " + e.message);
+        alert("{{ _t('add.error_network') }}: " + e.message);
     }
 
     btn.disabled = false;
-    btn.textContent = "🔄 Перевести";
+    btn.textContent = "{{ _t('add.translate_btn') }}";
 });
 </script>
 {% endblock %}

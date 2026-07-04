@@ -52,6 +52,40 @@ def get_supported_languages() -> dict[str, list[str]]:
         return {}
 
 
+def get_api_language_names() -> dict[str, str]:
+    """Fetch language names from Yandex Translate API.
+    
+    Returns a dict mapping language codes to English names.
+    Returns an empty dict on any error.
+    """
+    if not API_KEY:
+        return {}
+
+    try:
+        with httpx.Client(timeout=10.0) as client:
+            response = client.post(
+                LANGUAGES_URL,
+                headers={
+                    "Content-Type": "application/json",
+                    "Authorization": f"Api-Key {API_KEY}",
+                },
+                json={},
+            )
+            if response.status_code >= 400:
+                return {}
+            data = response.json()
+            languages = data.get("languages", [])
+            names: dict[str, str] = {}
+            for lang in languages:
+                code = lang.get("code")
+                name = lang.get("name")
+                if code and name:
+                    names[code] = name
+            return names
+    except (httpx.RequestError, httpx.HTTPStatusError, KeyError, ValueError):
+        return {}
+
+
 # Mapping of ISO language codes to human-readable names in Russian
 LANGUAGE_NAMES = {
     "en": "English",

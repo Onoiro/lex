@@ -1,33 +1,31 @@
 {% extends "base.html" %}
-{% block title %}Мой Словарь — Lex{% endblock %}
+{% block title %}{{ _t('dictionary.title') }}{% endblock %}
 
 {% block content %}
 <hgroup style="text-align: center; margin-bottom: 2rem; margin-top: 1rem;">
-    <h1>Мой словарь</h1>
-    <p>Всего сохранено слов: {{ total }}</p>
+    <h1>{{ _t('dictionary.heading') }}</h1>
+    <p>{{ _t('dictionary.total', total=total) }}</p>
 </hgroup>
 
 {% if not words %}
 <article style="text-align: center; padding: 3rem 1rem;">
-    <h2 style="margin-bottom: 1rem;">Словарь пока пуст 🍃</h2>
-    <p style="color: var(--pico-muted-color);">Добавь свое первое слово, чтобы начать тренировки.</p>
-    <a href="/add" role="button">Перевести слово</a>
+    <h2 style="margin-bottom: 1rem;">{{ _t('dictionary.empty') }}</h2>
+    <p style="color: var(--pico-muted-color);">{{ _t('dictionary.empty_hint') }}</p>
+    <a href="/add" role="button">{{ _t('dictionary.add_word') }}</a>
 </article>
 {% else %}
-<article style="padding: 0;"> <!-- Убираем padding у карточки, чтобы таблица была на всю ширину -->
-    
-    <!-- Тег figure делает таблицу скроллируемой по горизонтали на узких экранах -->
+<article style="padding: 0;">
     <figure style="margin: 0;">
         <table role="grid" style="margin: 0;">
             <thead>
                 <tr>
-                    <th style="width: 30%; padding-left: 1.5rem;">Слово</th>
-                    <th style="width: 30%;">Перевод</th>
-                    <th style="width: 10%; text-align: center;">Знаю/Нет</th>
-                    <th style="width: 10%; text-align: center;">Время</th>
-                    <th style="width: 10%; text-align: center;">Интервал</th>
-                    <th style="width: 10%; text-align: center;">%</th>
-                    <th style="width: 10%; text-align: center; padding-right: 1.5rem;">Удалить</th>
+                    <th style="width: 30%; padding-left: 1.5rem;">{{ _t('dictionary.col_word') }}</th>
+                    <th style="width: 30%;">{{ _t('dictionary.col_translation') }}</th>
+                    <th style="width: 10%; text-align: center;">{{ _t('dictionary.col_known_no') }}</th>
+                    <th style="width: 10%; text-align: center;">{{ _t('dictionary.col_time') }}</th>
+                    <th style="width: 10%; text-align: center;">{{ _t('dictionary.col_interval') }}</th>
+                    <th style="width: 10%; text-align: center;">{{ _t('dictionary.col_pct') }}</th>
+                    <th style="width: 10%; text-align: center; padding-right: 1.5rem;">{{ _t('dictionary.col_delete') }}</th>
                 </tr>
             </thead>
             <tbody>
@@ -65,10 +63,9 @@
                         {% endif %}
                     </td>
                     <td style="text-align: center; padding-right: 1.5rem;">
-                        <form method="post" action="/dictionary/delete/{{ w.id }}" style="margin: 0;" onsubmit="return confirm('Точно удалить слово «{{ w.word }}»?')">
+                        <form method="post" action="/dictionary/delete/{{ w.id }}" style="margin: 0;" onsubmit="return confirm('{{ _t('dictionary.confirm_delete', word=w.word) }}')">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                            <!-- Используем outline и class="contrast", чтобы кнопка была аккуратной -->
-                            <button type="submit" class="outline contrast" style="border: none; padding: 0.25rem 0.5rem; font-size: 1.2rem;" title="Удалить">
+                            <button type="submit" class="outline contrast" style="border: none; padding: 0.25rem 0.5rem; font-size: 1.2rem;" title="{{ _t('dictionary.col_delete') }}">
                                 🗑️
                             </button>
                         </form>

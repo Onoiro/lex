@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="ru">
+<html lang="{{ _locale }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#1095c1"> <!-- Укажи основной цвет Pico или свой -->
     
-    <title>{% block title %}Lex{% endblock %}</title>
+    <title>{% block title %}{{ _t('index.title') }}{% endblock %}</title>
     <link rel="icon" type="image/png" href="/static/favicon.png">
     <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
@@ -39,13 +39,13 @@
         <header>
             <nav>
                 <ul>
-                    <li><a href="/" class="contrast"><strong>Lex</strong></a></li>
+                    <li><a href="/" class="contrast"><strong>{{ _t('nav.home') }}</strong></a></li>
                 </ul>
                 <ul>
-                    <li><a href="/add" class="secondary">Переводчик</a></li>
-                    <li><a href="/review" class="secondary">Повтор</a></li>
-                    <li><a href="/dictionary" class="secondary">Словарь</a></li>
-                    <li><a href="/settings" class="secondary" title="Настройки языков">⚙</a></li>
+                    <li><a href="/add" class="secondary">{{ _t('nav.translate') }}</a></li>
+                    <li><a href="/review" class="secondary">{{ _t('nav.review') }}</a></li>
+                    <li><a href="/dictionary" class="secondary">{{ _t('nav.dictionary') }}</a></li>
+                    <li><a href="/settings" class="secondary" title="{{ _t('nav.settings.title') }}">{{ _t('nav.settings') }}</a></li>
                 </ul>
             </nav>
         </header>
@@ -57,7 +57,7 @@
 
         <!-- Фиксированный подвал -->
         <footer style="position:fixed;left:0;bottom:0;right:0;margin:0;padding:0.75rem;background:var(--pico-background-color);color:var(--pico-muted-color);text-align:center;border-top:1px solid var(--pico-muted-border-color); font-size: 0.85rem; z-index: 100;">
-            Lex v{{ version | default('0.6.0') }}
+            {{ _t('footer.version', version=version | default('0.6.0')) }}
         </footer>
     </div>
 </body>

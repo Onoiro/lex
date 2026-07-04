@@ -15,7 +15,8 @@ from validators import validate_word, validate_translation
 from rate_limiter import rate_limit, add_rate_limiter, translate_rate_limiter
 from auth import require_auth
 from csrf import csrf_protect_form, csrf_protection
-from translator import get_supported_languages, SUPPORTED_LANGUAGES, _get_language_name
+from translator import get_supported_languages, get_api_language_names, SUPPORTED_LANGUAGES
+from translations import _t, set_locale, set_api_language_names, SUPPORTED_LOCALES, get_language_name
 
 # Загрузка переменных окружения из .env
 load_dotenv()
@@ -30,6 +31,11 @@ def get_version():
         return tomllib.load(f)["project"]["version"]
 
 VERSION = get_version()
+
+# Default language settings
+DEFAULT_SOURCE_LANG = "auto"
+DEFAULT_TARGET_LANG = "ru"
+DEFAULT_LOCALE = "en"
 
 app = FastAPI()
 
@@ -67,6 +73,13 @@ auto_migrate()
 SUPPORTED_LANGUAGES.update(get_supported_languages())
 if SUPPORTED_LANGUAGES:
     print(f"[translator] Loaded {len(SUPPORTED_LANGUAGES)} source languages from Yandex API")
+    # Загружаем названия языков для i18n
+    api_names = get_api_language_names()
+    if api_names:
+        set_api_language_names(api_names)
+        print(f"[translator] Loaded {len(api_names)} language names from Yandex API")
+    else:
+        print("[translator] WARNING: Could not load language names from Yandex API")
 else:
     print("[translator] WARNING: Could not load supported languages from Yandex API")
 
@@ -74,11 +87,27 @@ else:
 loader = jinja2.FileSystemLoader("templates")
 env = jinja2.Environment(loader=loader, autoescape=True)
 env.globals["version"] = VERSION
-env.globals["_get_language_name"] = _get_language_name
+env.globals["_get_language_name"] = get_language_name  # localized language name
+env.globals["_t"] = _t  # translation function
+env.globals["_locale"] = DEFAULT_LOCALE  # current UI locale
 
 # Default language settings
 DEFAULT_SOURCE_LANG = "auto"
 DEFAULT_TARGET_LANG = "ru"
+
+# ---------- middleware ----------
+
+@app.middleware("http")
+async def set_locale_middleware(request: Request, call_next):
+    """Set the current locale from cookie for each request."""
+    locale = request.cookies.get("locale", DEFAULT_LOCALE)
+    if locale not in SUPPORTED_LOCALES:
+        locale = DEFAULT_LOCALE
+    set_locale(locale)
+    # Update Jinja2 global
+    env.globals["_locale"] = locale
+    response = await call_next(request)
+    return response
 
 # ---------- helpers ----------
 
