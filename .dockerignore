@@ -9,11 +9,20 @@ __pycache__/
 .git/
 
 # Database
+data/
 *.db
 lex.db
 
-# Environment
-.env
+# Test reports
+coverage-reports/
+htmlcov/
+
+# Python cache
+.pytest_cache/
+.ruff_cache/
+
+# Draft assets
+static/draft_logo_*.jpg
 
 # IDE
 .vscode/

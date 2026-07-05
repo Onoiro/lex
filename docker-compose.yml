@@ -7,7 +7,6 @@ services:
       - "8003:8003"
     volumes:
       - lex_data:/app/data
-      - ./.env:/app/.env:ro
     environment:
       - PYTHONUNBUFFERED=1
       - LEX_DATA_DIR=/app/data
