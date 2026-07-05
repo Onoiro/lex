@@ -2,7 +2,7 @@
 
 import pytest
 from fastapi import HTTPException, status
-from csrf import (
+from security.csrf import (
     generate_csrf_token,
     sign_token,
     verify_token,

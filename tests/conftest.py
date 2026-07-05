@@ -32,8 +32,8 @@ os.environ["LEX_DB_NAME"] = os.path.basename(TEST_DB_PATH).replace(".db", "")
 # ruff: noqa: E402
 from database import Base, get_db, engine, SessionLocal
 from main import app
-from auth import get_password_hash
-from csrf import sign_token, generate_csrf_token
+from security.auth import get_password_hash
+from security.csrf import sign_token, generate_csrf_token
 
 
 # Create tables in test database

@@ -3,7 +3,8 @@ import httpx
 import asyncio
 from fastapi import HTTPException
 
-from cache import translation_cache
+from services.cache import translation_cache
+from i18n.languages import LANGUAGE_NAMES_EN
 
 API_KEY = os.getenv("YANDEX_API_KEY")
 FOLDER_ID = os.getenv("YANDEX_FOLDER_ID", "b1gqq9rjega7119p3a2f")
@@ -86,100 +87,12 @@ def get_api_language_names() -> dict[str, str]:
         return {}
 
 
-# Mapping of ISO language codes to human-readable names in Russian
-LANGUAGE_NAMES = {
-    "en": "English",
-    "es": "Spanish",
-    "fr": "French",
-    "de": "German",
-    "it": "Italian",
-    "pt": "Portuguese",
-    "ru": "Russian",
-    "zh": "Chinese",
-    "ja": "Japanese",
-    "ko": "Korean",
-    "ar": "Arabic",
-    "hi": "Hindi",
-    "tr": "Turkish",
-    "pl": "Polish",
-    "nl": "Dutch",
-    "uk": "Ukrainian",
-    "sv": "Swedish",
-    "cs": "Czech",
-    "el": "Greek",
-    "hu": "Hungarian",
-    "fi": "Finnish",
-    "no": "Norwegian",
-    "da": "Danish",
-    "ro": "Romanian",
-    "th": "Thai",
-    "vi": "Vietnamese",
-    "id": "Indonesian",
-    "he": "Hebrew",
-    "bg": "Bulgarian",
-    "ca": "Catalan",
-    "hr": "Croatian",
-    "sk": "Slovak",
-    "sl": "Slovenian",
-    "sr": "Serbian",
-    "ms": "Malay",
-    "tl": "Filipino",
-    "af": "Afrikaans",
-    "sq": "Albanian",
-    "am": "Amharic",
-    "az": "Azerbaijani",
-    "be": "Belarusian",
-    "bn": "Bengali",
-    "bs": "Bosnian",
-    "cy": "Welsh",
-    "et": "Estonian",
-    "fa": "Persian",
-    "ga": "Irish",
-    "gl": "Galician",
-    "gu": "Gujarati",
-    "ha": "Hausa",
-    "hy": "Armenian",
-    "is": "Icelandic",
-    "jw": "Javanese",
-    "ka": "Georgian",
-    "kk": "Kazakh",
-    "km": "Khmer",
-    "kn": "Kannada",
-    "ky": "Kyrgyz",
-    "lo": "Lao",
-    "la": "Latin",
-    "lt": "Lithuanian",
-    "lv": "Latvian",
-    "mk": "Macedonian",
-    "ml": "Malayalam",
-    "mn": "Mongolian",
-    "mr": "Marathi",
-    "mt": "Maltese",
-    "my": "Myanmar",
-    "ne": "Nepali",
-    "ps": "Pashto",
-    "pa": "Punjabi",
-    "si": "Sinhala",
-    "so": "Somali",
-    "sw": "Swahili",
-    "ta": "Tamil",
-    "te": "Telugu",
-    "tg": "Tajik",
-    "tk": "Turkmen",
-    "tlh": "Klingon",
-    "to": "Tongan",
-    "ur": "Urdu",
-    "uz": "Uzbek",
-    "zu": "Zulu",
-}
-
-
 def _get_language_name(code: str) -> str:
     """Return a human-readable name for a language code.
     
     Falls back to the code itself if unknown.
     """
-    return LANGUAGE_NAMES.get(code, code)
+    return LANGUAGE_NAMES_EN.get(code, code)
 
 
 def _translate_sync(

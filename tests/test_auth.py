@@ -2,7 +2,7 @@
 
 import pytest
 from fastapi import HTTPException, status
-from auth import (
+from security.auth import (
     verify_password,
     get_password_hash,
     get_credentials_from_env,
@@ -67,7 +67,7 @@ class TestGetCredentialsFromEnv:
 
     def test_with_password_hash(self, monkeypatch):
         """Использование APP_PASSWORD_HASH."""
-        from auth import get_password_hash
+        from security.auth import get_password_hash
         
         monkeypatch.setenv("APP_USERNAME", "testuser")
         monkeypatch.setenv("APP_PASSWORD_HASH", get_password_hash("testpass"))
@@ -96,7 +96,7 @@ class TestRequireAuth:
     @pytest.mark.anyio
     async def test_missing_auth_header(self, monkeypatch):
         """Отсутствие заголовка Authorization вызывает 401."""
-        from auth import get_password_hash
+        from security.auth import get_password_hash
         from unittest.mock import Mock
         
         monkeypatch.setenv("APP_USERNAME", "admin")
@@ -117,7 +117,7 @@ class TestRequireAuth:
     @pytest.mark.anyio
     async def test_invalid_auth_header_format(self, monkeypatch):
         """Неверный формат Authorization вызывает 401."""
-        from auth import get_password_hash
+        from security.auth import get_password_hash
         from unittest.mock import Mock
         
         monkeypatch.setenv("APP_USERNAME", "admin")
@@ -138,7 +138,7 @@ class TestRequireAuth:
     @pytest.mark.anyio
     async def test_wrong_username(self, monkeypatch):
         """Неверное имя пользователя вызывает 401."""
-        from auth import get_password_hash
+        from security.auth import get_password_hash
         import base64
         from unittest.mock import Mock
         
@@ -162,7 +162,7 @@ class TestRequireAuth:
     @pytest.mark.anyio
     async def test_wrong_password(self, monkeypatch):
         """Неверный пароль вызывает 401."""
-        from auth import get_password_hash
+        from security.auth import get_password_hash
         import base64
         from unittest.mock import Mock
         
@@ -186,7 +186,7 @@ class TestRequireAuth:
     @pytest.mark.anyio
     async def test_valid_credentials(self, monkeypatch):
         """Верные учётные данные проходят."""
-        from auth import get_password_hash
+        from security.auth import get_password_hash
         import base64
         from unittest.mock import Mock
         

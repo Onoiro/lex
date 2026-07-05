@@ -3,7 +3,7 @@
 import pytest
 import time
 from fastapi import HTTPException
-from rate_limiter import RateLimiter, get_client_ip
+from security.rate_limiter import RateLimiter, get_client_ip
 
 
 class TestRateLimiter:

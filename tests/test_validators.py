@@ -2,7 +2,7 @@
 
 import pytest
 from fastapi import HTTPException
-from validators import validate_word, validate_translation, MAX_WORD_LENGTH, MAX_TRANSLATION_LENGTH
+from security.validators import validate_word, validate_translation, MAX_WORD_LENGTH, MAX_TRANSLATION_LENGTH
 
 
 class TestValidateWord:

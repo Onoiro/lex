@@ -10,13 +10,14 @@ from dotenv import load_dotenv
 
 from database import engine, get_db
 from models import Base, Word
-from translator import translate_word
-from validators import validate_word, validate_translation
-from rate_limiter import rate_limit, add_rate_limiter, translate_rate_limiter
-from auth import require_auth
-from csrf import csrf_protect_form, csrf_protection
-from translator import get_supported_languages, get_api_language_names, SUPPORTED_LANGUAGES
-from translations import _t, set_locale, set_api_language_names, SUPPORTED_LOCALES, get_language_name
+from services.translator import translate_word
+from security.validators import validate_word, validate_translation
+from security.rate_limiter import rate_limit, add_rate_limiter, translate_rate_limiter
+from security.auth import require_auth
+from security.csrf import csrf_protect_form, csrf_protection
+from services.translator import get_supported_languages, get_api_language_names, SUPPORTED_LANGUAGES
+from i18n import _t, set_locale, set_api_language_names, SUPPORTED_LOCALES
+from i18n.languages import get_language_name
 
 # Загрузка переменных окружения из .env
 load_dotenv()
@@ -118,12 +119,12 @@ def _get_language_codes() -> list[str]:
     otherwise falls back to hardcoded LANGUAGE_NAMES.
     Always includes 'auto' as the first option.
     """
-    from translator import LANGUAGE_NAMES
+    from i18n.languages import LANGUAGE_NAMES_EN
     codes = ["auto"]
     if SUPPORTED_LANGUAGES:
         codes.extend(sorted(SUPPORTED_LANGUAGES.keys()))
     else:
-        codes.extend(sorted(LANGUAGE_NAMES.keys()))
+        codes.extend(sorted(LANGUAGE_NAMES_EN.keys()))
     return codes
 
 
@@ -213,7 +214,7 @@ async def add_translate(
 ):
     """API for auto-translating a word (called from frontend)."""
     # CSRF check via header
-    from csrf import get_csrf_token_from_request, validate_csrf_form_token
+    from security.csrf import get_csrf_token_from_request, validate_csrf_form_token
     
     csrf_token = get_csrf_token_from_request(request)
     validate_csrf_form_token(csrf_token)
@@ -228,7 +229,7 @@ async def add_translate(
     tgt = target_lang if target_lang else _get_target_lang(request)
     translation, detected = await translate_word(word, src, tgt)
     if translation:
-        from translator import _get_language_name
+        from services.translator import _get_language_name
         lang_name = _get_language_name(detected) if detected else ""
         return {"translation": translation, "detected_language": lang_name}
     return {"translation": "", "detected_language": "", "error": "Translation not found. Check your API key."}
@@ -239,7 +240,7 @@ async def debug_translate():
     """Debug: shows raw Yandex API response."""
     import asyncio
     loop = asyncio.get_running_loop()
-    from translator import _translate_sync
+    from services.translator import _translate_sync
     result, detected, debug = await loop.run_in_executor(None, _translate_sync, "hello", "en")
     return {"result": result, "detected": detected, "debug": debug}
 

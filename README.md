@@ -179,26 +179,34 @@ This creates:
 
 ```
 .
-├── main.py           # FastAPI routes
-├── database.py       # SQLite setup
-├── models.py         # SQLAlchemy models
-├── translator.py     # Yandex Translate API
-├── auth.py           # Authentication
-├── csrf.py           # CSRF protection
-├── validators.py     # Input validation
-├── templates/        # Jinja2 templates
+├── main.py            # FastAPI routes
+├── database.py        # SQLite setup
+├── models.py          # SQLAlchemy models
+├── security/          # Auth, CSRF, rate limiting, input validation
+│   ├── auth.py
+│   ├── csrf.py
+│   ├── rate_limiter.py
+│   └── validators.py
+├── services/          # Business logic services
+│   ├── translator.py  # Yandex Translate API integration
+│   └── cache.py       # Translation cache
+├── i18n/              # Internationalization (en, ru) and language metadata
+│   ├── __init__.py    # i18n core: _t(), set_locale()
+│   ├── languages.py   # Language name dictionaries and display helpers
+│   ├── en.json
+│   └── ru.json
+├── templates/         # Jinja2 templates
 │   ├── base.html
 │   ├── index.html
 │   ├── add.html
 │   ├── review.html
 │   ├── dictionary.html
 │   └── settings.html
-├── translations/     # i18n (en, ru) and language name mappings
-├── tests/            # Unit tests
-├── Dockerfile        # Docker image definition
+├── tests/             # Unit tests
+├── Dockerfile         # Docker image definition
 ├── docker-compose.yml
-├── pyproject.toml    # Dependencies
-└── Makefile          # Build commands
+├── pyproject.toml     # Dependencies
+└── Makefile           # Build commands
 ```
 
 ## License
