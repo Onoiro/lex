@@ -28,7 +28,7 @@ jobs:
         run: uv sync --frozen --all-groups
 
       - name: Run ruff
-        run: uv run --frozen ruff check .
+        run: uvx ruff check .
 
   test:
     name: Test
@@ -52,7 +52,7 @@ jobs:
         run: uv sync --frozen --all-groups
 
       - name: Run tests with coverage
-        run: uv run --frozen pytest --cov=. --cov-report=term-missing --cov-report=xml:coverage-reports/coverage.xml
+        run: uvx pytest --cov=. --cov-report=term-missing --cov-report=xml:coverage-reports/coverage.xml
 
       - name: Upload coverage report
         uses: actions/upload-artifact@v4
