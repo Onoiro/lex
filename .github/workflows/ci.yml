@@ -52,7 +52,7 @@ jobs:
         run: uv sync --frozen --all-groups
 
       - name: Run tests with coverage
-        run: uvx pytest --cov=. --cov-report=term-missing --cov-report=xml:coverage-reports/coverage.xml
+        run: uv run pytest --cov=. --cov-report=term-missing --cov-report=xml:coverage-reports/coverage.xml
 
       - name: Upload coverage report
         uses: actions/upload-artifact@v4
