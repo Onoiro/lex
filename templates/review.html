@@ -50,7 +50,11 @@
                 {{ _t('review.show_translation') }}
             </summary>
             <p style="font-size: 2rem; font-weight: bold; margin: 0; color: var(--pico-color);" id="translation-display">
-                {{ word.translation }}
+                {% if direction == 'en_ru' %}
+                    {{ word.translation }}
+                {% else %}
+                    {{ word.word }}
+                {% endif %}
             </p>
         </details>
     </div>
