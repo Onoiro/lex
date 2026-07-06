@@ -2,11 +2,6 @@
 {% block title %}{{ _t('review.title') }}{% endblock %}
 
 {% block content %}
-<hgroup style="text-align: center; margin-bottom: 2rem; margin-top: 1rem;">
-    <h1>{{ _t('review.heading') }}</h1>
-    <p>{{ _t('review.queue', total_due=total_due) }}</p>
-</hgroup>
-
 {% if message %}
 <article style="text-align: center;">
     <p style="font-size: 1.2rem;">{{ _t('review.empty', message=message) }}</p>
@@ -43,22 +38,6 @@
         {% endif %}
     </header>
 
-    <!-- Middle (Translation, hidden by default) -->
-    <div style="text-align: center; flex-grow: 1; display: flex; align-items: center; justify-content: center;">
-        <details id="translation-details" style="width: 100%;">
-            <summary id="translation-summary" style="cursor:pointer; color: var(--pico-primary); font-weight: bold;">
-                {{ _t('review.show_translation') }}
-            </summary>
-            <p style="font-size: 2rem; font-weight: bold; margin: 0; color: var(--pico-color);" id="translation-display">
-                {% if direction == 'en_ru' %}
-                    {{ word.translation }}
-                {% else %}
-                    {{ word.word }}
-                {% endif %}
-            </p>
-        </details>
-    </div>
-
     <!-- Bottom (Action buttons) -->
     <footer style="margin-top: auto;">
         <form method="post" action="/review" id="review-form" style="margin-bottom: 0;">
@@ -74,6 +53,27 @@
 
         <button type="button" id="btn-next" class="outline" style="width: 100%; display: none;">{{ _t('review.next_word') }}</button>
     </footer>
+
+    <!-- Translation (between action buttons and stop button) -->
+    <div style="text-align: center; margin-top: 1.5rem; padding-bottom: 1rem;">
+        <details id="translation-details" style="width: 100%;">
+            <summary id="translation-summary" style="cursor:pointer; color: var(--pico-primary); font-weight: bold;">
+                {{ _t('review.show_translation') }}
+            </summary>
+            <p style="font-size: 2rem; font-weight: bold; margin: 0; color: var(--pico-color);" id="translation-display">
+                {% if direction == 'en_ru' %}
+                    {{ word.translation }}
+                {% else %}
+                    {{ word.word }}
+                {% endif %}
+            </p>
+        </details>
+    </div>
+
+    <!-- Stop button always at the very bottom -->
+    <div style="text-align: center; padding-bottom: 1rem;">
+        <button type="button" id="btn-stop" class="outline secondary" style="width: 100%;">{{ _t('review.stop') }}</button>
+    </div>
 </article>
 
 <script>
@@ -86,7 +86,8 @@ var _strings = {
     "pct": "{{ _t('review.stats_pct', pct='{pct}') }}",
     "done": "{{ _t('review.done', message='{message}') }}",
     "home": "{{ _t('review.home') }}",
-    "next_word": "{{ _t('review.next_word') }}"
+    "next_word": "{{ _t('review.next_word') }}",
+    "stop": "{{ _t('review.stop') }}"
 };
 
 (function() {
@@ -100,6 +101,7 @@ var _strings = {
     var pauseScreen = document.getElementById('pause-screen');
     var btnStart = document.getElementById('btn-start');
     var btnResume = document.getElementById('btn-resume');
+    var btnStop = document.getElementById('btn-stop');
 
     const form = document.getElementById('review-form');
     const btnKnow = document.getElementById('btn-know');
@@ -210,6 +212,9 @@ var _strings = {
         clearTimeout(autoNextTimeoutId);
         container.style.display = 'none';
         pauseScreen.style.display = 'block';
+        // Remove any dynamically added home links to avoid accumulation
+        var existing = pauseScreen.querySelector('a');
+        if (existing) existing.remove();
     }
 
     function resumeFromPause() {
@@ -322,6 +327,25 @@ var _strings = {
     btnStart.addEventListener('click', startTraining);
 
     btnResume.addEventListener('click', resumeFromPause);
+
+    btnStop.addEventListener('click', function() {
+        clearTimeout(inactivityTimeoutId);
+        clearTimeout(autoNextTimeoutId);
+        clearTimeout(answerTimeoutId);
+        clearInterval(timerInterval);
+        showPauseScreen();
+        // Add "Back to home" button to pause screen
+        var homeLink = document.createElement('a');
+        homeLink.href = '/';
+        homeLink.role = 'button';
+        homeLink.className = 'outline secondary';
+        homeLink.style.cssText = 'margin-top: 1rem; display: inline-block;';
+        homeLink.textContent = _strings.home;
+        // Remove existing home link if present
+        var existing = pauseScreen.querySelector('a');
+        if (existing) existing.remove();
+        pauseScreen.querySelector('button').after(homeLink);
+    });
 
     btnKnow.addEventListener('click', function(e) {
         e.preventDefault();

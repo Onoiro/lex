@@ -50,6 +50,7 @@
   "review.start": "Start training",
   "review.paused": "Training paused",
   "review.resume": "Resume training",
+  "review.stop": "Stop training",
   "dictionary.title": "My Dictionary — Lex",
   "dictionary.heading": "My dictionary",
   "dictionary.total": "Total words saved: {total}",

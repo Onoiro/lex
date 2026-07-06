@@ -50,6 +50,7 @@
   "review.start": "Начать тренировку",
   "review.paused": "Тренировка приостановлена",
   "review.resume": "Продолжить тренировку",
+  "review.stop": "Остановить",
   "dictionary.title": "Мой Словарь — Lex",
   "dictionary.heading": "Мой словарь",
   "dictionary.total": "Всего сохранено слов: {total}",
