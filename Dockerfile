@@ -17,8 +17,13 @@ COPY pyproject.toml uv.lock ./
 # Install dependencies
 RUN uv sync --frozen
 
-# Copy project files
-COPY . .
+# Copy project files (explicit list to avoid copying sensitive data)
+COPY main.py database.py models.py migrate.py ./
+COPY security/ ./security/
+COPY services/ ./services/
+COPY i18n/ ./i18n/
+COPY templates/ ./templates/
+COPY static/ ./static/
 
 # Change ownership to non-root user
 RUN chown -R lex:lex /app
