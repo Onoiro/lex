@@ -25,10 +25,10 @@ jobs:
           version: "latest"
 
       - name: Install dependencies
-        run: uv sync --frozen --all-groups
+        run: uv sync --frozen --all-groups --no-build
 
       - name: Run ruff
-        run: uvx ruff check .
+        run: uv run --frozen --no-build ruff check .
 
   test:
     name: Test
@@ -49,12 +49,12 @@ jobs:
           version: "latest"
 
       - name: Install dependencies
-        run: uv sync --frozen --all-groups
+        run: uv sync --frozen --all-groups --no-build
 
       - name: Run tests with coverage
         run: |
           mkdir -p coverage-reports
-          uv run pytest --cov=. --cov-report=term-missing --cov-report=xml:coverage-reports/coverage.xml --junitxml=coverage-reports/test-results.xml
+          uv run --frozen --no-build pytest --cov=. --cov-report=term-missing --cov-report=xml:coverage-reports/coverage.xml --junitxml=coverage-reports/test-results.xml
 
       - name: Upload coverage report
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
