@@ -11,10 +11,11 @@ test:
 
 test-cov:
 	@mkdir -p coverage-reports
-	uv run --frozen pytest --cov=. --cov-report=term-missing --cov-report=xml:coverage-reports/coverage.xml --cov-report=html:htmlcov
+	uv run --frozen pytest --cov=. --cov-report=term-missing --cov-report=xml:coverage-reports/coverage.xml --cov-report=html:htmlcov --junitxml=coverage-reports/test-results.xml
 	@echo ""
 	@echo "Coverage reports generated:"
-	@echo "  - XML: coverage-reports/coverage.xml (for SonarQube)"
+	@echo "  - XML: coverage-reports/coverage.xml (for SonarQube coverage)"
+	@echo "  - JUnit: coverage-reports/test-results.xml (for SonarQube test execution)"
 	@echo "  - HTML: htmlcov/index.html (open in browser)"
 
 clean:

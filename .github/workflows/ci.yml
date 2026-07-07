@@ -52,13 +52,15 @@ jobs:
         run: uv sync --frozen --all-groups
 
       - name: Run tests with coverage
-        run: uv run pytest --cov=. --cov-report=term-missing --cov-report=xml:coverage-reports/coverage.xml
+        run: |
+          mkdir -p coverage-reports
+          uv run pytest --cov=. --cov-report=term-missing --cov-report=xml:coverage-reports/coverage.xml --junitxml=coverage-reports/test-results.xml
 
       - name: Upload coverage report
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: coverage-report
-          path: coverage-reports/coverage.xml
+          path: coverage-reports/
 
   sonarqube:
     name: SonarQube Scan
