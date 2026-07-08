@@ -1,3 +1,9 @@
+[![CI](https://github.com/Onoiro/lex/actions/workflows/ci.yml/badge.svg)](https://github.com/Onoiro/lex/actions/workflows/ci.yml)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=Onoiro_lex&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=Onoiro_lex)
+[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=Onoiro_lex&metric=coverage)](https://sonarcloud.io/summary/new_code?id=Onoiro_lex)
+[![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=Onoiro_lex&metric=sqale_rating)](https://sonarcloud.io/summary/new_code?id=Onoiro_lex)
+[![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=Onoiro_lex&metric=security_rating)](https://sonarcloud.io/summary/new_code?id=Onoiro_lex)
+
 # Lex
 
 Lex is a web-based translator and vocabulary assistant. It provides fast translation between Russian and 100+ languages via Yandex Translate API, plus a spaced-repetition tool for learning and retaining foreign words.
