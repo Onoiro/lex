@@ -454,14 +454,14 @@ async def review_next(
     weights = [1.0 / (wi.interval + 1) for wi in all_words]
     total = sum(weights)
     weights = [t / total for t in weights]
-    chosen = random.choices(all_words, weights=weights, k=1)[0]
-    new_direction = random.choice(['en_ru', 'ru_en'])
+    chosen = random.choices(all_words, weights=weights, k=1)[0]  # nosec B311
+    new_direction = random.choice(['en_ru', 'ru_en'])  # nosec B311
 
     weights2 = [1.0 / (wi.interval + 1) for wi in all_words]
     total2 = sum(weights2)
     weights2 = [t / total2 for t in weights2]
-    chosen2 = random.choices(all_words, weights=weights2, k=1)[0]
-    new_direction2 = random.choice(['en_ru', 'ru_en'])
+    chosen2 = random.choices(all_words, weights=weights2, k=1)[0]  # nosec B311
+    new_direction2 = random.choice(['en_ru', 'ru_en'])  # nosec B311
 
     return JSONResponse({
         "done": False,
