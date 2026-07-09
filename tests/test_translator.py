@@ -2,8 +2,16 @@
 
 import pytest
 import os
+import httpx
 from unittest.mock import patch, MagicMock
-from services.translator import translate_word, _translate_sync
+from fastapi import HTTPException
+from services.translator import (
+    translate_word,
+    _translate_sync,
+    _get_language_name,
+    get_supported_languages,
+    get_api_language_names,
+)
 from services.cache import translation_cache
 
 
@@ -59,15 +67,44 @@ class TestTranslateSync:
             assert detected is None
             assert "API_KEY" in debug
 
-    def test_api_error_response(self):
-        """Handles API error response."""
+    def test_api_error_401_raises_http_exception(self):
+        """401/403 errors raise HTTPException(500)."""
         with patch("services.translator.API_KEY", "fake_key"), \
              patch("services.translator.FOLDER_ID", "fake_folder"):
 
             mock_response = MagicMock()
             mock_response.status_code = 401
             mock_response.text = "Unauthorized"
-            mock_response.raise_for_status.side_effect = Exception("HTTP Error")
+
+            http_error = httpx.HTTPStatusError(
+                "Unauthorized", request=MagicMock(), response=mock_response
+            )
+            mock_response.raise_for_status.side_effect = http_error
+
+            with patch("services.translator.httpx.Client") as mock_client_class:
+                mock_client = MagicMock()
+                mock_client_class.return_value.__enter__.return_value = mock_client
+                mock_client.post.return_value = mock_response
+
+                with pytest.raises(HTTPException) as exc_info:
+                    _translate_sync("test_word")
+
+                assert exc_info.value.status_code == 500
+                assert "API key" in exc_info.value.detail
+
+    def test_api_error_500_returns_debug_string(self):
+        """Non-401/403 HTTP errors return debug string instead of raising."""
+        with patch("services.translator.API_KEY", "fake_key"), \
+             patch("services.translator.FOLDER_ID", "fake_folder"):
+
+            mock_response = MagicMock()
+            mock_response.status_code = 500
+            mock_response.text = "Internal Server Error"
+
+            http_error = httpx.HTTPStatusError(
+                "Server Error", request=MagicMock(), response=mock_response
+            )
+            mock_response.raise_for_status.side_effect = http_error
 
             with patch("services.translator.httpx.Client") as mock_client_class:
                 mock_client = MagicMock()
@@ -78,7 +115,7 @@ class TestTranslateSync:
 
                 assert result is None
                 assert detected is None
-                assert "HTTP" in debug or "401" in debug or "Unauthorized" in debug
+                assert "500" in debug
 
     def test_empty_api_response(self):
         """Handles empty API response."""
@@ -295,6 +332,218 @@ class TestTranslateSync:
                 assert result is None
                 assert detected is None
                 assert "парсин" in debug.lower() or "parse" in debug.lower()
+
+
+class TestGetLanguageName:
+    """Tests for _get_language_name helper."""
+
+    def test_known_language(self):
+        """Returns English name for known language code."""
+        assert _get_language_name("en") == "English"
+
+    def test_unknown_language_falls_back_to_code(self):
+        """Returns the code itself for unknown language."""
+        assert _get_language_name("xx") == "xx"
+
+
+class TestGetSupportedLanguages:
+    """Tests for get_supported_languages function."""
+
+    def test_no_api_key_returns_empty(self):
+        """Returns empty dict when API key is missing."""
+        with patch("services.translator.API_KEY", None):
+            result = get_supported_languages()
+            assert result == {}
+
+    def test_successful_response(self):
+        """Returns dict mapping language codes to [TARGET_LANG]."""
+        with patch("services.translator.API_KEY", "fake_key"):
+            mock_response = MagicMock()
+            mock_response.status_code = 200
+            mock_response.json.return_value = {
+                "languages": [
+                    {"code": "en", "name": "English"},
+                    {"code": "de", "name": "German"},
+                    {"code": "fr", "name": "French"},
+                ]
+            }
+            mock_response.raise_for_status.return_value = None
+
+            with patch("services.translator.httpx.Client") as mock_client_class:
+                mock_client = MagicMock()
+                mock_client_class.return_value.__enter__.return_value = mock_client
+                mock_client.post.return_value = mock_response
+
+                result = get_supported_languages()
+
+                assert result == {"en": ["ru"], "de": ["ru"], "fr": ["ru"]}
+
+    def test_api_error_returns_empty(self):
+        """Returns empty dict on HTTP error status."""
+        with patch("services.translator.API_KEY", "fake_key"):
+            mock_response = MagicMock()
+            mock_response.status_code = 403
+
+            with patch("services.translator.httpx.Client") as mock_client_class:
+                mock_client = MagicMock()
+                mock_client_class.return_value.__enter__.return_value = mock_client
+                mock_client.post.return_value = mock_response
+
+                result = get_supported_languages()
+
+                assert result == {}
+
+    def test_network_error_returns_empty(self):
+        """Returns empty dict on network error."""
+        with patch("services.translator.API_KEY", "fake_key"):
+            with patch("services.translator.httpx.Client") as mock_client_class:
+                mock_client = MagicMock()
+                mock_client_class.return_value.__enter__.return_value = mock_client
+                mock_client.post.side_effect = httpx.RequestError("Network error")
+
+                result = get_supported_languages()
+
+                assert result == {}
+
+    def test_language_without_code_is_skipped(self):
+        """Languages without 'code' field are skipped."""
+        with patch("services.translator.API_KEY", "fake_key"):
+            mock_response = MagicMock()
+            mock_response.status_code = 200
+            mock_response.json.return_value = {
+                "languages": [
+                    {"code": "en", "name": "English"},
+                    {"name": "Unknown"},  # no code
+                    {"code": "de", "name": "German"},
+                ]
+            }
+            mock_response.raise_for_status.return_value = None
+
+            with patch("services.translator.httpx.Client") as mock_client_class:
+                mock_client = MagicMock()
+                mock_client_class.return_value.__enter__.return_value = mock_client
+                mock_client.post.return_value = mock_response
+
+                result = get_supported_languages()
+
+                assert result == {"en": ["ru"], "de": ["ru"]}
+
+    def test_empty_languages_list_returns_empty(self):
+        """Returns empty dict when API returns no languages."""
+        with patch("services.translator.API_KEY", "fake_key"):
+            mock_response = MagicMock()
+            mock_response.status_code = 200
+            mock_response.json.return_value = {"languages": []}
+            mock_response.raise_for_status.return_value = None
+
+            with patch("services.translator.httpx.Client") as mock_client_class:
+                mock_client = MagicMock()
+                mock_client_class.return_value.__enter__.return_value = mock_client
+                mock_client.post.return_value = mock_response
+
+                result = get_supported_languages()
+
+                assert result == {}
+
+
+class TestGetApiLanguageNames:
+    """Tests for get_api_language_names function."""
+
+    def test_no_api_key_returns_empty(self):
+        """Returns empty dict when API key is missing."""
+        with patch("services.translator.API_KEY", None):
+            result = get_api_language_names()
+            assert result == {}
+
+    def test_successful_response(self):
+        """Returns dict mapping language codes to English names."""
+        with patch("services.translator.API_KEY", "fake_key"):
+            mock_response = MagicMock()
+            mock_response.status_code = 200
+            mock_response.json.return_value = {
+                "languages": [
+                    {"code": "en", "name": "English"},
+                    {"code": "de", "name": "German"},
+                    {"code": "fr", "name": "French"},
+                ]
+            }
+            mock_response.raise_for_status.return_value = None
+
+            with patch("services.translator.httpx.Client") as mock_client_class:
+                mock_client = MagicMock()
+                mock_client_class.return_value.__enter__.return_value = mock_client
+                mock_client.post.return_value = mock_response
+
+                result = get_api_language_names()
+
+                assert result == {"en": "English", "de": "German", "fr": "French"}
+
+    def test_api_error_returns_empty(self):
+        """Returns empty dict on HTTP error status."""
+        with patch("services.translator.API_KEY", "fake_key"):
+            mock_response = MagicMock()
+            mock_response.status_code = 403
+
+            with patch("services.translator.httpx.Client") as mock_client_class:
+                mock_client = MagicMock()
+                mock_client_class.return_value.__enter__.return_value = mock_client
+                mock_client.post.return_value = mock_response
+
+                result = get_api_language_names()
+
+                assert result == {}
+
+    def test_network_error_returns_empty(self):
+        """Returns empty dict on network error."""
+        with patch("services.translator.API_KEY", "fake_key"):
+            with patch("services.translator.httpx.Client") as mock_client_class:
+                mock_client = MagicMock()
+                mock_client_class.return_value.__enter__.return_value = mock_client
+                mock_client.post.side_effect = httpx.RequestError("Network error")
+
+                result = get_api_language_names()
+
+                assert result == {}
+
+    def test_language_without_name_is_skipped(self):
+        """Languages without 'name' field are skipped."""
+        with patch("services.translator.API_KEY", "fake_key"):
+            mock_response = MagicMock()
+            mock_response.status_code = 200
+            mock_response.json.return_value = {
+                "languages": [
+                    {"code": "en", "name": "English"},
+                    {"code": "xx"},  # no name
+                    {"code": "de", "name": "German"},
+                ]
+            }
+            mock_response.raise_for_status.return_value = None
+
+            with patch("services.translator.httpx.Client") as mock_client_class:
+                mock_client = MagicMock()
+                mock_client_class.return_value.__enter__.return_value = mock_client
+                mock_client.post.return_value = mock_response
+
+                result = get_api_language_names()
+
+                assert result == {"en": "English", "de": "German"}
+
+    def test_empty_languages_list_returns_empty(self):
+        """Returns empty dict when API returns no languages."""
+        with patch("services.translator.API_KEY", "fake_key"):
+            mock_response = MagicMock()
+            mock_response.status_code = 200
+            mock_response.json.return_value = {"languages": []}
+            mock_response.raise_for_status.return_value = None
+
+            with patch("services.translator.httpx.Client") as mock_client_class:
+                mock_client = MagicMock()
+                mock_client_class.return_value.__enter__.return_value = mock_client
+                mock_client.post.return_value = mock_response
+
+                result = get_api_language_names()
+
+                assert result == {}
 
 
 class TestTranslateWord:

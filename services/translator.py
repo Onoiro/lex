@@ -136,8 +136,6 @@ def _translate_sync(
                 json=payload,
             )
             raw = response.text
-            if response.status_code >= 400:
-                return None, None, f"HTTP {response.status_code}: {raw}"
             response.raise_for_status()
             data = response.json()
             # Yandex v2: {"translations": [{"text": "...", "detectedLanguageCode": "..."}]}
