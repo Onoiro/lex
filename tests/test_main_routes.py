@@ -195,6 +195,20 @@ class TestAddTranslate:
         # FastAPI validates Form fields (422 for missing/empty required fields)
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
+    def test_translate_invalid_word_chars(self, authenticated_client, csrf_token):
+        """Translate with invalid characters returns error."""
+        response = authenticated_client.post(
+            "/add/translate",
+            data={"word": "hello!@#"},
+            headers={"X-CSRF-Token": csrf_token},
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert data["translation"] == ""
+        assert data["detected_language"] == ""
+        assert "error" in data
+
 
 class TestDictionary:
     """Tests for /dictionary route."""
@@ -410,6 +424,68 @@ class TestReviewResult:
         )
         
         assert response.status_code == status.HTTP_404_NOT_FOUND
+
+    def test_review_result_second_correct(self, client, sample_word, db_session):
+        """Second correct answer sets interval to 6."""
+        sample_word.repetitions = 1
+        sample_word.interval = 1
+        db_session.commit()
+
+        response = client.post(
+            "/review/result",
+            data={
+                "word_id": sample_word.id,
+                "correct": True,
+                "direction": "en_ru",
+            },
+            follow_redirects=False,
+        )
+
+        assert response.status_code == status.HTTP_303_SEE_OTHER
+        updated = db_session.query(Word).get(sample_word.id)
+        assert updated.interval == 6
+        assert updated.repetitions == 2
+
+    def test_review_result_third_correct(self, client, sample_word, db_session):
+        """Third correct answer multiplies interval by 2.5."""
+        sample_word.repetitions = 2
+        sample_word.interval = 6
+        db_session.commit()
+
+        response = client.post(
+            "/review/result",
+            data={
+                "word_id": sample_word.id,
+                "correct": True,
+                "direction": "en_ru",
+            },
+            follow_redirects=False,
+        )
+
+        assert response.status_code == status.HTTP_303_SEE_OTHER
+        updated = db_session.query(Word).get(sample_word.id)
+        assert updated.interval == 15
+        assert updated.repetitions == 3
+
+    def test_review_result_interval_cap(self, client, sample_word, db_session):
+        """Interval is capped at 30 days."""
+        sample_word.repetitions = 2
+        sample_word.interval = 20
+        db_session.commit()
+
+        response = client.post(
+            "/review/result",
+            data={
+                "word_id": sample_word.id,
+                "correct": True,
+                "direction": "en_ru",
+            },
+            follow_redirects=False,
+        )
+
+        assert response.status_code == status.HTTP_303_SEE_OTHER
+        updated = db_session.query(Word).get(sample_word.id)
+        assert updated.interval == 30
 
 
 class TestReviewNext:
@@ -640,6 +716,44 @@ class TestReviewNext:
         assert "next_know_count" in data
         assert "next_forgot_count" in data
 
+    def test_review_next_interval_growth(self, client, sample_word, db_session):
+        """Third correct answer multiplies interval by 2.5."""
+        sample_word.repetitions = 2
+        sample_word.interval = 6
+        db_session.commit()
+
+        response = client.post(
+            "/review/next",
+            data={
+                "word_id": sample_word.id,
+                "correct": True,
+                "direction": "en_ru",
+            },
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        updated = db_session.query(Word).get(sample_word.id)
+        assert updated.interval == 15
+
+    def test_review_next_interval_cap(self, client, sample_word, db_session):
+        """Interval is capped at 30 days."""
+        sample_word.repetitions = 2
+        sample_word.interval = 20
+        db_session.commit()
+
+        response = client.post(
+            "/review/next",
+            data={
+                "word_id": sample_word.id,
+                "correct": True,
+                "direction": "en_ru",
+            },
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        updated = db_session.query(Word).get(sample_word.id)
+        assert updated.interval == 30
+
 
 class TestSettingsRoutes:
     """Tests for language settings routes."""
@@ -775,6 +889,31 @@ class TestSettingsRoutes:
         )
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
+    def test_settings_page_invalid_locale(self, authenticated_client):
+        """Settings page handles invalid locale cookie."""
+        response = authenticated_client.get(
+            "/settings",
+            cookies={"locale": "invalid"},
+        )
+        assert response.status_code == status.HTTP_200_OK
+
+    def test_update_settings_with_locale(self, authenticated_client, csrf_token):
+        """Updating settings with locale saves locale cookie."""
+        response = authenticated_client.post(
+            "/settings",
+            data={
+                "source_lang": "en",
+                "target_lang": "ru",
+                "locale": "ru",
+                "csrf_token": csrf_token,
+            },
+            follow_redirects=False,
+        )
+
+        assert response.status_code == status.HTTP_303_SEE_OTHER
+        set_cookie = response.headers.get("set-cookie", "")
+        assert "locale=ru" in set_cookie
+
 
 class TestAddTranslateWithSourceLang:
     """Tests for /add/translate with source_lang parameter."""
@@ -841,3 +980,40 @@ class TestAddTranslateWithSourceLang:
         assert response.status_code == status.HTTP_200_OK
         # Default target_lang is "ru" (from cookie default)
         mock_translate_success.assert_called_once_with("hello", "auto", "ru")
+
+
+class TestLocaleMiddleware:
+    """Tests for locale middleware."""
+
+    def test_invalid_locale_falls_back_to_default(self, client):
+        """Invalid locale cookie falls back to default locale."""
+        response = client.get("/", cookies={"locale": "invalid"})
+
+        assert response.status_code == status.HTTP_200_OK
+
+
+class TestApiLanguages:
+    """Tests for /api/languages route."""
+
+    def test_get_languages_returns_json(self, client):
+        """API languages endpoint returns JSON."""
+        response = client.get("/api/languages")
+
+        assert response.status_code == status.HTTP_200_OK
+        assert "application/json" in response.headers["content-type"]
+        data = response.json()
+        assert "languages" in data
+
+
+class TestLanguageCodes:
+    """Tests for _get_language_codes helper."""
+
+    def test_get_language_codes_with_api_languages(self, authenticated_client, monkeypatch):
+        """_get_language_codes uses SUPPORTED_LANGUAGES when available."""
+        from main import SUPPORTED_LANGUAGES
+
+        monkeypatch.setitem(SUPPORTED_LANGUAGES, "xx", ["ru"])
+        response = authenticated_client.get("/settings")
+
+        assert response.status_code == status.HTTP_200_OK
+        assert "xx" in response.text
