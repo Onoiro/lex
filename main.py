@@ -1,3 +1,5 @@
+from typing import Annotated
+
 from fastapi import FastAPI, Depends, Form, Request, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -150,6 +152,58 @@ def _set_lang_cookie(response, key: str, value: str):
     )
 
 
+# Type alias for FastAPI database session dependency
+DbSession = Annotated[Session, Depends(get_db)]
+
+
+def _apply_review_result(w: Word, correct: bool, direction: str):
+    """Apply SM-2 based review result to a word."""
+    if correct:
+        if w.repetitions == 0:
+            w.interval = 1
+        elif w.repetitions == 1:
+            w.interval = 6
+        else:
+            w.interval = int(w.interval * 2.5)
+        # Cap interval to prevent unbounded growth (max 30 days)
+        if w.interval > 30:
+            w.interval = 30
+        w.repetitions += 1
+        w.know_count += 1
+    else:
+        w.repetitions = 0
+        w.interval = 0
+        w.forgot_count += 1
+
+    w.next_review = time.time() + w.interval * 86400
+    w.last_direction = direction
+
+
+def _update_response_time(w: Word, elapsed: float):
+    """Update best and average response time for a word."""
+    if elapsed <= 0:
+        return
+    if w.best_time is None or elapsed < w.best_time:
+        w.best_time = elapsed
+    if w.avg_time is None:
+        w.avg_time = elapsed
+    else:
+        w.avg_time = (w.avg_time + elapsed) / 2.0
+
+
+def _pick_weighted_word(words: list[Word]) -> Word:
+    """Pick a word using weighted random selection (lower interval = higher chance)."""
+    weights = [1.0 / (wi.interval + 1) for wi in words]
+    total = sum(weights)
+    weights = [t / total for t in weights]
+    return random.choices(words, weights=weights, k=1)[0]  # noqa: S2245
+
+
+def _pick_random_direction() -> str:
+    """Return a random review direction."""
+    return random.choice(['en_ru', 'ru_en'])  # noqa: S2245
+
+
 # ---------- страницы ----------
 
 @app.get("/", response_class=HTMLResponse)
@@ -208,9 +262,9 @@ async def add_word(
 @require_auth
 async def add_translate(
     request: Request,
-    word: str = Form(...),
-    source_lang: str = Form(default=""),
-    target_lang: str = Form(default=""),
+    word: Annotated[str, Form(...)],
+    source_lang: Annotated[str, Form()] = "",
+    target_lang: Annotated[str, Form()] = "",
 ):
     """API for auto-translating a word (called from frontend)."""
     # CSRF check via header
@@ -401,67 +455,33 @@ async def review_result(
     return RedirectResponse(url="/review", status_code=303)
 
 
-@app.post("/review/next")
+@app.post("/review/next", responses={404: {"description": "Word not found"}})
 async def review_next(
-    word_id: int = Form(...),
-    correct: bool = Form(...),
-    direction: str = Form(...),
-    elapsed: float = Form(default=0.0),
-    db: Session = Depends(get_db),
+    word_id: Annotated[int, Form(...)],
+    correct: Annotated[bool, Form(...)],
+    direction: Annotated[str, Form(...)],
+    db: DbSession,
+    elapsed: Annotated[float, Form()] = 0.0,
 ):
     """AJAX route: saves result and returns next word in JSON."""
     w = db.query(Word).get(word_id)
     if not w:
         raise HTTPException(404)
 
-    if correct:
-        if w.repetitions == 0:
-            w.interval = 1
-        elif w.repetitions == 1:
-            w.interval = 6
-        else:
-            w.interval = int(w.interval * 2.5)
-        # Cap interval to prevent unbounded growth (max 30 days)
-        if w.interval > 30:
-            w.interval = 30
-        w.repetitions += 1
-        w.know_count += 1
-    else:
-        w.repetitions = 0
-        w.interval = 0
-        w.forgot_count += 1
-
-    w.next_review = time.time() + w.interval * 86400
-    w.last_direction = direction
-
-    # Обновляем время ответа
-    if elapsed > 0:
-        if w.best_time is None or elapsed < w.best_time:
-            w.best_time = elapsed
-        if w.avg_time is None:
-            w.avg_time = elapsed
-        else:
-            # Простое среднее арифметическое
-            w.avg_time = (w.avg_time + elapsed) / 2.0
-
+    _apply_review_result(w, correct, direction)
+    _update_response_time(w, elapsed)
     db.commit()
 
-    # Получить следующее и следующее+1 слово для предзагрузки
+    # Get next word and preload one more for prefetch
     all_words = db.query(Word).all()
     if not all_words:
         return JSONResponse({"done": True, "message": "Словарь пуст."})
 
-    weights = [1.0 / (wi.interval + 1) for wi in all_words]
-    total = sum(weights)
-    weights = [t / total for t in weights]
-    chosen = random.choices(all_words, weights=weights, k=1)[0]  # noqa: S2245
-    new_direction = random.choice(['en_ru', 'ru_en'])  # noqa: S2245
+    chosen = _pick_weighted_word(all_words)
+    new_direction = _pick_random_direction()
 
-    weights2 = [1.0 / (wi.interval + 1) for wi in all_words]
-    total2 = sum(weights2)
-    weights2 = [t / total2 for t in weights2]
-    chosen2 = random.choices(all_words, weights=weights2, k=1)[0]  # noqa: S2245
-    new_direction2 = random.choice(['en_ru', 'ru_en'])  # noqa: S2245
+    chosen2 = _pick_weighted_word(all_words)
+    new_direction2 = _pick_random_direction()
 
     return JSONResponse({
         "done": False,
