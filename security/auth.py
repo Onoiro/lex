@@ -61,47 +61,42 @@ def require_auth(func):
     """
     @wraps(func)
     async def wrapper(request: Request, *args, **kwargs):
-        # Проверяем аутентификацию
+        # Извлекаем credentials из заголовка Authorization
+        auth_header = request.headers.get("Authorization")
+        if not auth_header or not auth_header.startswith("Basic "):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Требуется аутентификация",
+                headers={"WWW-Authenticate": "Basic"},
+            )
+
+        import base64
         try:
-            # Извлекаем credentials из заголовка Authorization
-            auth_header = request.headers.get("Authorization")
-            if not auth_header or not auth_header.startswith("Basic "):
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Требуется аутентификация",
-                    headers={"WWW-Authenticate": "Basic"},
-                )
-            
-            import base64
-            try:
-                decoded = base64.b64decode(auth_header[6:]).decode("utf-8")
-                username, password = decoded.split(":", 1)
-            except (ValueError, UnicodeDecodeError):
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Неверный формат авторизации",
-                    headers={"WWW-Authenticate": "Basic"},
-                )
-            
-            correct_username, correct_password_hash = get_credentials_from_env()
-            
-            if username != correct_username:
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Неверное имя пользователя или пароль",
-                    headers={"WWW-Authenticate": "Basic"},
-                )
-            
-            if not verify_password(password, correct_password_hash):
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Неверное имя пользователя или пароль",
-                    headers={"WWW-Authenticate": "Basic"},
-                )
-                
-        except HTTPException:
-            raise
-        
+            decoded = base64.b64decode(auth_header[6:]).decode("utf-8")
+            username, password = decoded.split(":", 1)
+        except ValueError:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Неверный формат авторизации",
+                headers={"WWW-Authenticate": "Basic"},
+            )
+
+        correct_username, correct_password_hash = get_credentials_from_env()
+
+        if username != correct_username:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Неверное имя пользователя или пароль",
+                headers={"WWW-Authenticate": "Basic"},
+            )
+
+        if not verify_password(password, correct_password_hash):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Неверное имя пользователя или пароль",
+                headers={"WWW-Authenticate": "Basic"},
+            )
+
         return await func(request, *args, **kwargs)
-    
+
     return wrapper

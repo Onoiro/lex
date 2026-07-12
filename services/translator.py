@@ -11,6 +11,7 @@ FOLDER_ID = os.getenv("YANDEX_FOLDER_ID", "b1gqq9rjega7119p3a2f")
 API_URL = "https://translate.api.cloud.yandex.net/translate/v2/translate"
 LANGUAGES_URL = "https://translate.api.cloud.yandex.net/translate/v2/languages"
 TARGET_LANG = "ru"
+JSON_CONTENT_TYPE = "application/json"
 
 # Cached list of supported languages: {source_code: target_codes}
 # Populated on startup via get_supported_languages().
@@ -33,7 +34,7 @@ def get_supported_languages() -> dict[str, list[str]]:
             response = client.post(
                 LANGUAGES_URL,
                 headers={
-                    "Content-Type": "application/json",
+                    "Content-Type": JSON_CONTENT_TYPE,
                     "Authorization": f"Api-Key {API_KEY}",
                 },
                 json={},
@@ -67,7 +68,7 @@ def get_api_language_names() -> dict[str, str]:
             response = client.post(
                 LANGUAGES_URL,
                 headers={
-                    "Content-Type": "application/json",
+                    "Content-Type": JSON_CONTENT_TYPE,
                     "Authorization": f"Api-Key {API_KEY}",
                 },
                 json={},
@@ -130,7 +131,7 @@ def _translate_sync(
             response = client.post(
                 API_URL,
                 headers={
-                    "Content-Type": "application/json",
+                    "Content-Type": JSON_CONTENT_TYPE,
                     "Authorization": f"Api-Key {API_KEY}",
                 },
                 json=payload,

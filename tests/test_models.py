@@ -1,6 +1,7 @@
 """Tests for the Word model."""
 
 import pytest
+from sqlalchemy.exc import IntegrityError
 from models import Word
 
 
@@ -62,7 +63,7 @@ class TestWordModel:
         db_session.commit()
         
         db_session.add(word2)
-        with pytest.raises(Exception):  # IntegrityError
+        with pytest.raises(IntegrityError):
             db_session.commit()
 
     def test_word_query_by_word(self, db_session):
