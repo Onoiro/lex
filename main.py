@@ -236,9 +236,9 @@ async def add_page(request: Request):
 @csrf_protect_form
 async def add_word(
     request: Request,
-    word: str = Form(...),
-    translation: str = Form(...),
-    db: Session = Depends(get_db),
+    word: Annotated[str, Form(...)],
+    translation: Annotated[str, Form(...)],
+    db: DbSession,
 ):
     # Валидация входных данных
     word = validate_word(word)
@@ -334,9 +334,9 @@ async def settings_page(request: Request):
 @csrf_protect_form
 async def update_settings(
     request: Request,
-    source_lang: str = Form(...),
-    target_lang: str = Form(...),
-    locale: str = Form(default=""),
+    source_lang: Annotated[str, Form(...)],
+    target_lang: Annotated[str, Form(...)],
+    locale: Annotated[str, Form()] = "",
 ):
     """Update language settings via cookies."""
     response = RedirectResponse(url="/settings", status_code=303)
@@ -351,8 +351,8 @@ async def update_settings(
 @require_auth
 async def update_settings_api(
     request: Request,
-    source_lang: str = Form(...),
-    target_lang: str = Form(...),
+    source_lang: Annotated[str, Form(...)],
+    target_lang: Annotated[str, Form(...)],
 ):
     """AJAX endpoint: update language settings and return JSON."""
     return JSONResponse({
@@ -369,7 +369,7 @@ async def get_languages():
 
 
 @app.get("/dictionary", response_class=HTMLResponse)
-async def dictionary_page(request: Request, db: Session = Depends(get_db)):
+async def dictionary_page(request: Request, db: DbSession):
     """Страница со списком всех слов и переводов."""
     all_words = db.query(Word).order_by(Word.word).all()
     csrf_token = csrf_protection.get_token_for_form()
@@ -377,13 +377,13 @@ async def dictionary_page(request: Request, db: Session = Depends(get_db)):
     return tpl.render(words=all_words, total=len(all_words), csrf_token=csrf_token)
 
 
-@app.post("/dictionary/delete/{word_id}")
+@app.post("/dictionary/delete/{word_id}", responses={404: {"description": "Word not found"}})
 @require_auth
 @csrf_protect_form
 async def delete_word(
     request: Request,
     word_id: int,
-    db: Session = Depends(get_db),
+    db: DbSession,
 ):
     """Удаление слова из словаря."""
     w = db.query(Word).get(word_id)
@@ -397,7 +397,7 @@ async def delete_word(
 
 
 @app.get("/review", response_class=HTMLResponse)
-async def review_page(request: Request, db: Session = Depends(get_db)):
+async def review_page(request: Request, db: DbSession):
     # Берём все слова из базы
     all_words = db.query(Word).all()
 
@@ -405,51 +405,25 @@ async def review_page(request: Request, db: Session = Depends(get_db)):
         tpl = env.get_template("review.html")
         return tpl.render(message="Словарь пуст. Добавьте слова для повторения.")
 
-    # Weighted selection: lower interval means higher chance of being picked
-    # Weight = 1 / (interval + 1) → interval 0 gives weight 1, interval 10 gives weight ~0.09
-    weights = [1.0 / (w.interval + 1) for w in all_words]
-    total = sum(weights)
-    weights = [t / total for t in weights]
-
-    chosen = random.choices(all_words, weights=weights, k=1)[0]  # noqa: S2245
-
-    # Random direction: 50/50
-    direction = random.choice(['en_ru', 'ru_en'])  # noqa: S2245
+    chosen = _pick_weighted_word(all_words)
+    direction = _pick_random_direction()
 
     tpl = env.get_template("review.html")
     return tpl.render(word=chosen, total_due=len(all_words), direction=direction, know_count=chosen.know_count, forgot_count=chosen.forgot_count)
 
 
-@app.post("/review/result")
+@app.post("/review/result", responses={404: {"description": "Word not found"}})
 async def review_result(
-    word_id: int = Form(...),
-    correct: bool = Form(...),
-    direction: str = Form(...),
-    db: Session = Depends(get_db),
+    word_id: Annotated[int, Form(...)],
+    correct: Annotated[bool, Form(...)],
+    direction: Annotated[str, Form(...)],
+    db: DbSession,
 ):
     w = db.query(Word).get(word_id)
     if not w:
         raise HTTPException(404)
 
-    if correct:
-        if w.repetitions == 0:
-            w.interval = 1
-        elif w.repetitions == 1:
-            w.interval = 6
-        else:
-            w.interval = int(w.interval * 2.5)
-        # Cap interval to prevent unbounded growth (max 30 days)
-        if w.interval > 30:
-            w.interval = 30
-        w.repetitions += 1
-        w.know_count += 1
-    else:
-        w.repetitions = 0
-        w.interval = 0
-        w.forgot_count += 1
-
-    w.next_review = time.time() + w.interval * 86400
-    w.last_direction = direction
+    _apply_review_result(w, correct, direction)
     db.commit()
 
     return RedirectResponse(url="/review", status_code=303)
