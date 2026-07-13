@@ -17,6 +17,7 @@ dependencies = [
     "python-dotenv>=1.2.2",
     "passlib[bcrypt]>=1.7.4",
     "tomli>=2.0.0; python_version<'3.11'",
+    "rollbar>=1.4.0",
 ]
 classifiers = [
     "License :: OSI Approved :: MIT License",

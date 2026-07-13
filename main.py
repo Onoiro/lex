@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 import jinja2
 import random
 import time
+import os
 from dotenv import load_dotenv
 
 from database import engine, get_db
@@ -44,6 +45,23 @@ app = FastAPI()
 
 # Статические файлы (favicon, логотип и др.)
 app.mount("/static", StaticFiles(directory="static"), name="static")
+
+# Инициализация Rollbar (после создания app, но до маршрутов)
+ROLLBAR_ACCESS_TOKEN = os.getenv('ROLLBAR_ACCESS_TOKEN') or os.getenv('POST_SERVICE_ITEM_ACCESS_TOKEN')
+ROLLBAR_ENVIRONMENT = os.getenv('ROLLBAR_ENVIRONMENT', 'development')
+if ROLLBAR_ACCESS_TOKEN:
+    import rollbar
+    from rollbar.contrib.fastapi import add_to as rollbar_add_to
+
+    rollbar.init(
+        access_token=ROLLBAR_ACCESS_TOKEN,
+        environment=ROLLBAR_ENVIRONMENT,
+        code_version=VERSION,
+    )
+    rollbar_add_to(app)
+    print(f"[rollbar] Initialized in '{ROLLBAR_ENVIRONMENT}' mode (v{VERSION})")
+else:
+    print("[rollbar] ROLLBAR_ACCESS_TOKEN not set, Rollbar is disabled")
 
 # Авто-миграция: добавляем недостающие столбцы
 def auto_migrate():
@@ -479,3 +497,13 @@ async def review_next(
         "next_know_count": chosen2.know_count,
         "next_forgot_count": chosen2.forgot_count,
     })
+
+
+@app.get("/debug/rollbar")
+@require_auth
+async def debug_rollbar():
+    """Test endpoint to verify Rollbar is working. Triggers a test error."""
+    # Send a test message
+    rollbar.report_message('Rollbar test message from /debug/rollbar', 'info')
+    # Trigger a test error
+    undefined_variable  # noqa: F821
