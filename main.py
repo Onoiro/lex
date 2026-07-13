@@ -501,7 +501,7 @@ async def review_next(
 
 @app.get("/debug/rollbar")
 @require_auth
-async def debug_rollbar():
+async def debug_rollbar(request: Request):
     """Test endpoint to verify Rollbar is working. Triggers a test error."""
     # Send a test message
     rollbar.report_message('Rollbar test message from /debug/rollbar', 'info')
