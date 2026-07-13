@@ -6,7 +6,7 @@
 
 # Lex
 
-Lex is a web-based translator and vocabulary assistant. It provides fast translation between Russian and 100+ languages via Yandex Translate API, plus a spaced-repetition tool for learning and retaining foreign words.
+Lex is a web-based translator and vocabulary assistant. It provides fast translation between any of 100+ languages via Yandex Translate API, plus a spaced-repetition tool for learning and retaining foreign words.
 
 **Try it live:** [lex.2-way.ru](https://lex.2-way.ru)
 
@@ -30,6 +30,21 @@ Lex is a web-based translator and vocabulary assistant. It provides fast transla
 - **Templates:** Jinja2
 - **Styles:** Pico CSS
 - **Translation:** Yandex Translate Cloud API v2
+- **Error Tracking:** Rollbar
+- **Code Quality:** SonarCloud
+
+## Code Quality & Monitoring
+
+### SonarCloud
+Code quality is continuously analyzed by SonarCloud. Coverage reports are generated via `make test-cov` and uploaded to SonarCloud through GitHub Actions CI.
+
+- [SonarCloud Dashboard](https://sonarcloud.io/summary/new_code?id=Onoiro_lex)
+- [CI Pipeline](https://github.com/Onoiro/lex/actions/workflows/ci.yml)
+
+### Rollbar
+Production errors are tracked with Rollbar. Unhandled exceptions are automatically reported to a centralized dashboard for monitoring and debugging.
+
+- Test endpoint: `/debug/rollbar` (requires authentication)
 
 ## Quick Start
 
