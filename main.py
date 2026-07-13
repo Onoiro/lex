@@ -506,4 +506,4 @@ async def debug_rollbar(request: Request):
     # Send a test message
     rollbar.report_message('Rollbar test message from /debug/rollbar', 'info')
     # Trigger a test error
-    undefined_variable  # noqa: F821
+    raise NameError("Test error for Rollbar")
