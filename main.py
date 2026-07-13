@@ -43,10 +43,7 @@ DEFAULT_LOCALE = "en"
 
 app = FastAPI()
 
-# Статические файлы (favicon, логотип и др.)
-app.mount("/static", StaticFiles(directory="static"), name="static")
-
-# Инициализация Rollbar (после создания app, но до маршрутов)
+# Инициализация Rollbar (до app.mount и всех маршрутов)
 ROLLBAR_ACCESS_TOKEN = os.getenv('ROLLBAR_ACCESS_TOKEN') or os.getenv('POST_SERVICE_ITEM_ACCESS_TOKEN')
 ROLLBAR_ENVIRONMENT = os.getenv('ROLLBAR_ENVIRONMENT', 'development')
 if ROLLBAR_ACCESS_TOKEN:
@@ -62,6 +59,9 @@ if ROLLBAR_ACCESS_TOKEN:
     print(f"[rollbar] Initialized in '{ROLLBAR_ENVIRONMENT}' mode (v{VERSION})")
 else:
     print("[rollbar] ROLLBAR_ACCESS_TOKEN not set, Rollbar is disabled")
+
+# Статические файлы (favicon, логотип и др.)
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # Авто-миграция: добавляем недостающие столбцы
 def auto_migrate():
