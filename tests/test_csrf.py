@@ -2,10 +2,12 @@
 
 import pytest
 from fastapi import HTTPException, status
+from unittest.mock import Mock
 from security.csrf import (
     generate_csrf_token,
     sign_token,
     verify_token,
+    get_csrf_token_from_request,
     CSRFProtection,
     validate_csrf_form_token,
 )
@@ -67,6 +69,24 @@ class TestTokenSigning:
         assert verify_token("token") is False
 
 
+class TestGetCsrfTokenFromRequest:
+    """Tests for get_csrf_token_from_request helper."""
+
+    def test_returns_token_from_header(self):
+        """Returns token when X-CSRF-Token header is present."""
+        mock_request = Mock()
+        mock_request.headers = {"X-CSRF-Token": "some_token"}
+
+        assert get_csrf_token_from_request(mock_request) == "some_token"
+
+    def test_returns_none_without_header(self):
+        """Returns None when X-CSRF-Token header is absent."""
+        mock_request = Mock()
+        mock_request.headers = {}
+
+        assert get_csrf_token_from_request(mock_request) is None
+
+
 class TestCSRFProtection:
     """Тесты CSRFProtection класса."""
 
@@ -114,6 +134,40 @@ class TestCSRFProtection:
         fake_token = "fake.token"
         
         assert protection.validate_token(fake_token) is False
+
+    def test_validate_token_no_separator(self):
+        """Token without dot separator returns False."""
+        protection = CSRFProtection(ttl_seconds=60)
+
+        assert protection.validate_token("no_separator") is False
+
+    def test_validate_expired_token_deletes_and_returns_false(self):
+        """Expired token is deleted from storage and returns False."""
+        protection = CSRFProtection(ttl_seconds=60)
+
+        token = protection.create_token()
+        token_part = token.rsplit('.', 1)[0]
+
+        # Simulate expiration by moving the expiry time into the past
+        protection._tokens[token_part] = protection._time.time() - 1
+
+        assert protection.validate_token(token) is False
+        assert token_part not in protection._tokens
+
+    def test_cleanup_removes_expired_tokens(self):
+        """_cleanup removes expired tokens when creating a new one."""
+        protection = CSRFProtection(ttl_seconds=60)
+
+        token = protection.create_token()
+        token_part = token.rsplit('.', 1)[0]
+
+        # Simulate expiration
+        protection._tokens[token_part] = protection._time.time() - 1
+
+        # Creating a new token triggers _cleanup, which should remove the expired one
+        protection.create_token()
+
+        assert token_part not in protection._tokens
 
     def test_get_token_for_form(self):
         """Токен для формы."""

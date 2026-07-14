@@ -204,3 +204,28 @@ class TestRequireAuth:
         
         result = await dummy_endpoint(mock_request)
         assert result == {"ok": True}
+
+    @pytest.mark.anyio
+    async def test_malformed_basic_auth_no_colon(self, monkeypatch):
+        """Basic auth without colon in decoded value returns 401."""
+        from security.auth import get_password_hash
+        import base64
+        from unittest.mock import Mock
+
+        monkeypatch.setenv("APP_USERNAME", "admin")
+        monkeypatch.setenv("APP_PASSWORD_HASH", get_password_hash("password"))
+
+        @require_auth
+        async def dummy_endpoint(request):
+            return {"ok": True}
+
+        # "nocolon" decodes to a string without ":"
+        credentials = base64.b64encode(b"nocolon").decode()
+
+        mock_request = Mock()
+        mock_request.headers = {"Authorization": f"Basic {credentials}"}
+
+        with pytest.raises(HTTPException) as exc_info:
+            await dummy_endpoint(mock_request)
+
+        assert exc_info.value.status_code == status.HTTP_401_UNAUTHORIZED
