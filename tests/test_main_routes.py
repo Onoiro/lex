@@ -1017,3 +1017,71 @@ class TestLanguageCodes:
 
         assert response.status_code == status.HTTP_200_OK
         assert "xx" in response.text
+
+
+class TestAutoMigrate:
+    """Tests for auto_migrate function."""
+
+    def test_auto_migrate_adds_all_columns(self, tmp_path, monkeypatch):
+        """auto_migrate adds all missing columns to a legacy table."""
+        from sqlalchemy import create_engine, inspect as sa_inspect, text
+        from main import auto_migrate
+
+        # Create a legacy database with only original columns
+        db_path = tmp_path / "legacy.db"
+        legacy_engine = create_engine(f"sqlite:///{db_path}")
+        with legacy_engine.connect() as conn:
+            conn.execute(text(
+                "CREATE TABLE words ("
+                "id INTEGER PRIMARY KEY, "
+                "word VARCHAR UNIQUE, "
+                "translation VARCHAR, "
+                "interval INTEGER DEFAULT 0, "
+                "repetitions INTEGER DEFAULT 0, "
+                "next_review FLOAT)"
+            ))
+            conn.commit()
+
+        monkeypatch.setattr("main.engine", legacy_engine)
+        auto_migrate()
+
+        inspector = sa_inspect(legacy_engine)
+        columns = [col["name"] for col in inspector.get_columns("words")]
+        assert "last_direction" in columns
+        assert "best_time" in columns
+        assert "avg_time" in columns
+        assert "know_count" in columns
+        assert "forgot_count" in columns
+
+    def test_auto_migrate_idempotent(self):
+        """auto_migrate is safe to run on an already-migrated table."""
+        from sqlalchemy import inspect as sa_inspect
+        from main import auto_migrate, engine
+
+        auto_migrate()
+
+        inspector = sa_inspect(engine)
+        columns = [col["name"] for col in inspector.get_columns("words")]
+        assert "last_direction" in columns
+        assert "best_time" in columns
+        assert "avg_time" in columns
+        assert "know_count" in columns
+        assert "forgot_count" in columns
+
+
+class TestDebugTranslate:
+    """Tests for /debug/translate route."""
+
+    def test_debug_translate_returns_json(self, client):
+        """Debug translate endpoint returns JSON with translation data."""
+        from unittest.mock import patch
+
+        with patch("services.translator._translate_sync") as mock:
+            mock.return_value = ("привет", "en", {"debug": "info"})
+            response = client.get("/debug/translate")
+
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert data["result"] == "привет"
+        assert data["detected"] == "en"
+        assert "debug" in data
