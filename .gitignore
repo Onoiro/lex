@@ -64,6 +64,9 @@ ENV/
 *.swo
 *~
 
+# Koda CLI
+.kodacli/
+
 # OS
 .DS_Store
 Thumbs.db
