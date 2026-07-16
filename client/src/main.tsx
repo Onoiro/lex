@@ -1,6 +1,9 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { Capacitor } from "@capacitor/core";
+import { StatusBar, Style } from "@capacitor/status-bar";
+import { SplashScreen } from "@capacitor/splash-screen";
 import "@picocss/pico/css/pico.min.css";
 import "./index.css";
 import { Layout } from "@/components/Layout";
@@ -27,6 +30,24 @@ function App() {
   );
 }
 
+// Configure native plugins (Android only, no-op on web)
+async function setupNativePlugins() {
+  if (!Capacitor.isNativePlatform()) return;
+
+  try {
+    await StatusBar.setStyle({ style: Style.Default });
+    await StatusBar.setBackgroundColor({ color: "#1095C1" });
+  } catch {
+    // StatusBar not available on this platform
+  }
+
+  try {
+    await SplashScreen.hide();
+  } catch {
+    // SplashScreen not available
+  }
+}
+
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <BrowserRouter>
@@ -43,3 +64,6 @@ if ("serviceWorker" in navigator) {
     });
   });
 }
+
+// Initialize native plugins
+void setupNativePlugins();
