@@ -1,0 +1,19 @@
+/* Layout: sticky footer, full-height body */
+html,
+body {
+  height: 100%;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+}
+
+main {
+  flex: 1;
+  padding-bottom: 4rem;
+}
+
+nav strong {
+  font-size: 1.2rem;
+}
