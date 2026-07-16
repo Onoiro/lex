@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { getSettings } from "@/data/settingsRepository";
 import en from "./en.json";
 import ru from "./ru.json";
 
@@ -74,7 +75,6 @@ export function useLocale(): readonly [typeof t, Locale] {
  */
 export function useInitLocale(): void {
   const init = useCallback(async () => {
-    const { getSettings } = await import("@/data/settingsRepository");
     const settings = await getSettings();
     setLocale(settings.locale);
   }, []);
