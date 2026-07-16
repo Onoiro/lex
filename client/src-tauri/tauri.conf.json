@@ -2,7 +2,7 @@
   "$schema": "https://raw.githubusercontent.com/nicehash/tauri/dev/crates/tauri-config-schema/schema.json",
   "productName": "Lex",
   "version": "0.11.7",
-  "identifier": "ru.lex.app",
+  "identifier": "ru.lex.desktop",
   "build": {
     "frontendDist": "../dist",
     "devUrl": "http://localhost:5173",
