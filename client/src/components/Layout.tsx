@@ -1,17 +1,22 @@
 import { NavLink, Link } from "react-router-dom";
+import { useLocale } from "@/i18n";
+
+const APP_VERSION = "0.11.7";
 
 interface LayoutProps {
   children: React.ReactNode;
 }
 
-const navItems = [
-  { to: "/add", label: "Translate" },
-  { to: "/review", label: "Review" },
-  { to: "/dictionary", label: "Dictionary" },
-  { to: "/settings", label: "Settings" },
-];
-
 export function Layout({ children }: LayoutProps) {
+  const [t] = useLocale();
+
+  const navItems = [
+    { to: "/add", label: t("nav.translate") },
+    { to: "/review", label: t("nav.review") },
+    { to: "/dictionary", label: t("nav.dictionary") },
+    { to: "/settings", label: t("nav.settings"), title: t("nav.settings.title") },
+  ];
+
   return (
     <div className="container">
       <header>
@@ -19,7 +24,7 @@ export function Layout({ children }: LayoutProps) {
           <ul>
             <li>
               <Link to="/" className="contrast">
-                <strong>Lex</strong>
+                <strong>{t("nav.home")}</strong>
               </Link>
             </li>
           </ul>
@@ -28,9 +33,8 @@ export function Layout({ children }: LayoutProps) {
               <li key={item.to}>
                 <NavLink
                   to={item.to}
-                  className={({ isActive }) =>
-                    isActive ? "secondary" : "secondary"
-                  }
+                  className={({ isActive }) => (isActive ? "secondary" : "secondary")}
+                  title={item.title}
                 >
                   {item.label}
                 </NavLink>
@@ -58,7 +62,7 @@ export function Layout({ children }: LayoutProps) {
           zIndex: 100,
         }}
       >
-        Lex v0.1.0
+        {t("footer.version", { version: APP_VERSION })}
       </footer>
     </div>
   );
