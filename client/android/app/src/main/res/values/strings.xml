@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Lex</string>
+    <string name="title_activity_main">Lex</string>
+    <string name="package_name">ru.lex.app</string>
+    <string name="custom_url_scheme">ru.lex.app</string>
+</resources>
