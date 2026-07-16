@@ -5,6 +5,7 @@ import { validateWord, validateTranslation } from "@/domain/validators";
 import { translateWord } from "@/services/translateApi";
 import { addWord } from "@/data/wordRepository";
 import { getSettings } from "@/data/settingsRepository";
+import { OfflineIndicator } from "@/components/OfflineIndicator";
 import type { LanguageSettings } from "@/types";
 
 type MessageType = "success" | "error_duplicate" | "error_translation" | "error_network" | null;
@@ -17,6 +18,18 @@ export function Add() {
   const [translating, setTranslating] = useState(false);
   const [message, setMessage] = useState<{ type: MessageType; text: string } | null>(null);
   const [settings, setSettings] = useState<LanguageSettings | null>(null);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, []);
 
   const wordRef = useRef<HTMLTextAreaElement>(null);
   const translationRef = useRef<HTMLTextAreaElement>(null);
@@ -92,6 +105,7 @@ export function Add() {
 
   return (
     <>
+      <OfflineIndicator />
       <hgroup style={{ textAlign: "center", marginBottom: "2rem", marginTop: "1rem" }}>
         <h1>{t("add.heading")}</h1>
         <p>{t("add.subheading")}</p>
@@ -133,7 +147,7 @@ export function Add() {
             className="secondary"
             style={{ width: "100%", marginTop: "0.5rem" }}
             onClick={handleTranslate}
-            disabled={translating}
+            disabled={translating || !isOnline}
           >
             {translating ? "⏳ ..." : t("add.translate_btn")}
           </button>
