@@ -1,0 +1,18 @@
+[package]
+name = "lex"
+version = "0.11.7"
+description = "Lex — Translator and Vocabulary Trainer"
+authors = ["Andrey Bogatyrev"]
+edition = "2021"
+
+[lib]
+name = "lex_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
