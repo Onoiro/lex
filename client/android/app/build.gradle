@@ -7,8 +7,8 @@ android {
         applicationId "ru.lex.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
+        versionCode 11
+        versionName "0.11.7"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -20,6 +20,23 @@ android {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            // Signing config for release builds (RuStore, AppGallery).
+            // Create keystore.properties in android/app/ with:
+            //   storeFile=lex.jks
+            //   storePassword=***
+            //   keyAlias=lex
+            //   keyPassword=***
+            def keystoreProperties = new Properties()
+            def keystorePropertiesFile = rootProject.file('app/keystore.properties')
+            if (keystorePropertiesFile.exists()) {
+                keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+                signingConfig signingConfigs.create('release') {
+                    storeFile file(keystoreProperties['storeFile'])
+                    storePassword keystoreProperties['storePassword']
+                    keyAlias keystoreProperties['keyAlias']
+                    keyPassword keystoreProperties['keyPassword']
+                }
+            }
         }
     }
 }
