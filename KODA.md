@@ -1,124 +1,189 @@
 # KODA.md — Контекст проекта Lex
 
 ## Обзор проекта
-Lex — веб-приложение-переводчик и помощник для запоминания слов. Приложение поддерживает перевод между любыми из 100+ языков через Yandex Translate API, а также позволяет добавлять новые слова с переводом и проходить повторения: слова выбираются случайно с учётом веса (чем меньше интервал, тем выше шанс выпадения). При добавлении слова можно автоматически получить перевод через Yandex Translate API. По умолчанию используется автоопределение языка введённого текста, но пользователь может выбрать конкретный исходный и целевой язык на странице настроек (/settings). Проект предназначен для личного и некоммерческого использования.
+Lex — local-first приложение-переводчик и помощник для запоминания слов. Словарь, spaced repetition (SM-2) и настройки хранятся локально на устройстве (IndexedDB через Dexie.js). Интернет нужен только для перевода через тонкий proxy к Yandex Translate API. Распространение: PWA, Android (RuStore/AppGallery через Capacitor), Desktop (Tauri).
 
 **Демо:** [lex.2-way.ru](https://lex.2-way.ru)
 
 **Текущая версия:** 0.11.7
 
+## Архитектура
+
+```
+┌─────────────────────────────────────────────────────┐
+│                    Client (React)                    │
+│  ┌──────────┐  ┌──────────┐  ┌───────────────────┐  │
+│  │   Pages   │  │  Domain  │  │  Data (Dexie/IDB) │  │
+│  │  (React)  │  │  (SRS)   │  │  wordRepository   │  │
+│  └────┬─────┘  └──────────┘  └───────────────────┘  │
+│       │                                              │
+│       ▼                                              │
+│  ┌──────────────┐                                   │
+│  │ translateApi │ ──── HTTP ────► Proxy (FastAPI)   │
+│  └──────────────┘                (Yandex API key)   │
+└─────────────────────────────────────────────────────┘
+```
+
+- **Client:** React 19 + TypeScript, Vite 7, Dexie.js (IndexedDB), Pico CSS, vite-plugin-pwa
+- **Proxy:** FastAPI, порт 8004. Скрывает Yandex API key. Эндпоинты: POST `/translate`, GET `/languages`
+- **Old server:** FastAPI + SQLAlchemy + Jinja2 (выводится из эксплуатации, остаётся только `/export` для миграции)
+
 ## Используемые технологии
+
+### Client (`client/`)
+- **Язык:** TypeScript (strict mode)
+- **Фреймворк:** React 19
+- **Сборка:** Vite 7
+- **Хранилище:** Dexie.js (IndexedDB)
+- **Стили:** Pico CSS (через npm, подход без классов)
+- **PWA:** vite-plugin-pwa (service worker, web manifest, offline)
+- **Тестирование:** Vitest + jsdom + fake-indexeddb
+- **Линтинг:** ESLint 9 + typescript-eslint
+- **Android:** Capacitor 8 (RuStore, AppGallery)
+- **Desktop:** Tauri 2 (Windows MSI/NSIS, macOS DMG, Linux deb/AppImage)
+
+### Proxy (`proxy/`)
 - **Язык:** Python 3.13
-- **Фреймворк:** FastAPI (асинхронный веб-сервер)
-- **База данных:** SQLite (файловая, без отдельного сервера)
-- **ORM:** SQLAlchemy 2.0
-- **Шаблоны:** Jinja2 (серверный рендеринг)
-- **Стили:** Pico CSS (через CDN, подход без классов)
+- **Фреймворк:** FastAPI
+- **Управление пакетами:** pip (requirements.txt)
+- **Порт:** 8004
+
+### Old server (корень проекта)
+- **Язык:** Python 3.13
+- **Фреймворк:** FastAPI + SQLAlchemy 2.0 + Jinja2
+- **База данных:** SQLite
 - **Управление пакетами:** uv
 - **Линтинг:** ruff
-- **Сборка/запуск:** Makefile
-- **Переменные окружения:** python-dotenv (.env)
-- **Интеграция:** Yandex Translate API (автоперевод слов)
-- **Мониторинг ошибок:** Rollbar (production error tracking)
-- **Качество кода:** SonarCloud (статический анализ, покрытие, CI)
+- **Тестирование:** pytest
 
 ## Сборка и запуск
-Проект управляется через `Makefile`. Основные команды:
-- `make run` — запуск сервера разработки на порту 8003 с автоперезагрузкой
-- `make lint` — проверка кода линтером ruff
-- `make test` — запуск тестов
-- `make clean` — очистка кэша Python
 
-Для установки зависимостей используется `uv`. Виртуальное окружение создаётся автоматически при первом запуске.
+### Client (PWA)
+```bash
+cd client
+npm install
+npm run dev          # dev server на localhost:5173
+npm run build        # production build → dist/
+npm run test         # vitest
+npm run lint         # eslint
+```
 
-### Docker
-Проект поддерживает развёртывание через Docker:
+### Proxy
+```bash
+cd proxy
+pip install -r requirements.txt
+uvicorn main:app --port 8004
+```
 
-**Docker Compose (рекомендуемый способ):**
+### Android (Capacitor)
+```bash
+cd client
+npm run build
+npx cap sync android
+cd android
+./gradlew assembleRelease   # → app/build/outputs/apk/release/
+```
+
+### Desktop (Tauri)
+```bash
+cd client
+npm run tauri:build    # → src-tauri/target/release/bundle/
+npm run tauri:dev      # dev mode
+```
+
+### Old server (для миграции)
+```bash
+make run    # порт 8003
+make lint   # ruff
+make test   # pytest
+```
+
+### Docker (proxy + old server)
 ```bash
 make d-build  # docker compose build
 make d-run    # docker compose up -d
 ```
-Сервер будет доступен на http://localhost:8003
 
-Дополнительные команды:
-```bash
-make d-stop   # docker compose stop
-make d-down   # docker compose down
-make d-logs   # docker compose logs -f
-make d-rebuild # docker compose down && docker compose up -d --build
-```
-
-**Ручной Dockerfile:**
-```bash
-docker build -t lex-app .
-docker run -d --name lex -p 8003:8003 -v $(pwd)/data:/app/data --env-file .env lex-app
-```
-Маунт тома `-v $(pwd)/data:/app/data` сохраняет базу данных SQLite вне контейнера.
-
-## Архитектура и ключевые файлы
+## Структура проекта
 ```
 .
-├── main.py            # Точка входа FastAPI, маршруты (главная, добавление, повтор, словарь)
-├── database.py        # Настройка SQLAlchemy, движок SQLite, функция получения сессии
-├── models.py          # Модель слова: id, слово, перевод, интервал, повторения, следующая проверка, направление, best/avg время, know/forgot count
-├── security/          # Модули безопасности
-│   ├── auth.py        # Аутентификация
-│   ├── csrf.py        # CSRF защита
-│   ├── rate_limiter.py # Ограничение запросов к API
-│   └── validators.py  # Валидация входных данных
-├── services/          # Бизнес-сервисы
-│   ├── translator.py  # Интеграция с Yandex Translate Cloud API v2 (100+ языков)
-│   └── cache.py       # Кэширование переводов
-├── i18n/              # Интернационализация
-│   ├── __init__.py    # i18n core: функция _t(), set_locale(), SUPPORTED_LOCALES
-│   ├── languages.py   # Словари LANGUAGE_NAMES_EN/RU, NATIVE_NAMES, get_language_name()
-│   ├── en.json        # Английские переводы UI
-│   └── ru.json        # Русские переводы UI
-├── templates/
-│   ├── base.html      # Базовый шаблон с подключением Pico CSS и навигацией
-│   ├── index.html     # Главная страница (выбор режима)
-│   ├── add.html       # Форма добавления нового слова с кнопкой автоперевода
-│   ├── review.html    # Интерфейс повторения (показ слова, скрытый перевод, кнопки ответа)
-│   ├── dictionary.html # Просмотр словаря (поиск, удаление слов)
-│   └── settings.html  # Настройки (язык интерфейса, языки перевода)
-├── Dockerfile         # Образ Docker
-├── docker-compose.yml # Конфигурация Docker Compose
-├── pyproject.toml     # Конфигурация проекта, зависимости, настройки линтера
-├── sonar-project.properties # Конфигурация SonarCloud
-├── Makefile           # Скрипты сборки и запуска
-├── .env               # Переменные окружения (YANDEX_API_KEY)
-└── uv.lock            # Файл блокировок uv
+├── client/                    # Local-first клиентское приложение
+│   ├── src/
+│   │   ├── components/        # Layout, OfflineIndicator
+│   │   ├── data/              # db.ts (Dexie), wordRepository, settingsRepository
+│   │   ├── domain/            # srs.ts (SM-2), stats.ts, validators.ts
+│   │   ├── i18n/              # index.ts, languages.ts, en.json, ru.json
+│   │   ├── pages/             # Home, Add, Review, Dictionary, Settings
+│   │   ├── services/          # translateApi.ts (proxy client)
+│   │   ├── types/             # Word, LanguageSettings
+│   │   └── main.tsx           # App entry, SW registration, native plugins
+│   ├── capacitor.config.ts    # Android config (ru.lex.app)
+│   ├── src-tauri/             # Desktop (Tauri 2, Rust)
+│   ├── android/               # Capacitor Android project
+│   ├── public/                # PWA icons, favicon
+│   ├── vite.config.ts         # Vite + PWA plugin
+│   ├── eslint.config.js
+│   └── package.json
+├── proxy/                     # Translate proxy (FastAPI, порт 8004)
+│   ├── main.py                # /translate, /languages
+│   └── requirements.txt
+├── main.py                    # Old server (выводится из эксплуатации)
+├── database.py                # Old SQLAlchemy setup
+├── models.py                  # Old Word model
+├── security/                  # Old auth, CSRF, rate limiter, validators
+├── services/                  # Old translator, cache
+├── i18n/                      # Old server-side i18n
+├── templates/                 # Old Jinja2 templates
+├── tests/                     # Old server tests (pytest)
+├── static/                    # Old static assets
+├── pyproject.toml             # Python project config (uv, ruff)
+├── Makefile                   # Build/run scripts
+├── docker-compose.yml         # Docker (proxy + old server)
+└── .env                       # YANDEX_API_KEY, auth config
 ```
 
 ## Правила разработки
-- **Управление зависимостями:** Только `uv`. Не использовать `pip`.
-- **Линтинг:** Перед каждым коммитом запускать `make lint`. Линтер должен проходить без ошибок.
-- **Стиль кода:** Python 3.10+, соблюдение соглашений, соблюдаемых ruff.
-- **Комментарии в коде:** Все комментарии должны быть написаны на простом английском языке, хорошо понятном не-нативным носителям (non-native speakers). Избегать сложных грамматических конструкций и идиом.
-- **База данных:** SQLite хранится в файле базы данных (добавлен в игнорирование git). Не коммитить базу данных.
-- **Коммиты:** Сообщения коммитов пишутся на простом английском языке, понятном не-носителям.
-- **Версионирование:** Версия проекта управляется через `pyproject.toml` (семантическое версионирование 0.x).
-- **Переменные окружения:** Все секретные ключи хранятся в `.env`. Для установки — `python-dotenv`.
-- **Rollbar:** Production error tracking. Инициализируется в `main.py` через `ROLLBAR_ACCESS_TOKEN`. Тестовый эндпоинт: `/debug/rollbar` (требует аутентификации).
-- **SonarCloud:** Статический анализ кода и покрытие. Конфигурация в `sonar-project.properties`. Отчёты генерируются через `make test-cov` (XML + HTML). CI настроен в `.github/workflows/ci.yml`.
-- **Шаблоны:** Серверный рендеринг через Jinja2. Избегать передачи объекта запроса в шаблоны напрямую (проблема с хешированием в кэше Jinja2). Передавать только нужные данные.
-- **Алгоритм повторений:** Упрощённая версия метода SM-2. Интервалы растут при правильных ответах, сбрасываются при ошибках. Интервал ограничен 30 днями (потолок). Выбор слова — взвешенный рандом из всех слов: вес = 1 / (интервал + 1). Слова с меньшим интервалом (чаще забываемые) выпадают чаще.
-- **Статистика ответа:** Для каждого слова отслеживаются количество кликов «Знаю» и «Забыл», а также процент успешных ответов. Показатели отображаются на странице повторения и в словаре.
-- **Время ответа:** В режиме повторения отслеживается время от показа слова до нажатия кнопки. Лучшее и среднее время отображаются над словом. Живой таймер останавливается при ответе. При новом рекорде таймер становится зелёным. В словаре отображаются best и avg время, а также интервал. Таймер имеет потолок 10 секунд: если пользователь не ответил за это время, ответ автоматически засчитывается как «Не помню» (elapsed ограничивается 10 сек). После 5 секунд таймер становится оранжевым, после 10 — красным.
-- **Авто-ответ и пауза:** Если пользователь не отвечает за 10 секунд, ответ автоматически записывается как «Не помню» и показывается перевод. При 3 подряд авто-ответах или 30 секундах бездействия после авто-ответа тренировка приостанавливается с экраном паузы и кнопкой «Продолжить». Перед началом сессии показывается стартовый экран с кнопкой «Начать тренировку».
-- **Отображение языков:** В списке языков на странице настроек каждый язык отображается в формате «Полное имя (имя на родном языке, код)», например «Arabic (العربية, ar)» или «Английский (English, en)». Полные имена берутся из статических словарей (LANGUAGE_NAMES_EN, LANGUAGE_NAMES_RU) с fallback на Yandex API. Родные имена хранятся в словаре NATIVE_NAMES в `i18n/languages.py`.
-- **Тестирование:** 
-  - Все новые функции должны покрываться тестами.
-  - Запуск тестов: `make test`
-  - Покрытие кода: `make test-cov` (генерирует XML для SonarQube и HTML-отчёт)
-  - Использовать фикстуры из `tests/conftest.py` для переиспользования кода.
-  - Комментарии в тестах — на простом английском.
+
+### Client
+- **Импорты:** alias `@/` → `client/src/`
+- **Тестирование:** Vitest + fake-indexeddb. Все новые функции покрываются тестами.
+- **Линтинг:** `npx eslint .` — 0 ошибок. Предупреждения — некритичные (react-refresh, react-hooks/exhaustive-deps).
+- **Комментарии:** на простом английском, понятном non-native speakers.
+- **Стиль:** Pico CSS (без классов), Material Design принципы.
+- **i18n:** все UI-строки через `t()` из `@/i18n`. Переводы в `en.json` и `ru.json`.
+- **PWA:** vite-plugin-pwa генерирует SW. Runtime cache для `/translate` и `/languages` (NetworkFirst).
+- **VITE_PROXY_URL:** env var для proxy base URL (пустая строка = relative path).
+
+### Proxy
+- Скрывает Yandex API key. Rate limiting. Кэш переводов.
+- Эндпоинты: POST `/translate` (body: word, source_lang, target_lang), GET `/languages`.
+
+### Old server
+- **Управление зависимостями:** только `uv`.
+- **Линтинг:** `make lint` (ruff). Без ошибок.
+- **Комментарии:** на простом английском.
+- **База данных:** SQLite, не коммитить.
+- **Версионирование:** `pyproject.toml`, семантическое версионирование 0.x.
+- **Переменные окружения:** `.env` (YANDEX_API_KEY, auth).
+
+## Алгоритм повторений (SM-2)
+- Упрощённая версия SM-2. Интервалы растут при правильных ответах, сбрасываются при ошибках.
+- Потолок интервала: 30 дней.
+- Выбор слова: взвешенный рандом, вес = 1 / (интервал + 1). Меньший интервал = выше шанс.
+- Статистика: know_count, forgot_count, best_time, avg_time для каждого слова.
+- Таймер: потолок 10 сек. После 5 сек — оранжевый, после 10 — красный. Авто-ответ «Не помню» через 10 сек.
+- Пауза: при 3 подряд авто-ответах или 30 сек бездействия.
+
+## Миграция (old server → client)
+1. GET `/export` на старом сервере (требует auth) → JSON-массив всех слов.
+2. В клиенте: Dictionary → Import → загрузить JSON-файл.
+3. Дубликаты пропускаются, недостающие поля заполняются значениями по умолчанию.
 
 ## Дальнейшие планы
-- Добавить экспорт/импорт словаря
-- Добавить тёмную тему (поддерживается на уровне фреймворка стилей)
-- Реализовать пагинацию и поиск по словарю при его росте
+- Вывести старый сервер из эксплуатации (оставить только proxy)
+- Добавить тёмную тему (Pico CSS поддерживает)
+- Пагинация и поиск по словарю при росте
+- CI для кросс-компиляции Tauri (Windows MSI/NSIS, macOS DMG)
 
 ---
-**Последнее обновление:** 14 июля 2026
+**Последнее обновление:** 17 июля 2026
