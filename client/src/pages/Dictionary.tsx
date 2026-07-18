@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Link } from "react-router-dom";
 import { useLocale } from "@/i18n";
-import { getAllWords, deleteWord } from "@/data/wordRepository";
+import { getAllWords, deleteWord, exportWords, importWords } from "@/data/wordRepository";
 import { formatTime } from "@/domain/stats";
 import type { Word } from "@/types";
 
@@ -9,6 +9,8 @@ export function Dictionary() {
   const [t] = useLocale();
   const [words, setWords] = useState<Word[]>([]);
   const [search, setSearch] = useState("");
+  const [importMsg, setImportMsg] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const loadWords = useCallback(async () => {
     const all = await getAllWords();
@@ -33,6 +35,45 @@ export function Dictionary() {
     void loadWords();
   };
 
+  const handleExport = async () => {
+    const words = await exportWords();
+    const blob = new Blob([JSON.stringify(words, null, 2)], {
+      type: "application/json",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "lex-dictionary.json";
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const text = await file.text();
+      const data = JSON.parse(text);
+      if (!Array.isArray(data) || data.length === 0) {
+        setImportMsg(t("dictionary.import_empty"));
+        return;
+      }
+      const result = await importWords(data);
+      setImportMsg(
+        t("dictionary.import_success", {
+          imported: result.imported,
+          skipped: result.skipped,
+        }),
+      );
+      void loadWords();
+    } catch {
+      setImportMsg(t("dictionary.import_error"));
+    } finally {
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
   if (words.length === 0) {
     return (
       <>
@@ -55,6 +96,30 @@ export function Dictionary() {
         <h1>{t("dictionary.heading")}</h1>
         <p>{t("dictionary.total", { total: words.length })}</p>
       </hgroup>
+
+      <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1rem", flexWrap: "wrap" }}>
+        <button className="outline" onClick={() => void handleExport()} style={{ fontSize: "0.9rem" }}>
+          📤 {t("dictionary.export")}
+        </button>
+        <button
+          className="outline"
+          onClick={() => fileInputRef.current?.click()}
+          style={{ fontSize: "0.9rem" }}
+        >
+          📥 {t("dictionary.import")}
+        </button>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="application/json"
+          onChange={(e) => void handleImport(e)}
+          style={{ display: "none" }}
+        />
+      </div>
+
+      {importMsg && (
+        <p style={{ marginBottom: "1rem", color: "var(--pico-muted-color)" }}>{importMsg}</p>
+      )}
 
       <input
         type="search"
