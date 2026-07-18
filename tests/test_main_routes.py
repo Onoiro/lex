@@ -1069,6 +1069,58 @@ class TestAutoMigrate:
         assert "forgot_count" in columns
 
 
+class TestExportDictionary:
+    """Tests for GET /export route."""
+
+    def test_export_requires_auth(self, client):
+        """Export endpoint requires authentication."""
+        response = client.get("/export")
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+    def test_export_returns_json(self, authenticated_client):
+        """Export endpoint returns JSON."""
+        response = authenticated_client.get("/export")
+        assert response.status_code == status.HTTP_200_OK
+        assert "application/json" in response.headers["content-type"]
+        assert isinstance(response.json(), list)
+
+    def test_export_empty_dictionary(self, authenticated_client):
+        """Export returns empty list for empty dictionary."""
+        response = authenticated_client.get("/export")
+        assert response.status_code == status.HTTP_200_OK
+        assert response.json() == []
+
+    def test_export_returns_all_words(self, authenticated_client, sample_words):
+        """Export returns all words with correct fields."""
+        response = authenticated_client.get("/export")
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert len(data) == 3
+        # Check that all expected fields are present
+        for entry in data:
+            assert "word" in entry
+            assert "translation" in entry
+            assert "interval" in entry
+            assert "repetitions" in entry
+            assert "next_review" in entry
+            assert "last_direction" in entry
+            assert "best_time" in entry
+            assert "avg_time" in entry
+            assert "know_count" in entry
+            assert "forgot_count" in entry
+
+    def test_export_data_matches_db(self, authenticated_client, sample_word):
+        """Export data matches database content."""
+        response = authenticated_client.get("/export")
+        data = response.json()
+        assert len(data) == 1
+        entry = data[0]
+        assert entry["word"] == sample_word.word
+        assert entry["translation"] == sample_word.translation
+        assert entry["interval"] == sample_word.interval
+        assert entry["repetitions"] == sample_word.repetitions
+
+
 class TestDebugTranslate:
     """Tests for /debug/translate route."""
 

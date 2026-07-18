@@ -499,6 +499,29 @@ async def review_next(
     })
 
 
+@app.get("/export")
+@require_auth
+async def export_dictionary(request: Request, db: DbSession):
+    """Export all words as JSON for migration to local-first client."""
+    all_words = db.query(Word).order_by(Word.word).all()
+    data = [
+        {
+            "word": w.word,
+            "translation": w.translation,
+            "interval": w.interval,
+            "repetitions": w.repetitions,
+            "next_review": w.next_review,
+            "last_direction": w.last_direction,
+            "best_time": w.best_time,
+            "avg_time": w.avg_time,
+            "know_count": w.know_count,
+            "forgot_count": w.forgot_count,
+        }
+        for w in all_words
+    ]
+    return JSONResponse(data)
+
+
 @app.get("/debug/rollbar")
 @require_auth
 async def debug_rollbar(request: Request):
