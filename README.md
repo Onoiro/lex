@@ -6,228 +6,201 @@
 
 # Lex
 
-Lex is a web-based translator and vocabulary assistant. It provides fast translation between any of 100+ languages via Yandex Translate API, plus a spaced-repetition tool for learning and retaining foreign words.
+Lex is a local-first translator and vocabulary trainer. Your dictionary, spaced repetition, and settings are stored locally on your device — no account needed, no server required. Internet is only needed for translation via a thin proxy to Yandex Translate API.
 
 **Try it live:** [lex.2-way.ru](https://lex.2-way.ru)
 
 ## Features
 
-- **Add words** — Add new words with translations manually or get auto-translation via Yandex Translate API
-- **Multi-language translation** — Translate between any of 100+ languages (English, Spanish, French, German, Chinese, Arabic, Russian, and many more). Choose both source and target languages on the Settings page
-- **Internationalization** — Switch between English and Russian UI languages via Settings page (/settings)
-- **Language settings** — Set default source and target languages globally via Settings page (/settings), and quickly switch source language on the Add page (/add)
-- **Language display** — Language selectors show full names with native names and codes, e.g. "Arabic (العربية, ar)" or "Английский (English, en)"
-- **Review mode** — Practice words with spaced repetition, response time tracking with best/avg stats, and live timer
-- **Dictionary view** — See all your words in a table with time stats and intervals
-- **Delete words** — Remove words you no longer need
-- **Spaced repetition** — Words you forget more often appear more frequently in reviews
+- **Local-first** — Dictionary, SRS, and settings stored in IndexedDB (Dexie.js). Works offline.
+- **Translate words** — Auto-translate from 100+ languages via Yandex Translate API (through proxy)
+- **Spaced repetition (SM-2)** — Words you forget more often appear more frequently in reviews
+- **Response time tracking** — Best/average times, live timer with color thresholds
+- **Auto-answer & pause** — Auto-records "Forgot" after 10s, pauses after 3 consecutive auto-answers or 30s inactivity
+- **PWA** — Installable, offline-capable via service worker
+- **Android** — Native app via Capacitor (RuStore, AppGallery)
+- **Desktop** — Native installers via Tauri (Windows MSI/NSIS, macOS DMG, Linux deb/AppImage)
+- **i18n** — English and Russian UI
+- **Import/Export** — Migrate dictionary from old server or backup as JSON
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────┐
+│                    Client (React)                    │
+│  ┌──────────┐  ┌──────────┐  ┌───────────────────┐  │
+│  │   Pages   │  │  Domain  │  │  Data (Dexie/IDB) │  │
+│  │  (React)  │  │  (SRS)   │  │  wordRepository   │  │
+│  └────┬─────┘  └──────────┘  └───────────────────┘  │
+│       │                                              │
+│       ▼                                              │
+│  ┌──────────────┐                                   │
+│  │ translateApi │ ──── HTTP ────► Proxy (FastAPI)   │
+│  └──────────────┘                (Yandex API key)   │
+└─────────────────────────────────────────────────────┘
+```
 
 ## Tech Stack
 
-- **Backend:** Python 3.13, FastAPI
-- **Database:** SQLite
-- **ORM:** SQLAlchemy 2.0
-- **Templates:** Jinja2
-- **Styles:** Pico CSS
-- **Translation:** Yandex Translate Cloud API v2
-- **Error Tracking:** Rollbar
-- **Code Quality:** SonarCloud
+### Client (`client/`)
+- React 19, TypeScript (strict), Vite 7
+- Dexie.js (IndexedDB) for local storage
+- Pico CSS for styling
+- vite-plugin-pwa for offline support
+- Capacitor 8 for Android
+- Tauri 2 for Desktop
+- Vitest + fake-indexeddb for testing
 
-## Code Quality & Monitoring
+### Proxy (`proxy/`)
+- Python 3.13, FastAPI
+- Hides Yandex API key
+- Endpoints: POST `/translate`, GET `/languages`
+- Rate limiting, translation cache
 
-### SonarCloud
-Code quality is continuously analyzed by SonarCloud. Coverage reports are generated via `make test-cov` and uploaded to SonarCloud through GitHub Actions CI.
-
-- [SonarCloud Dashboard](https://sonarcloud.io/summary/new_code?id=Onoiro_lex)
-- [CI Pipeline](https://github.com/Onoiro/lex/actions/workflows/ci.yml)
-
-### Rollbar
-Production errors are tracked with Rollbar. Unhandled exceptions are automatically reported to a centralized dashboard for monitoring and debugging.
-
-- Test endpoint: `/debug/rollbar` (requires authentication)
+### Old server (root, being decommissioned)
+- Python 3.13, FastAPI, SQLAlchemy, Jinja2
+- SQLite database
+- `/export` endpoint for migration to local-first client
 
 ## Quick Start
 
-### Prerequisites
+### Client (PWA)
 
-- Python 3.10+
-- [uv](https://docs.astral.sh/uv/) package manager
-- Yandex Translate API key (optional, for auto-translation)
+```bash
+cd client
+npm install
+npm run dev          # http://localhost:5173
+npm run build        # production build → dist/
+npm run test         # vitest (73 tests)
+npm run lint         # eslint
+```
 
-### Installation
+### Proxy
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/yourusername/lex.git
-   cd lex
-   ```
+```bash
+cd proxy
+pip install -r requirements.txt
+uvicorn main:app --port 8004
+```
 
-2. Install dependencies:
-   ```bash
-   uv sync
-   ```
+Set `VITE_PROXY_URL` in `client/.env` if proxy runs on a different origin.
 
-3. Create `.env` file:
-   ```bash
-   cp .env.example .env
-   ```
+### Android (Capacitor)
 
-4. Add your Yandex API key to `.env` (optional):
-   ```
-   YANDEX_API_KEY=your_api_key_here
-   ```
+```bash
+cd client
+npm run build
+npx cap sync android
+cd android
+./gradlew assembleRelease   # → app/build/outputs/apk/release/
+```
 
-5. Run the development server:
-   ```bash
-   make run
-   ```
+### Desktop (Tauri)
 
-6. Open http://localhost:8003 in your browser
+```bash
+cd client
+npm run tauri:build    # → src-tauri/target/release/bundle/
+npm run tauri:dev      # dev mode
+```
+
+Requires Rust + system libraries (see [Tauri prerequisites](https://tauri.app/start/prerequisites/)).
+
+### Old server (for migration only)
+
+```bash
+make run    # http://localhost:8003
+make lint   # ruff
+make test   # pytest
+```
 
 ### Docker
-
-#### Quick start with Docker Compose
-
-Build and run the app in a container:
 
 ```bash
 make d-build  # docker compose build
 make d-run    # docker compose up -d
 ```
 
-The app will be available at http://localhost:8003
+## Migration (old server → local-first client)
 
-Other Docker commands:
-
-```bash
-make d-stop   # docker compose stop
-make d-down   # docker compose down
-make d-logs   # docker compose logs -f
-make d-rebuild # docker compose down && docker compose up -d --build
-```
-
-#### Dockerfile
-
-Build the image manually:
-
-```bash
-docker build -t lex-app .
-```
-
-Run the container:
-
-```bash
-docker run -d --name lex \
-  -p 8003:8003 \
-  -v $(pwd)/data:/app/data \
-  --env-file .env \
-  lex-app
-```
-
-The `-v $(pwd)/data:/app/data` mount persists the SQLite database outside the container.
-
+1. Start the old server and go to `/export` (requires authentication)
+2. Save the JSON response as a file
+3. Open the client app → Dictionary → Import
+4. Select the JSON file — duplicates are skipped, missing fields get defaults
 
 ## Usage
 
 ### Adding Words
 
-1. Go to **Добавить** (Add) page
-2. Use the language selector to choose the source language (defaults to the setting from /settings)
-3. Enter a word in the selected language
-4. Either:
-   - Click **Автоперевод** to get automatic translation to the target language
-   - Enter translation manually
-5. Click **Добавить** (Add)
-
-**Language Settings:** Go to **⚙ Settings** (/settings) to set a default source and target language. Both source and target can be any of the 100+ supported languages. These settings persist across sessions via cookies and apply to both the Add page and auto-translation.
+1. Go to **Translate** page
+2. Enter a word (language auto-detected, configurable in Settings)
+3. Click **Translate** to get auto-translation, or enter manually
+4. Click **Save to dictionary**
 
 ### Reviewing Words
 
-1. Go to **Повтор** (Review) page
-2. Click **Начать тренировку** (Start training) to begin the session
-3. You will see a word in any language or Russian
-4. Click:
-   - **Знаю** (Know) — if you remember the translation. The translation is hidden for 3 seconds so you can verify.
-   - **Забыл** (Forgot) — if you don't remember. The translation is shown for 3 seconds to help you remember.
-5. The next word appears automatically after 3 seconds
-6. Click **Следующее слово** (Next word) to skip the wait
-7. Response time is tracked: best and average times are shown above the word, and a live timer runs while you think. If your response is faster than your previous best, the timer turns green.
-8. **Auto-answer:** If you don't respond within 10 seconds, the answer is automatically recorded as "Forgot" and the translation is shown. The timer turns orange after 5 seconds and red after 10 seconds.
-9. **Pause on inactivity:** If you miss 3 answers in a row (auto-answers) or remain inactive for 30 seconds after an auto-answer, training pauses. Click **Продолжить тренировку** (Resume training) to continue.
+1. Go to **Review** page → click **Start training**
+2. A word appears — try to recall the translation
+3. Click **I know** or **I don't remember**
+4. Timer: green (record), orange (5s), red (10s). Auto-answer after 10s.
+5. Training pauses after 3 consecutive auto-answers or 30s inactivity.
 
 ### Dictionary
 
-1. Go to **Словарь** (Dictionary) page
-3. See all words sorted alphabetically. Each word shows its best/average response time, interval, and success rate.
-4. Click **✕** to delete a word.
+- View all words with stats (known/forgotten, best/avg time, interval, success rate)
+- Search, delete, export, and import words
 
 ## Spaced Repetition Algorithm
 
-Lex uses a simplified SM-2 algorithm:
-
-- **Correct answer:** Interval increases (1 → 6 → 15 → 30 days...)
-- **Wrong answer:** Interval resets to 0
-- **Interval cap:** Maximum interval is 30 days
-- **Selection:** Words with smaller intervals have higher chance to appear
-- **Know/Forgot tracking:** Each word tracks "Know" and "Forgot" clicks with success percentage shown in the dictionary and during review
+Simplified SM-2:
+- **Correct:** Interval grows (1 → 6 → 15 → 30 days, capped at 30)
+- **Wrong:** Interval resets to 0
+- **Selection:** Weighted random — weight = 1 / (interval + 1)
+- **Stats:** know_count, forgot_count, best_time, avg_time per word
 
 ## Development
 
-### Commands
+### Client commands
 
 ```bash
-make run       # Start development server
-make lint      # Run linter (ruff)
-make test      # Run tests
-make test-cov  # Run tests with coverage report (XML for SonarQube + HTML)
-make clean     # Clean Python cache and coverage reports
+cd client
+npx tsc --noEmit      # type-check
+npm run build         # vite build
+npm run lint          # eslint
+npm run test          # vitest
 ```
 
-### Coverage Reports
-
-To generate code coverage reports:
+### Server commands
 
 ```bash
-make test-cov
+make run              # dev server (port 8003)
+make lint             # ruff
+make test             # pytest
+make test-cov         # coverage (XML + HTML)
 ```
-
-This creates:
-- `coverage-reports/coverage.xml` — XML format for SonarQube Cloud
-- `htmlcov/index.html` — Interactive HTML report (open in browser)
-- Terminal output with line-by-line coverage details
 
 ### Project Structure
 
 ```
 .
-├── main.py            # FastAPI routes
-├── database.py        # SQLite setup
-├── models.py          # SQLAlchemy models
-├── security/          # Auth, CSRF, rate limiting, input validation
-│   ├── auth.py
-│   ├── csrf.py
-│   ├── rate_limiter.py
-│   └── validators.py
-├── services/          # Business logic services
-│   ├── translator.py  # Yandex Translate API integration
-│   └── cache.py       # Translation cache
-├── i18n/              # Internationalization (en, ru) and language metadata
-│   ├── __init__.py    # i18n core: _t(), set_locale()
-│   ├── languages.py   # Language name dictionaries and display helpers
-│   ├── en.json
-│   └── ru.json
-├── templates/         # Jinja2 templates
-│   ├── base.html
-│   ├── index.html
-│   ├── add.html
-│   ├── review.html
-│   ├── dictionary.html
-│   └── settings.html
-├── tests/             # Unit tests
-├── Dockerfile         # Docker image definition
-├── docker-compose.yml
-├── pyproject.toml     # Dependencies
-└── Makefile           # Build commands
+├── client/                    # Local-first client app
+│   ├── src/
+│   │   ├── components/        # Layout, OfflineIndicator
+│   │   ├── data/              # db.ts, wordRepository, settingsRepository
+│   │   ├── domain/            # srs.ts, stats.ts, validators.ts
+│   │   ├── i18n/              # index.ts, languages.ts, en/ru.json
+│   │   ├── pages/             # Home, Add, Review, Dictionary, Settings
+│   │   ├── services/          # translateApi.ts
+│   │   └── types/             # Word, LanguageSettings
+│   ├── capacitor.config.ts    # Android config
+│   ├── src-tauri/             # Desktop (Tauri 2)
+│   ├── android/               # Capacitor Android project
+│   └── vite.config.ts         # Vite + PWA plugin
+├── proxy/                     # Translate proxy (FastAPI, port 8004)
+├── main.py                    # Old server (decommissioning)
+├── tests/                     # Old server tests
+├── pyproject.toml             # Python config (uv, ruff)
+├── Makefile                   # Build/run scripts
+└── docker-compose.yml         # Docker (proxy + old server)
 ```
 
 ## License
