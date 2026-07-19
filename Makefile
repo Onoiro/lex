@@ -1,4 +1,4 @@
-.PHONY: help run proxy client-dev client-build client-test client-lint lint test test-cov clean d-build d-run d-stop d-down d-logs d-rebuild
+.PHONY: help run proxy client-dev client-build client-test client-lint client-typecheck lint test test-cov clean d-build d-run d-stop d-down d-logs d-rebuild deploy
 
 help: ## Show available commands
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}'
@@ -56,22 +56,29 @@ check: ## Run all checks (client + server)
 
 # ---------- Docker ----------
 
-d-build: ## Build Docker images
+d-build: ## Build Docker image (proxy only)
 	docker compose build
 
-d-run: ## Start Docker containers
+d-run: ## Start Docker container (proxy only)
 	docker compose up -d
 
-d-stop: ## Stop Docker containers
+d-stop: ## Stop Docker container
 	docker compose stop
 
-d-down: ## Stop and remove Docker containers
+d-down: ## Stop and remove Docker container
 	docker compose down
 
 d-logs: ## Follow Docker logs
 	docker compose logs -f
 
-d-rebuild: ## Rebuild and restart Docker containers
+d-rebuild: ## Rebuild and restart Docker container (proxy only)
+	docker compose down
+	docker compose up -d --build
+
+# ---------- Deploy ----------
+
+deploy: ## Deploy: build client + rebuild proxy container
+	cd client && npm ci && npm run build
 	docker compose down
 	docker compose up -d --build
 

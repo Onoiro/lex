@@ -25,7 +25,7 @@ from security.rate_limiter import RateLimiter, get_client_ip
 
 load_dotenv()
 
-app = FastAPI(title="Lex Translate Proxy", version="0.1.0")
+app = FastAPI(title="Lex Translate Proxy", version="1.0.0")
 
 # CORS: allow client apps from any origin
 app.add_middleware(

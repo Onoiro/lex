@@ -1,25 +1,4 @@
 services:
-  lex:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    ports:
-      - "8003:8003"
-    volumes:
-      - lex_data:/app/data
-    environment:
-      - PYTHONUNBUFFERED=1
-      - LEX_DATA_DIR=/app/data
-    env_file:
-      - ./.env
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8003/')"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
-
   lex-proxy:
     build:
       context: .
@@ -35,6 +14,3 @@ services:
       timeout: 10s
       retries: 3
       start_period: 10s
-
-volumes:
-  lex_data:

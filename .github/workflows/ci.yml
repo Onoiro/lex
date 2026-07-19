@@ -7,20 +7,52 @@ on:
     branches: [master]
 
 jobs:
-  lint:
-    name: Lint
+  client-check:
+    name: Client (lint, typecheck, test, build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: client
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: client/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type check
+        run: npx tsc --noEmit
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        run: npm run test
+
+      - name: Build
+        run: npm run build
+
+  server-lint:
+    name: Server Lint
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        uses: actions/setup-python@v5
         with:
           python-version: "3.13"
 
       - name: Install uv
-        uses: astral-sh/setup-uv@f98e06938123ccabd21905ea5d0069192241f9f1
+        uses: astral-sh/setup-uv@v5
         with:
           version: "latest"
 
@@ -30,21 +62,21 @@ jobs:
       - name: Run ruff
         run: uv run --frozen --no-build ruff check .
 
-  test:
-    name: Test
+  server-test:
+    name: Server Test
     runs-on: ubuntu-latest
-    needs: lint
+    needs: server-lint
     steps:
       - name: Checkout code
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        uses: actions/setup-python@v5
         with:
           python-version: "3.13"
 
       - name: Install uv
-        uses: astral-sh/setup-uv@f98e06938123ccabd21905ea5d0069192241f9f1
+        uses: astral-sh/setup-uv@v5
         with:
           version: "latest"
 
@@ -57,7 +89,7 @@ jobs:
           uv run --frozen --no-build pytest --cov=. --cov-report=term-missing --cov-report=xml:coverage-reports/coverage.xml --junitxml=coverage-reports/test-results.xml
 
       - name: Upload coverage report
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        uses: actions/upload-artifact@v4
         with:
           name: coverage-report
           path: coverage-reports/
@@ -65,21 +97,21 @@ jobs:
   sonarqube:
     name: SonarQube Scan
     runs-on: ubuntu-latest
-    needs: test
+    needs: [server-test, client-check]
     if: github.event_name == 'push' && github.ref == 'refs/heads/master'
     steps:
       - name: Checkout code
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
       - name: Download coverage report
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        uses: actions/download-artifact@v4
         with:
           name: coverage-report
           path: coverage-reports
 
       - name: SonarQube Scan
-        uses: SonarSource/sonarqube-scan-action@713881670b6b3676cda39549040e2d88c70d582e
+        uses: SonarSource/sonarqube-scan-action@v5
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
