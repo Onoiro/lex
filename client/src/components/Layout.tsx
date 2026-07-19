@@ -1,7 +1,7 @@
 import { NavLink, Link } from "react-router-dom";
 import { useLocale } from "@/i18n";
 
-const APP_VERSION = "0.11.7";
+const APP_VERSION = "1.0.0";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -33,7 +33,7 @@ export function Layout({ children }: LayoutProps) {
               <li key={item.to}>
                 <NavLink
                   to={item.to}
-                  className={({ isActive }) => (isActive ? "secondary" : "secondary")}
+                  className={({ isActive }) => (isActive ? "" : "secondary")}
                   title={item.title}
                 >
                   {item.label}

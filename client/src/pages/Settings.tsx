@@ -45,8 +45,8 @@ export function Settings() {
   };
 
   const langCodes = langOptions.length > 0
-    ? langOptions.map((l) => l.code).sort()
-    : Object.keys(LANGUAGE_NAMES_EN).sort();
+    ? langOptions.map((l) => l.code).sort((a, b) => a.localeCompare(b))
+    : Object.keys(LANGUAGE_NAMES_EN).sort((a, b) => a.localeCompare(b));
 
   return (
     <>
