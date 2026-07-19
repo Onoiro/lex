@@ -1,15 +1,42 @@
-.PHONY: run lint test test-cov clean d-build d-run d-stop d-down d-logs d-rebuild
+.PHONY: help run proxy client-dev client-build client-test client-lint lint test test-cov clean d-build d-run d-stop d-down d-logs d-rebuild
 
-run:
+help: ## Show available commands
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}'
+
+# ---------- Development ----------
+
+client-dev: ## Start client dev server (port 5173)
+	cd client && npm run dev
+
+proxy: ## Start translate proxy (port 8004)
+	uv run --with-requirements proxy/requirements.txt uvicorn main:app --port 8004 --reload --app-dir proxy
+
+run: ## Start old server (port 8003, for migration only)
 	uv run --frozen uvicorn main:app --host 0.0.0.0 --port 8003 --reload
 
-lint:
+# ---------- Client checks ----------
+
+client-build: ## Build client for production
+	cd client && npm run build
+
+client-test: ## Run client tests (vitest)
+	cd client && npm run test
+
+client-lint: ## Lint client code (eslint)
+	cd client && npm run lint
+
+client-typecheck: ## Type-check client (tsc)
+	cd client && npx tsc --noEmit
+
+# ---------- Server checks ----------
+
+lint: ## Lint server code (ruff)
 	uv run --frozen ruff check .
 
-test:
+test: ## Run server tests (pytest)
 	uv run --frozen pytest
 
-test-cov:
+test-cov: ## Run server tests with coverage
 	@mkdir -p coverage-reports
 	uv run --frozen pytest --cov=. --cov-report=term-missing --cov-report=xml:coverage-reports/coverage.xml --cov-report=html:htmlcov --junitxml=coverage-reports/test-results.xml
 	@echo ""
@@ -18,26 +45,39 @@ test-cov:
 	@echo "  - JUnit: coverage-reports/test-results.xml (for SonarQube test execution)"
 	@echo "  - HTML: htmlcov/index.html (open in browser)"
 
-clean:
+# ---------- All checks ----------
+
+check: ## Run all checks (client + server)
+	cd client && npx tsc --noEmit
+	cd client && npm run lint
+	cd client && npm run test
+	uv run --frozen ruff check .
+	uv run --frozen pytest
+
+# ---------- Docker ----------
+
+d-build: ## Build Docker images
+	docker compose build
+
+d-run: ## Start Docker containers
+	docker compose up -d
+
+d-stop: ## Stop Docker containers
+	docker compose stop
+
+d-down: ## Stop and remove Docker containers
+	docker compose down
+
+d-logs: ## Follow Docker logs
+	docker compose logs -f
+
+d-rebuild: ## Rebuild and restart Docker containers
+	docker compose down
+	docker compose up -d --build
+
+# ---------- Cleanup ----------
+
+clean: ## Clean caches and coverage reports
 	find . -type d -name __pycache__ -exec rm -rf {} +
 	find . -type f -name *.pyc -delete
 	rm -rf coverage-reports htmlcov .pytest_cache .ruff_cache
-
-d-build:
-	docker compose build
-
-d-run:
-	docker compose up -d
-
-d-stop:
-	docker compose stop
-
-d-down:
-	docker compose down
-
-d-logs:
-	docker compose logs -f
-
-d-rebuild:
-	docker compose down
-	docker compose up -d --build
