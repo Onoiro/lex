@@ -75,6 +75,9 @@ Thumbs.db
 *.db
 *.sqlite3
 
+# Nginx config (local example, real config is on the server)
+nginx.example
+
 # Logs
 *.log
 
