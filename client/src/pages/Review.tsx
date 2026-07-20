@@ -375,17 +375,19 @@ export function Review() {
         {!answered ? (
           <div className="grid">
             <button
+              type="button"
               className="outline secondary"
               onClick={() => handleAnswer(false, false)}
             >
               {t("review.btn_forgot")}
             </button>
-            <button onClick={() => handleAnswer(true, false)}>
+            <button type="button" onClick={() => handleAnswer(true, false)}>
               {t("review.btn_know")}
             </button>
           </div>
         ) : (
           <button
+            type="button"
             className="outline"
             style={{ width: "100%" }}
             onClick={handleNext}
@@ -414,7 +416,7 @@ export function Review() {
       </div>
 
       <div style={{ textAlign: "center", paddingBottom: "1rem" }}>
-        <button className="outline secondary" style={{ width: "100%" }} onClick={handleStop}>
+        <button type="button" className="outline secondary" style={{ width: "100%" }} onClick={handleStop}>
           {t("review.stop")}
         </button>
       </div>

@@ -98,10 +98,11 @@ export function Dictionary() {
       </hgroup>
 
       <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1rem", flexWrap: "wrap" }}>
-        <button className="outline" onClick={() => void handleExport()} style={{ fontSize: "0.9rem" }}>
+        <button type="button" className="outline" onClick={() => void handleExport()} style={{ fontSize: "0.9rem" }}>
           📤 {t("dictionary.export")}
         </button>
         <button
+          type="button"
           className="outline"
           onClick={() => fileInputRef.current?.click()}
           style={{ fontSize: "0.9rem" }}
@@ -177,6 +178,7 @@ export function Dictionary() {
                   </td>
                   <td style={{ textAlign: "center", padding: "0.75rem" }}>
                     <button
+                      type="button"
                       className="outline contrast"
                       onClick={() => handleDelete(w.id!, w.word)}
                       style={{ border: "none", padding: "0.25rem 0.5rem", fontSize: "1.2rem" }}
