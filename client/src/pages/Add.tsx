@@ -35,15 +35,17 @@ export function Add() {
   const translationRef = useRef<HTMLTextAreaElement>(null);
   const messageTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const showMessage = useCallback((type: MessageType, text: string) => {
+    if (messageTimeoutRef.current) clearTimeout(messageTimeoutRef.current);
+    setMessage({ type, text });
+    messageTimeoutRef.current = setTimeout(() => setMessage(null), 3000);
+  }, []);
+
   useEffect(() => {
-    if (message) {
-      if (messageTimeoutRef.current) clearTimeout(messageTimeoutRef.current);
-      messageTimeoutRef.current = setTimeout(() => setMessage(null), 3000);
-    }
     return () => {
       if (messageTimeoutRef.current) clearTimeout(messageTimeoutRef.current);
     };
-  }, [message]);
+  }, []);
 
   useEffect(() => {
     void getSettings().then(setSettings);
@@ -77,10 +79,10 @@ export function Add() {
           setDetectedLang("");
         }
       } else {
-        setMessage({ type: "error_translation", text: t("add.error_translation") });
+        showMessage("error_translation", t("add.error_translation"));
       }
     } catch (e) {
-      setMessage({ type: "error_network", text: t("add.error_network") + ": " + (e as Error).message });
+      showMessage("error_network", t("add.error_network") + ": " + (e as Error).message);
     }
     setTranslating(false);
   };
@@ -97,15 +99,15 @@ export function Add() {
 
     try {
       await addWord(validWord, validTranslation);
-      setMessage({ type: "success", text: t("add.success") });
+      showMessage("success", t("add.success"));
       setWord("");
       setTranslation("");
       setDetectedLang("");
     } catch (err) {
       if ((err as Error).message.includes("already exists")) {
-        setMessage({ type: "error_duplicate", text: t("add.error_duplicate", { error_word: validWord }) });
+        showMessage("error_duplicate", t("add.error_duplicate", { error_word: validWord }));
       } else {
-        setMessage({ type: "error_network", text: (err as Error).message });
+        showMessage("error_network", (err as Error).message);
       }
     }
   };
