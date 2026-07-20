@@ -3,6 +3,7 @@
 [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=Onoiro_lex&metric=coverage)](https://sonarcloud.io/summary/new_code?id=Onoiro_lex)
 [![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=Onoiro_lex&metric=sqale_rating)](https://sonarcloud.io/summary/new_code?id=Onoiro_lex)
 [![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=Onoiro_lex&metric=security_rating)](https://sonarcloud.io/summary/new_code?id=Onoiro_lex)
+[![Reliability Rating](https://sonarcloud.io/api/project_badges/measure?project=Onoiro_lex&metric=reliability_rating)](https://sonarcloud.io/summary/new_code?id=Onoiro_lex)
 
 # Lex
 
@@ -27,13 +28,13 @@ Lex is a local-first translator and vocabulary trainer. Your dictionary, spaced 
 
 ```
 ┌─────────────────────────────────────────────────────┐
-│                    Client (React)                    │
+│                    Client (React)                   │
 │  ┌──────────┐  ┌──────────┐  ┌───────────────────┐  │
-│  │   Pages   │  │  Domain  │  │  Data (Dexie/IDB) │  │
-│  │  (React)  │  │  (SRS)   │  │  wordRepository   │  │
+│  │   Pages   │ │  Domain  │  │  Data (Dexie/IDB) │  │
+│  │  (React)  │ │  (SRS)   │  │  wordRepository   │  │
 │  └────┬─────┘  └──────────┘  └───────────────────┘  │
-│       │                                              │
-│       ▼                                              │
+│       │                                             │
+│       ▼                                             │
 │  ┌──────────────┐                                   │
 │  │ translateApi │ ──── HTTP ────► Proxy (FastAPI)   │
 │  └──────────────┘                (Yandex API key)   │
