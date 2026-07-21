@@ -1,7 +1,6 @@
 import { NavLink, Link } from "react-router-dom";
 import { useLocale } from "@/i18n";
-
-const APP_VERSION = "1.0.0";
+import { version } from "../../package.json";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -62,7 +61,7 @@ export function Layout({ children }: LayoutProps) {
           zIndex: 100,
         }}
       >
-        {t("footer.version", { version: APP_VERSION })}
+        {t("footer.version", { version })}
       </footer>
     </div>
   );
