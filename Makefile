@@ -9,7 +9,7 @@ client-dev: ## Start client dev server (port 5173)
 	cd client && npm run dev
 
 proxy: ## Start translate proxy (port 8004)
-	uv run --with-requirements proxy/requirements.txt uvicorn main:app --port 8004 --reload --app-dir proxy
+	uv run --with-requirements proxy/requirements.txt uvicorn proxy.main:app --port 8004 --reload
 
 run: ## Start old server (port 8003, for migration only)
 	uv run --frozen uvicorn main:app --host 0.0.0.0 --port 8003 --reload
