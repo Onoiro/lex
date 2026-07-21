@@ -22,24 +22,27 @@ Lex is a local-first translator and vocabulary trainer. Your dictionary, spaced 
 - **Android** — Native app via Capacitor (RuStore, AppGallery)
 - **Desktop** — Native installers via Tauri (Windows MSI/NSIS, macOS DMG, Linux deb/AppImage)
 - **i18n** — English and Russian UI
-- **Import/Export** — Migrate dictionary from old server or backup as JSON
+- **Import/Export** — Backup and transfer dictionary between devices as JSON
 
 ## Architecture
 
 ```
 ┌─────────────────────────────────────────────────────┐
-│                    Client (React)                   │
+│                    Client (React)                    │
 │  ┌──────────┐  ┌──────────┐  ┌───────────────────┐  │
-│  │   Pages   │ │  Domain  │  │  Data (Dexie/IDB) │  │
-│  │  (React)  │ │  (SRS)   │  │  wordRepository   │  │
+│  │   Pages   │  │  Domain  │  │  Data (Dexie/IDB) │  │
+│  │  (React)  │  │  (SRS)   │  │  wordRepository   │  │
 │  └────┬─────┘  └──────────┘  └───────────────────┘  │
-│       │                                             │
-│       ▼                                             │
+│       │                                              │
+│       ▼                                              │
 │  ┌──────────────┐                                   │
 │  │ translateApi │ ──── HTTP ────► Proxy (FastAPI)   │
 │  └──────────────┘                (Yandex API key)   │
 └─────────────────────────────────────────────────────┘
 ```
+
+- **Client:** React 19 + TypeScript, Vite 7, Dexie.js (IndexedDB), Pico CSS, vite-plugin-pwa
+- **Proxy:** FastAPI, port 8004. Hides Yandex API key. Endpoints: POST `/translate`, GET `/languages`
 
 ## Tech Stack
 
@@ -54,79 +57,69 @@ Lex is a local-first translator and vocabulary trainer. Your dictionary, spaced 
 
 ### Proxy (`proxy/`)
 - Python 3.13, FastAPI
-- Hides Yandex API key
+- Hides Yandex API key, rate limiting, translation cache
 - Endpoints: POST `/translate`, GET `/languages`
-- Rate limiting, translation cache
-
-### Old server (root, being decommissioned)
-- Python 3.13, FastAPI, SQLAlchemy, Jinja2
-- SQLite database
-- `/export` endpoint for migration to local-first client
 
 ## Quick Start
 
-### Client (PWA)
+### Prerequisites
+
+- Node.js 22+ and npm
+- Python 3.13+ with [uv](https://docs.astral.sh/uv/)
+- (Optional) Rust + system libraries for [Tauri](https://tauri.app/start/prerequisites/)
+- (Optional) Android SDK + JDK for Capacitor builds
+
+### Local Development
+
+Two terminals:
 
 ```bash
-cd client
-npm install
-npm run dev          # http://localhost:5173
-npm run build        # production build → dist/
-npm run test         # vitest (73 tests)
-npm run lint         # eslint
+# Terminal 1: translate proxy (port 8004)
+make proxy
+
+# Terminal 2: client dev server (port 5173)
+make client-dev
 ```
 
-### Proxy
+Open http://localhost:5173 — Vite proxies `/translate` and `/languages` to the proxy automatically.
+
+### Production Deploy
+
+On the server:
 
 ```bash
-cd proxy
-pip install -r requirements.txt
-uvicorn main:app --port 8004
+git pull origin master
+make deploy          # builds client + rebuilds proxy Docker container
 ```
 
-Set `VITE_PROXY_URL` in `client/.env` if proxy runs on a different origin.
+Nginx serves `client/dist/` as static files and proxies `/translate`, `/languages` to the Docker container on port 8004.
+
+### Docker (proxy only)
+
+```bash
+make d-build         # build image
+make d-run           # start container (detached)
+make d-logs          # follow logs
+make d-rebuild       # rebuild and restart
+make d-down          # stop and remove
+```
 
 ### Android (Capacitor)
 
 ```bash
-cd client
-npm run build
-npx cap sync android
-cd android
-./gradlew assembleRelease   # → app/build/outputs/apk/release/
+make android-build   # builds client, syncs Capacitor, assembles release APK
+# APK: client/android/app/build/outputs/apk/release/
 ```
 
 ### Desktop (Tauri)
 
 ```bash
-cd client
-npm run tauri:build    # → src-tauri/target/release/bundle/
-npm run tauri:dev      # dev mode
+make tauri-dev       # dev mode
+make tauri-build     # production installers
+# Bundles: client/src-tauri/target/release/bundle/
 ```
 
 Requires Rust + system libraries (see [Tauri prerequisites](https://tauri.app/start/prerequisites/)).
-
-### Old server (for migration only)
-
-```bash
-make run    # http://localhost:8003
-make lint   # ruff
-make test   # pytest
-```
-
-### Docker
-
-```bash
-make d-build  # docker compose build
-make d-run    # docker compose up -d
-```
-
-## Migration (old server → local-first client)
-
-1. Start the old server and go to `/export` (requires authentication)
-2. Save the JSON response as a file
-3. Open the client app → Dictionary → Import
-4. Select the JSON file — duplicates are skipped, missing fields get defaults
 
 ## Usage
 
@@ -150,6 +143,16 @@ make d-run    # docker compose up -d
 - View all words with stats (known/forgotten, best/avg time, interval, success rate)
 - Search, delete, export, and import words
 
+### Transferring Dictionary Between Devices
+
+Since Lex is local-first, each device has its own independent dictionary (stored in browser IndexedDB). To move your dictionary to another device:
+
+1. Open **Dictionary** on the source device
+2. Click **Export** — downloads `lex-dictionary.json`
+3. Open **Dictionary** on the target device
+4. Click **Import** and select the JSON file
+5. Duplicates are automatically skipped, missing fields get defaults
+
 ## Spaced Repetition Algorithm
 
 Simplified SM-2:
@@ -160,24 +163,29 @@ Simplified SM-2:
 
 ## Development
 
-### Client commands
+### All Commands
 
-```bash
-cd client
-npx tsc --noEmit      # type-check
-npm run build         # vite build
-npm run lint          # eslint
-npm run test          # vitest
-```
+All commands are run via `make`. Run `make help` to see the full list.
 
-### Server commands
-
-```bash
-make run              # dev server (port 8003)
-make lint             # ruff
-make test             # pytest
-make test-cov         # coverage (XML + HTML)
-```
+| Command | Description |
+|---|---|
+| `make proxy` | Start translate proxy (port 8004) |
+| `make client-dev` | Start client dev server (port 5173) |
+| `make client-build` | Build client for production |
+| `make client-test` | Run client tests (vitest, 113 tests) |
+| `make client-lint` | Lint client code (eslint) |
+| `make client-typecheck` | Type-check client (tsc) |
+| `make proxy-lint` | Lint proxy code (ruff) |
+| `make proxy-test` | Run proxy tests (pytest) |
+| `make check` | Run all checks (client + proxy) |
+| `make android-build` | Build Android APK |
+| `make tauri-dev` | Start Tauri desktop dev mode |
+| `make tauri-build` | Build desktop installers |
+| `make deploy` | Deploy: build client + rebuild proxy container |
+| `make d-build` | Build Docker image |
+| `make d-run` | Start Docker container |
+| `make d-rebuild` | Rebuild and restart Docker container |
+| `make clean` | Clean caches and coverage reports |
 
 ### Project Structure
 
@@ -195,13 +203,14 @@ make test-cov         # coverage (XML + HTML)
 │   ├── capacitor.config.ts    # Android config
 │   ├── src-tauri/             # Desktop (Tauri 2)
 │   ├── android/               # Capacitor Android project
-│   └── vite.config.ts         # Vite + PWA plugin
+│   └── vite.config.ts         # Vite + PWA plugin + dev proxy
 ├── proxy/                     # Translate proxy (FastAPI, port 8004)
-├── main.py                    # Old server (decommissioning)
-├── tests/                     # Old server tests
+│   ├── main.py                # /translate, /languages
+│   └── requirements.txt
+├── tests/                     # Proxy tests (pytest)
 ├── pyproject.toml             # Python config (uv, ruff)
-├── Makefile                   # Build/run scripts
-└── docker-compose.yml         # Docker (proxy + old server)
+├── Makefile                   # All build/run/deploy commands
+└── docker-compose.yml         # Docker (proxy only)
 ```
 
 ## License
