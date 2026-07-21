@@ -85,4 +85,10 @@ export default defineConfig({
       "@": fileURLToPath(new URL("./src", import.meta.url)),
     },
   },
+  server: {
+    proxy: {
+      "/translate": "http://localhost:8004",
+      "/languages": "http://localhost:8004",
+    },
+  },
 });
