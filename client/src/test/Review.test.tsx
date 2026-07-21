@@ -59,7 +59,9 @@ describe("Review", () => {
     await user.click(screen.getByRole("button", { name: "Start training" }));
 
     await waitFor(() => {
-      expect(screen.getByText("hello")).toBeInTheDocument();
+      const wordEl = screen.getByTestId("word-text");
+      expect(wordEl).toBeInTheDocument();
+      expect(["hello", "привет"]).toContain(wordEl.textContent);
     });
   });
 
@@ -131,6 +133,70 @@ describe("Review", () => {
     await waitFor(() => {
       expect(screen.getByRole("button", { name: "Stop training" })).toBeInTheDocument();
     });
+  });
+
+  it("hides translation on Know but shows Show translation button", async () => {
+    await addWord("hello", "привет");
+
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <Review />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Start training" })).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole("button", { name: "Start training" }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /I know/ })).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole("button", { name: /I know/ }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /Next word/ })).toBeInTheDocument();
+    });
+
+    // Translation should not be visible
+    expect(screen.queryByTestId("translation-text")).not.toBeInTheDocument();
+    // But Show translation button should be visible
+    expect(screen.getByText("Show translation")).toBeInTheDocument();
+  });
+
+  it("shows translation immediately on Forgot", async () => {
+    await addWord("hello", "привет");
+
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <Review />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Start training" })).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole("button", { name: "Start training" }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /I don't remember/ })).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole("button", { name: /I don't remember/ }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /Next word/ })).toBeInTheDocument();
+    });
+
+    // Translation should be visible immediately
+    expect(screen.getByTestId("translation-text")).toBeInTheDocument();
+    // Show translation button should NOT be visible
+    expect(screen.queryByText("Show translation")).not.toBeInTheDocument();
   });
 
   it("pauses training on stop", async () => {

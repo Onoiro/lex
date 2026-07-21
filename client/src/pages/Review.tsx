@@ -52,6 +52,8 @@ export function Review() {
     answeredRef.current = answered;
   }, [answered]);
 
+  const handleAnswerRef = useRef<typeof handleAnswer>(() => {});
+
   const clearAllTimers = useCallback(() => {
     if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
     if (answerTimeoutRef.current) clearTimeout(answerTimeoutRef.current);
@@ -104,7 +106,7 @@ export function Review() {
 
     if (answerTimeoutRef.current) clearTimeout(answerTimeoutRef.current);
     answerTimeoutRef.current = setTimeout(() => {
-      handleAnswer(false, true);
+      handleAnswerRef.current(false, true);
     }, ANSWER_TIMEOUT * 1000);
   }, []);
 
@@ -195,7 +197,7 @@ export function Review() {
         consecutiveAutoRef.current = 0;
       }
 
-      setShowTranslation(true);
+      setShowTranslation(!correct);
 
       // Submit result and prefetch next word
       void submitResult(correct, elapsedSec).then(() => {
@@ -224,6 +226,9 @@ export function Review() {
     },
     [stopTimer, submitResult, pickNextView, showPauseScreen, showNextWord, t],
   );
+
+  // Keep handleAnswer ref in sync for timer callback
+  handleAnswerRef.current = handleAnswer;
 
   const handleStart = useCallback(() => {
     const view = pickNextView();
@@ -368,7 +373,7 @@ export function Review() {
           )}
         </span>
         <small style={{ display: "block", color: "var(--pico-muted-color)" }}>{t("review.remember")}</small>
-        <h2 style={{ fontSize: "2.5rem", margin: "1rem 0" }}>{displayWord}</h2>
+        <h2 data-testid="word-text" style={{ fontSize: "2.5rem", margin: "1rem 0" }}>{displayWord}</h2>
       </header>
 
       <footer style={{ marginTop: "auto" }}>
@@ -398,21 +403,20 @@ export function Review() {
       </footer>
 
       <div style={{ textAlign: "center", marginTop: "1.5rem", paddingBottom: "1rem" }}>
-        <details open={showTranslation} style={{ width: "100%" }}>
-          <summary
-            style={{
-              cursor: "pointer",
-              color: "var(--pico-primary)",
-              fontWeight: "bold",
-              display: answered ? "none" : "block",
-            }}
-          >
-            {t("review.show_translation")}
-          </summary>
-          <p style={{ fontSize: "2rem", fontWeight: "bold", margin: 0, color: "var(--pico-color)" }}>
+        {showTranslation ? (
+          <p data-testid="translation-text" style={{ fontSize: "2rem", fontWeight: "bold", margin: 0, color: "var(--pico-color)" }}>
             {displayTranslation}
           </p>
-        </details>
+        ) : answered ? (
+          <button
+            type="button"
+            className="outline"
+            style={{ width: "100%" }}
+            onClick={() => setShowTranslation(true)}
+          >
+            {t("review.show_translation")}
+          </button>
+        ) : null}
       </div>
 
       <div style={{ textAlign: "center", paddingBottom: "1rem" }}>
