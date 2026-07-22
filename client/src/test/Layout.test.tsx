@@ -34,7 +34,7 @@ describe("Layout", () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getByText(/Lex v1\.0\.1/)).toBeInTheDocument();
+    expect(screen.getByText(/Lex v1\.0\.2/)).toBeInTheDocument();
   });
 
   it("renders navigation links in Russian", () => {
