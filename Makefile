@@ -14,11 +14,9 @@ help: ## Show available commands
 dev: proxy client-dev ## Start both proxy and client dev server (two processes)
 
 proxy: ## Start translate proxy (port 8004)
-#	uv run --with-requirements proxy/requirements.txt uvicorn proxy.main:app --port 8004 --reload
 	uv run --with-requirements proxy/requirements.txt uvicorn proxy.main:app --port 8004 --reload
 
 client-dev: ## Start client dev server (port 5173)
-#	cd client && npm run dev
 	cd client && npm run dev
 
 # ======================================================================
@@ -26,19 +24,15 @@ client-dev: ## Start client dev server (port 5173)
 # ======================================================================
 
 client-build: ## Build client for production
-#	cd client && npm run build
 	cd client && npm run build
 
 client-test: ## Run client tests (vitest)
-#	cd client && npm run test
 	cd client && npm run test
 
 client-lint: ## Lint client code (eslint)
-#	cd client && npm run lint
 	cd client && npm run lint
 
 client-typecheck: ## Type-check client (tsc)
-#	cd client && npx tsc --noEmit
 	cd client && npx tsc --noEmit
 
 # ======================================================================
@@ -46,15 +40,12 @@ client-typecheck: ## Type-check client (tsc)
 # ======================================================================
 
 proxy-lint: ## Lint proxy code (ruff)
-#	uv run --frozen ruff check proxy/
 	uv run --frozen ruff check proxy/
 
 proxy-test: ## Run proxy tests (pytest)
-#	uv run --frozen pytest tests/test_proxy.py -v
 	uv run --frozen pytest tests/test_proxy.py -v
 
 proxy-test-cov: ## Run proxy tests with coverage
-#	@mkdir -p coverage-reports && uv run --frozen pytest tests/test_proxy.py --cov=proxy --cov-report=term-missing --cov-report=xml:coverage-reports/proxy-coverage.xml
 	@mkdir -p coverage-reports
 	uv run --frozen pytest tests/test_proxy.py --cov=proxy --cov-report=term-missing --cov-report=xml:coverage-reports/proxy-coverage.xml
 
@@ -63,7 +54,6 @@ proxy-test-cov: ## Run proxy tests with coverage
 # ======================================================================
 
 check: ## Run all checks (client lint + typecheck + test, proxy lint + test)
-#	cd client && npx tsc --noEmit && npm run lint && npm run test && uv run --frozen ruff check proxy/ && uv run --frozen pytest tests/test_proxy.py -v
 	cd client && npx tsc --noEmit
 	cd client && npm run lint
 	cd client && npm run test
@@ -75,11 +65,9 @@ check: ## Run all checks (client lint + typecheck + test, proxy lint + test)
 # ======================================================================
 
 android-sync: client-build ## Sync Capacitor with latest build
-#	cd client && npx cap sync android
 	cd client && npx cap sync android
 
 android-build: android-sync ## Build Android APK (release)
-#	cd client/android && ./gradlew assembleRelease
 	@echo "APK: client/android/app/build/outputs/apk/release/"
 	cd client/android && ./gradlew assembleRelease
 
@@ -88,11 +76,9 @@ android-build: android-sync ## Build Android APK (release)
 # ======================================================================
 
 tauri-dev: ## Start Tauri desktop dev mode
-#	cd client && npm run tauri:dev
 	cd client && npm run tauri:dev
 
 tauri-build: ## Build desktop installers (Windows MSI/NSIS, macOS DMG, Linux deb/AppImage)
-#	cd client && npm run tauri:build
 	@echo "Bundles: client/src-tauri/target/release/bundle/"
 	cd client && npm run tauri:build
 
@@ -101,27 +87,21 @@ tauri-build: ## Build desktop installers (Windows MSI/NSIS, macOS DMG, Linux deb
 # ======================================================================
 
 d-build: ## Build Docker image (proxy)
-#	docker compose build
 	docker compose build
 
 d-run: ## Start Docker container (proxy, detached)
-#	docker compose up -d
 	docker compose up -d
 
 d-stop: ## Stop Docker container
-#	docker compose stop
 	docker compose stop
 
 d-down: ## Stop and remove Docker container
-#	docker compose down
 	docker compose down
 
 d-logs: ## Follow Docker logs
-#	docker compose logs -f
 	docker compose logs -f
 
 d-rebuild: ## Rebuild and restart Docker container
-#	docker compose down && docker compose up -d --build
 	docker compose down
 	docker compose up -d --build
 
@@ -129,18 +109,17 @@ d-rebuild: ## Rebuild and restart Docker container
 # Deploy (production server)
 # ======================================================================
 
-deploy: ## Deploy: build client + rebuild & restart proxy container
-#	cd client && npm ci && npm run build && docker compose down && docker compose up -d --build
+deploy: ## Deploy: build client + rebuild & restart proxy container + prune unused images
 	cd client && npm ci && npm run build
 	docker compose down
 	docker compose up -d --build
+	docker image prune -f
 
 # ======================================================================
 # Cleanup
 # ======================================================================
 
 clean: ## Clean caches and coverage reports
-#	find . -type d -name __pycache__ -exec rm -rf {} + && find . -type f -name *.pyc -delete && rm -rf coverage-reports htmlcov .pytest_cache .ruff_cache client/coverage client/dev-dist
 	find . -type d -name __pycache__ -exec rm -rf {} +
 	find . -type f -name *.pyc -delete
 	rm -rf coverage-reports htmlcov .pytest_cache .ruff_cache client/coverage client/dev-dist
