@@ -30,14 +30,14 @@ describe("Add", () => {
     expect(screen.getByText("New word")).toBeInTheDocument();
   });
 
-  it("renders language bar", () => {
+  it("renders language bar with swap button", () => {
     render(
       <MemoryRouter>
         <Add />
       </MemoryRouter>,
     );
 
-    expect(screen.getByText("→")).toBeInTheDocument();
+    expect(screen.getByTitle("Swap languages")).toBeInTheDocument();
   });
 
   it("renders word input and translation textarea", () => {

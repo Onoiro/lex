@@ -5,7 +5,7 @@ import { getLanguageName } from "@/i18n/languages";
 import { validateWord, validateTranslation } from "@/domain/validators";
 import { translateWord } from "@/services/translateApi";
 import { addWord } from "@/data/wordRepository";
-import { getSettings } from "@/data/settingsRepository";
+import { getSettings, saveSettings } from "@/data/settingsRepository";
 import { OfflineIndicator } from "@/components/OfflineIndicator";
 import type { LanguageSettings } from "@/types";
 
@@ -101,15 +101,17 @@ export function Add() {
     }
   };
 
-  const handleSettingsClick = () => {
-    navigate("/settings");
-  };
-
-  const handleSwapLanguages = () => {
+  const handleSwapLanguages = async () => {
     if (!settings) return;
-    const newSource = settings.target_lang;
-    const newTarget = settings.source_lang;
-    navigate(`/settings?source_lang=${encodeURIComponent(newSource)}&target_lang=${encodeURIComponent(newTarget)}`);
+    const swapped = {
+      source_lang: settings.target_lang,
+      target_lang: settings.source_lang,
+    };
+    await saveSettings(swapped);
+    setSettings({ ...settings, ...swapped });
+    // Clear translation when swapping languages
+    setTranslation("");
+    setUserEditingTranslation(false);
   };
 
   const sourceLangName = !settings
@@ -164,7 +166,7 @@ export function Add() {
             type="button"
             className="secondary"
             style={{ padding: "0.25rem 0.5rem", fontSize: "0.85rem", cursor: "pointer" }}
-            onClick={handleSettingsClick}
+            onClick={() => navigate("/settings")}
           >
             {sourceLangName}
           </button>
@@ -177,12 +179,11 @@ export function Add() {
           >
             ⇄
           </button>
-          <span>→</span>
           <button
             type="button"
             className="secondary"
             style={{ padding: "0.25rem 0.5rem", fontSize: "0.85rem", cursor: "pointer" }}
-            onClick={handleSettingsClick}
+            onClick={() => navigate("/settings")}
           >
             {targetLangName}
           </button>
