@@ -12,7 +12,7 @@ import type { LanguageSettings } from "@/types";
 type MessageType = "success" | "error_duplicate" | "error_translation" | "error_network" | null;
 
 // Allow tests to override debounce delay
-let _debounceMs = 500;
+let _debounceMs = 1000;
 export function setDebounceMs(ms: number) {
   _debounceMs = ms;
 }
