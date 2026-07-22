@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useLocale, setLocale, SUPPORTED_LOCALES } from "@/i18n";
 import { getLanguageName, LANGUAGE_NAMES_EN, LANGUAGE_NAMES_RU } from "@/i18n/languages";
 import { getSettings, saveSettings } from "@/data/settingsRepository";
@@ -8,6 +9,7 @@ import type { LanguageInfo } from "@/services/translateApi";
 
 export function Settings() {
   const [t] = useLocale();
+  const [searchParams] = useSearchParams();
   const [sourceLang, setSourceLang] = useState("auto");
   const [targetLang, setTargetLang] = useState("ru");
   const [locale, setLocaleState] = useState("en");
@@ -24,6 +26,14 @@ export function Settings() {
       setSourceLang(settings.source_lang);
       setTargetLang(settings.target_lang);
       setLocaleState(settings.locale);
+
+      // Check for swap params from /add page
+      const src = searchParams.get("source_lang");
+      const tgt = searchParams.get("target_lang");
+      if (src && tgt && src !== settings.source_lang && tgt !== settings.target_lang) {
+        setSourceLang(src);
+        setTargetLang(tgt);
+      }
 
       // Try cached list first
       const now = Date.now();
@@ -67,7 +77,7 @@ export function Settings() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [searchParams]);
 
   const sameLangWarning =
     sourceLang !== "auto" && sourceLang === targetLang

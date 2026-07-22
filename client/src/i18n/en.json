@@ -17,6 +17,7 @@
   "add.title": "New word — Lex",
   "add.heading": "New word",
   "add.auto_detect": "Auto detect",
+  "add.swap_languages": "Swap languages",
   "add.success": "✅ Word successfully added to the dictionary!",
   "add.error_duplicate": "❌ Word '{error_word}' is already in the dictionary",
   "add.word_placeholder_new": "Enter a word or phrase",

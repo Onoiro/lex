@@ -105,6 +105,13 @@ export function Add() {
     navigate("/settings");
   };
 
+  const handleSwapLanguages = () => {
+    if (!settings) return;
+    const newSource = settings.target_lang;
+    const newTarget = settings.source_lang;
+    navigate(`/settings?source_lang=${encodeURIComponent(newSource)}&target_lang=${encodeURIComponent(newTarget)}`);
+  };
+
   const sourceLangName = !settings
     ? ""
     : settings.source_lang === "auto"
@@ -160,6 +167,15 @@ export function Add() {
             onClick={handleSettingsClick}
           >
             {sourceLangName}
+          </button>
+          <button
+            type="button"
+            className="secondary"
+            style={{ padding: "0.25rem 0.35rem", fontSize: "0.85rem", cursor: "pointer", lineHeight: 1 }}
+            onClick={handleSwapLanguages}
+            title={t("add.swap_languages")}
+          >
+            ⇄
           </button>
           <span>→</span>
           <button
