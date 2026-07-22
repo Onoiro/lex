@@ -44,6 +44,10 @@ export interface LanguageSettings {
   target_lang: string;
   /** UI locale code (e.g. "en", "ru"). */
   locale: string;
+  /** Cached number of supported languages (from proxy /languages). */
+  lang_count?: number;
+  /** When lang_count was last updated (Unix ms). */
+  lang_count_updated_at?: number;
 }
 
 /** Default language settings. */
@@ -52,3 +56,6 @@ export const DEFAULT_LANGUAGE_SETTINGS: LanguageSettings = {
   target_lang: "ru",
   locale: "en",
 };
+
+/** How long to cache the language count before refetching (24 hours). */
+export const LANG_COUNT_TTL_MS = 24 * 60 * 60 * 1000;

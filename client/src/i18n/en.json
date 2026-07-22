@@ -7,7 +7,7 @@
   "nav.settings.title": "Language settings",
   "index.title": "Lex — Translator and Vocabulary Trainer",
   "index.subtitle": "Your personal translator and vocabulary trainer.",
-  "index.subtitle_detail": "Translate words from 90+ languages, save them to your dictionary, and memorize them forever with spaced repetition.",
+  "index.subtitle_detail": "Translate words from {count} languages, save them to your dictionary, and memorize them forever with spaced repetition.",
   "index.translate_card.title": "🌍 Translator",
   "index.translate_card.description": "Found an unfamiliar word? Translate it to your language and save it with one click to learn later.",
   "index.translate_card.button": "Translate a word",

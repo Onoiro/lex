@@ -1,8 +1,57 @@
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useLocale } from "@/i18n";
+import { getLanguages } from "@/services/translateApi";
+import { getSettings, saveSettings } from "@/data/settingsRepository";
+import { LANG_COUNT_TTL_MS } from "@/types";
 
 export function Home() {
   const [t] = useLocale();
+  const [langCount, setLangCount] = useState<number | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadLangCount() {
+      const settings = await getSettings();
+      const now = Date.now();
+
+      // Use cached value if still fresh
+      if (
+        settings.lang_count != null &&
+        settings.lang_count_updated_at != null &&
+        now - settings.lang_count_updated_at < LANG_COUNT_TTL_MS
+      ) {
+        if (!cancelled) setLangCount(settings.lang_count!);
+        return;
+      }
+
+      // Fallback to cached value while we fetch
+      if (settings.lang_count != null) {
+        setLangCount(settings.lang_count);
+      }
+
+      try {
+        const langs = await getLanguages();
+        if (!cancelled) {
+          setLangCount(langs.length);
+          // Persist cache
+          await saveSettings({
+            lang_count: langs.length,
+            lang_count_updated_at: now,
+          });
+        }
+      } catch {
+        // Keep using the cached value (or null if never fetched)
+      }
+    }
+
+    void loadLangCount();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <>
@@ -10,7 +59,7 @@ export function Home() {
         <h1>{t("index.title")}</h1>
         <p>{t("index.subtitle")}</p>
         <p style={{ fontSize: "0.9rem", color: "var(--pico-muted-color)" }}>
-          {t("index.subtitle_detail")}
+          {t("index.subtitle_detail", { count: langCount ?? "..." })}
         </p>
       </hgroup>
 
