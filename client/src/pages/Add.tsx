@@ -50,11 +50,18 @@ export function Add() {
 
   // Auto-translate with debounce
   useEffect(() => {
-    if (!word.trim() || !settings || userEditingTranslation) {
+    if (debounceTimeoutRef.current) clearTimeout(debounceTimeoutRef.current);
+
+    const trimmed = word.trim();
+
+    if (!trimmed) {
+      setTranslation("");
       return;
     }
 
-    if (debounceTimeoutRef.current) clearTimeout(debounceTimeoutRef.current);
+    if (!settings || userEditingTranslation) {
+      return;
+    }
 
     debounceTimeoutRef.current = setTimeout(async () => {
       setTranslating(true);

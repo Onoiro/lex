@@ -161,6 +161,96 @@ describe("Add", () => {
     });
   });
 
+  it("clears translation when word field is emptied", async () => {
+    vi.mocked(translateWord).mockResolvedValue({
+      translation: "привет",
+      detectedLanguage: "en",
+    });
+
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <Add />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText("Enter a word or phrase")).toBeInTheDocument();
+    });
+
+    await user.type(screen.getByPlaceholderText("Enter a word or phrase"), "hello");
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText("Translation")).toHaveValue("привет");
+    });
+
+    await user.clear(screen.getByPlaceholderText("Enter a word or phrase"));
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText("Translation")).toHaveValue("");
+    });
+  });
+
+  it("auto-translates single character word", async () => {
+    vi.mocked(translateWord).mockResolvedValue({
+      translation: "I",
+      detectedLanguage: "ru",
+    });
+
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <Add />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText("Enter a word or phrase")).toBeInTheDocument();
+    });
+
+    await user.type(screen.getByPlaceholderText("Enter a word or phrase"), "я");
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText("Translation")).toHaveValue("I");
+    });
+  });
+
+  it("does not leave stale translation when word is deleted character by character", async () => {
+    vi.mocked(translateWord).mockResolvedValue({
+      translation: "привет",
+      detectedLanguage: "en",
+    });
+
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <Add />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText("Enter a word or phrase")).toBeInTheDocument();
+    });
+
+    await user.type(screen.getByPlaceholderText("Enter a word or phrase"), "hello");
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText("Translation")).toHaveValue("привет");
+    });
+
+    // Delete characters one by one, slower than debounce
+    const input = screen.getByPlaceholderText("Enter a word or phrase");
+    for (let i = 0; i < 5; i++) {
+      await user.type(input, "{backspace}");
+      await new Promise((r) => setTimeout(r, 10));
+    }
+
+    await waitFor(() => {
+      expect(input).toHaveValue("");
+      expect(screen.getByPlaceholderText("Translation")).toHaveValue("");
+    });
+  });
+
   it("shows network error on translation failure", async () => {
     vi.mocked(translateWord).mockRejectedValue(new Error("Network error"));
 
