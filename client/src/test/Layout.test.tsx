@@ -3,6 +3,7 @@ import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { Layout } from "@/components/Layout";
 import { setLocale } from "@/i18n";
+import { version } from "../../package.json";
 
 describe("Layout", () => {
   beforeEach(() => {
@@ -34,7 +35,7 @@ describe("Layout", () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getByText(/Lex v1\.1\.0/)).toBeInTheDocument();
+    expect(screen.getByText(new RegExp(`Lex v${version.replaceAll(".", "\\.")}`))).toBeInTheDocument();
   });
 
   it("renders navigation links in Russian", () => {
