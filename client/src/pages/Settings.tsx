@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useLocale, setLocale, SUPPORTED_LOCALES } from "@/i18n";
-import { getLanguageName, LANGUAGE_NAMES_EN } from "@/i18n/languages";
+import { getLanguageName, LANGUAGE_NAMES_EN, LANGUAGE_NAMES_RU } from "@/i18n/languages";
 import { getSettings, saveSettings } from "@/data/settingsRepository";
 import { getLanguages } from "@/services/translateApi";
 import { LANG_LIST_TTL_MS } from "@/types";
@@ -82,9 +82,14 @@ export function Settings() {
     setTimeout(() => setSaved(false), 3000);
   };
 
+  const names = locale === "ru" ? LANGUAGE_NAMES_RU : LANGUAGE_NAMES_EN;
   const langCodes = langOptions.length > 0
-    ? langOptions.map((l) => l.code).sort((a, b) => a.localeCompare(b))
-    : Object.keys(LANGUAGE_NAMES_EN).sort((a, b) => a.localeCompare(b));
+    ? langOptions.map((l) => l.code).sort((a, b) =>
+        (names[a] ?? a).localeCompare(names[b] ?? b),
+      )
+    : Object.keys(LANGUAGE_NAMES_EN).sort((a, b) =>
+        (names[a] ?? a).localeCompare(names[b] ?? b),
+      );
 
   return (
     <>
