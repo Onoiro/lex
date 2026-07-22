@@ -48,6 +48,10 @@ export interface LanguageSettings {
   lang_count?: number;
   /** When lang_count was last updated (Unix ms). */
   lang_count_updated_at?: number;
+  /** Cached language list from proxy (JSON array of {code, name}). */
+  lang_list?: string;
+  /** When lang_list was last updated (Unix ms). */
+  lang_list_updated_at?: number;
 }
 
 /** Default language settings. */
@@ -59,3 +63,6 @@ export const DEFAULT_LANGUAGE_SETTINGS: LanguageSettings = {
 
 /** How long to cache the language count before refetching (24 hours). */
 export const LANG_COUNT_TTL_MS = 24 * 60 * 60 * 1000;
+
+/** How long to cache the language list before refetching (24 hours). */
+export const LANG_LIST_TTL_MS = 24 * 60 * 60 * 1000;

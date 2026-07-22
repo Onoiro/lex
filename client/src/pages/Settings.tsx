@@ -3,6 +3,7 @@ import { useLocale, setLocale, SUPPORTED_LOCALES } from "@/i18n";
 import { getLanguageName, LANGUAGE_NAMES_EN } from "@/i18n/languages";
 import { getSettings, saveSettings } from "@/data/settingsRepository";
 import { getLanguages } from "@/services/translateApi";
+import { LANG_LIST_TTL_MS } from "@/types";
 import type { LanguageInfo } from "@/services/translateApi";
 
 export function Settings() {
@@ -14,21 +15,58 @@ export function Settings() {
   const [langOptions, setLangOptions] = useState<LanguageInfo[]>([]);
 
   useEffect(() => {
-    void getSettings().then((s) => {
-      setSourceLang(s.source_lang);
-      setTargetLang(s.target_lang);
-      setLocaleState(s.locale);
-    });
+    let cancelled = false;
 
-    // Try to load languages from proxy, fall back to static dict
-    getLanguages()
-      .then(setLangOptions)
-      .catch(() => {
-        // Fallback: use static LANGUAGE_NAMES_EN
-        setLangOptions(
-          Object.entries(LANGUAGE_NAMES_EN).map(([code, name]) => ({ code, name })),
-        );
-      });
+    async function load() {
+      const settings = await getSettings();
+      if (cancelled) return;
+
+      setSourceLang(settings.source_lang);
+      setTargetLang(settings.target_lang);
+      setLocaleState(settings.locale);
+
+      // Try cached list first
+      const now = Date.now();
+      if (
+        settings.lang_list != null &&
+        settings.lang_list_updated_at != null &&
+        now - settings.lang_list_updated_at < LANG_LIST_TTL_MS
+      ) {
+        const parsed: LanguageInfo[] = JSON.parse(settings.lang_list);
+        if (!cancelled) setLangOptions(parsed);
+        return;
+      }
+
+      // If stale but cached, show it while fetching
+      if (settings.lang_list != null) {
+        const parsed: LanguageInfo[] = JSON.parse(settings.lang_list);
+        if (!cancelled) setLangOptions(parsed);
+      }
+
+      try {
+        const langs = await getLanguages();
+        if (!cancelled) {
+          setLangOptions(langs);
+          await saveSettings({
+            lang_list: JSON.stringify(langs),
+            lang_list_updated_at: now,
+          });
+        }
+      } catch {
+        // Fallback to static dict if nothing cached
+        if (!cancelled && settings.lang_list == null) {
+          setLangOptions(
+            Object.entries(LANGUAGE_NAMES_EN).map(([code, name]) => ({ code, name })),
+          );
+        }
+      }
+    }
+
+    void load();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const sameLangWarning =
