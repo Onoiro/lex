@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
-import { Add } from "@/pages/Add";
+import { Add, setDebounceMs } from "@/pages/Add";
 import { setLocale } from "@/i18n";
 import { db } from "@/data/db";
 
@@ -14,12 +14,13 @@ import { translateWord } from "@/services/translateApi";
 
 describe("Add", () => {
   beforeEach(async () => {
+    setDebounceMs(0);
     setLocale("en");
     await db.words.clear();
     vi.clearAllMocks();
   });
 
-  it("renders heading and subheading", () => {
+  it("renders heading", () => {
     render(
       <MemoryRouter>
         <Add />
@@ -27,32 +28,40 @@ describe("Add", () => {
     );
 
     expect(screen.getByText("New word")).toBeInTheDocument();
-    expect(screen.getByText("Translate and save to your dictionary")).toBeInTheDocument();
   });
 
-  it("renders word and translation inputs", () => {
+  it("renders language bar", () => {
     render(
       <MemoryRouter>
         <Add />
       </MemoryRouter>,
     );
 
-    expect(screen.getByLabelText("Foreign word")).toBeInTheDocument();
-    expect(screen.getByLabelText("Translation")).toBeInTheDocument();
+    expect(screen.getByText("→")).toBeInTheDocument();
   });
 
-  it("renders translate and save buttons", () => {
+  it("renders word input and translation textarea", () => {
     render(
       <MemoryRouter>
         <Add />
       </MemoryRouter>,
     );
 
-    expect(screen.getByRole("button", { name: /Translate/ })).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("Enter a word or phrase")).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("Translation")).toBeInTheDocument();
+  });
+
+  it("renders save button", () => {
+    render(
+      <MemoryRouter>
+        <Add />
+      </MemoryRouter>,
+    );
+
     expect(screen.getByRole("button", { name: "Save to dictionary" })).toBeInTheDocument();
   });
 
-  it("translates word via API and fills translation", async () => {
+  it("auto-translates word via API after debounce", async () => {
     vi.mocked(translateWord).mockResolvedValue({
       translation: "привет",
       detectedLanguage: "en",
@@ -66,14 +75,13 @@ describe("Add", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByLabelText("Foreign word")).toBeInTheDocument();
+      expect(screen.getByPlaceholderText("Enter a word or phrase")).toBeInTheDocument();
     });
 
-    await user.type(screen.getByLabelText("Foreign word"), "hello");
-    await user.click(screen.getByRole("button", { name: /Translate/ }));
+    await user.type(screen.getByPlaceholderText("Enter a word or phrase"), "hello");
 
     await waitFor(() => {
-      expect(screen.getByLabelText("Translation")).toHaveValue("привет");
+      expect(screen.getByPlaceholderText("Translation")).toHaveValue("привет");
     });
   });
 
@@ -91,14 +99,13 @@ describe("Add", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByLabelText("Foreign word")).toBeInTheDocument();
+      expect(screen.getByPlaceholderText("Enter a word or phrase")).toBeInTheDocument();
     });
 
-    await user.type(screen.getByLabelText("Foreign word"), "hello");
-    await user.click(screen.getByRole("button", { name: /Translate/ }));
+    await user.type(screen.getByPlaceholderText("Enter a word or phrase"), "hello");
 
     await waitFor(() => {
-      expect(screen.getByLabelText("Translation")).toHaveValue("привет");
+      expect(screen.getByPlaceholderText("Translation")).toHaveValue("привет");
     });
 
     await user.click(screen.getByRole("button", { name: "Save to dictionary" }));
@@ -138,14 +145,13 @@ describe("Add", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByLabelText("Foreign word")).toBeInTheDocument();
+      expect(screen.getByPlaceholderText("Enter a word or phrase")).toBeInTheDocument();
     });
 
-    await user.type(screen.getByLabelText("Foreign word"), "hello");
-    await user.click(screen.getByRole("button", { name: /Translate/ }));
+    await user.type(screen.getByPlaceholderText("Enter a word or phrase"), "hello");
 
     await waitFor(() => {
-      expect(screen.getByLabelText("Translation")).toHaveValue("привет");
+      expect(screen.getByPlaceholderText("Translation")).toHaveValue("привет");
     });
 
     await user.click(screen.getByRole("button", { name: "Save to dictionary" }));
@@ -166,11 +172,10 @@ describe("Add", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByLabelText("Foreign word")).toBeInTheDocument();
+      expect(screen.getByPlaceholderText("Enter a word or phrase")).toBeInTheDocument();
     });
 
-    await user.type(screen.getByLabelText("Foreign word"), "hello");
-    await user.click(screen.getByRole("button", { name: /Translate/ }));
+    await user.type(screen.getByPlaceholderText("Enter a word or phrase"), "hello");
 
     await waitFor(() => {
       expect(screen.getByText(/Network error/)).toBeInTheDocument();
