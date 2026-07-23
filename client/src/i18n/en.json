@@ -18,6 +18,7 @@
   "add.heading": "New word",
   "add.auto_detect": "Auto detect",
   "add.swap_languages": "Swap languages",
+  "add.swap_auto_warning": "Cannot swap: target language cannot be 'Auto detect'. Change source language in settings first.",
   "add.success": "✅ Word successfully added to the dictionary!",
   "add.error_duplicate": "❌ Word '{error_word}' is already in the dictionary",
   "add.word_placeholder_new": "Enter a word or phrase",

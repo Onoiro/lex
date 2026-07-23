@@ -251,6 +251,31 @@ describe("Add", () => {
     });
   });
 
+  it("shows warning when trying to swap with auto-detect source", async () => {
+    vi.mocked(translateWord).mockResolvedValue({
+      translation: "привет",
+      detectedLanguage: "en",
+    });
+
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <Add />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText("Enter a word or phrase")).toBeInTheDocument();
+    });
+
+    // Click swap when source is auto-detect (default)
+    await user.click(screen.getByTitle("Swap languages"));
+
+    await waitFor(() => {
+      expect(screen.getByText(/Cannot swap/)).toBeInTheDocument();
+    });
+  });
+
   it("shows network error on translation failure", async () => {
     vi.mocked(translateWord).mockRejectedValue(new Error("Network error"));
 

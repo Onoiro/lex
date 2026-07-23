@@ -110,6 +110,10 @@ export function Add() {
 
   const handleSwapLanguages = async () => {
     if (!settings) return;
+    if (settings.source_lang === "auto") {
+      showMessage("error_translation", t("add.swap_auto_warning"));
+      return;
+    }
     const swapped = {
       source_lang: settings.target_lang,
       target_lang: settings.source_lang,
