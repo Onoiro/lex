@@ -8,15 +8,66 @@ import { db } from "@/data/db";
 
 vi.mock("@/services/translateApi", () => ({
   translateWord: vi.fn(),
+  getLanguages: vi.fn().mockResolvedValue([
+    { code: "en", name: "English" },
+    { code: "ru", name: "Russian" },
+    { code: "de", name: "German" },
+    { code: "fr", name: "French" },
+    { code: "es", name: "Spanish" },
+    { code: "zh", name: "Chinese" },
+    { code: "ja", name: "Japanese" },
+    { code: "ko", name: "Korean" },
+    { code: "ar", name: "Arabic" },
+    { code: "hi", name: "Hindi" },
+    { code: "pt", name: "Portuguese" },
+    { code: "it", name: "Italian" },
+    { code: "tr", name: "Turkish" },
+    { code: "nl", name: "Dutch" },
+    { code: "pl", name: "Polish" },
+    { code: "sv", name: "Swedish" },
+    { code: "uk", name: "Ukrainian" },
+    { code: "el", name: "Greek" },
+    { code: "cs", name: "Czech" },
+    { code: "ro", name: "Romanian" },
+    { code: "hu", name: "Hungarian" },
+    { code: "bg", name: "Bulgarian" },
+    { code: "hr", name: "Croatian" },
+    { code: "sk", name: "Slovak" },
+    { code: "fi", name: "Finnish" },
+    { code: "da", name: "Danish" },
+    { code: "no", name: "Norwegian" },
+    { code: "he", name: "Hebrew" },
+    { code: "id", name: "Indonesian" },
+    { code: "ms", name: "Malay" },
+    { code: "th", name: "Thai" },
+    { code: "vi", name: "Vietnamese" },
+    { code: "ka", name: "Georgian" },
+    { code: "hy", name: "Armenian" },
+    { code: "az", name: "Azerbaijani" },
+    { code: "auto", name: "Auto-detect" },
+  ]),
+}));
+
+vi.mock("@/data/settingsRepository", () => ({
+  getSettings: vi.fn().mockResolvedValue({
+    source_lang: "auto",
+    target_lang: "ru",
+    locale: "en",
+    lang_list: null,
+    lang_list_updated_at: null,
+  }),
+  saveSettings: vi.fn().mockResolvedValue(undefined),
 }));
 
 import { translateWord } from "@/services/translateApi";
+import { saveSettings } from "@/data/settingsRepository";
 
 describe("Add", () => {
   beforeEach(async () => {
     setDebounceMs(0);
     setLocale("en");
     await db.words.clear();
+    await db.settings.clear();
     vi.clearAllMocks();
   });
 
@@ -295,5 +346,97 @@ describe("Add", () => {
     await waitFor(() => {
       expect(screen.getByText(/Network error/)).toBeInTheDocument();
     });
+  });
+
+  it("renders language select dropdowns", async () => {
+    render(
+      <MemoryRouter>
+        <Add />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTitle("Source language")).toBeInTheDocument();
+      expect(screen.getByTitle("Target language")).toBeInTheDocument();
+    });
+  });
+
+  it("saves settings when source language is changed", async () => {
+    const user = userEvent.setup();
+
+    render(
+      <MemoryRouter>
+        <Add />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTitle("Source language")).toBeInTheDocument();
+    });
+
+    const sourceSelect = screen.getByTitle("Source language") as HTMLSelectElement;
+    expect(sourceSelect.value).toBe("auto");
+
+    await user.selectOptions(sourceSelect, "en");
+
+    await waitFor(() => {
+      expect(saveSettings).toHaveBeenCalledWith(
+        expect.objectContaining({ source_lang: "en" }),
+      );
+    });
+  });
+
+  it("saves settings when target language is changed", async () => {
+    const user = userEvent.setup();
+
+    render(
+      <MemoryRouter>
+        <Add />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTitle("Target language")).toBeInTheDocument();
+    });
+
+    const targetSelect = screen.getByTitle("Target language") as HTMLSelectElement;
+    expect(targetSelect.value).toBe("ru");
+
+    await user.selectOptions(targetSelect, "en");
+
+    await waitFor(() => {
+      expect(saveSettings).toHaveBeenCalledWith(
+        expect.objectContaining({ target_lang: "en" }),
+      );
+    });
+  });
+
+  it("shows warning when source and target are the same", async () => {
+    const user = userEvent.setup();
+
+    render(
+      <MemoryRouter>
+        <Add />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTitle("Source language")).toBeInTheDocument();
+    });
+
+    const sourceSelect = screen.getByTitle("Source language") as HTMLSelectElement;
+    const targetSelect = screen.getByTitle("Target language") as HTMLSelectElement;
+
+    await user.selectOptions(sourceSelect, "en");
+    await user.selectOptions(targetSelect, "en");
+
+    await waitFor(() => {
+      expect(screen.getByText(/Source and target languages are the same/)).toBeInTheDocument();
+    });
+
+    // saveSettings should NOT be called when same-lang warning is shown
+    expect(saveSettings).not.toHaveBeenCalledWith(
+      expect.objectContaining({ target_lang: "en" }),
+    );
   });
 });
