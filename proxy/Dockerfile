@@ -9,19 +9,8 @@ WORKDIR /app
 COPY proxy/requirements.txt ./requirements.txt
 RUN pip install --no-cache-dir --only-binary :all: -r requirements.txt
 
-# Copy only proxy-needed modules (avoid pulling auth/csrf/validators deps)
-COPY proxy/main.py ./proxy/main.py
-COPY services/__init__.py ./services/__init__.py
-COPY services/translator.py ./services/translator.py
-COPY services/cache.py ./services/cache.py
-COPY security/rate_limiter.py ./security/rate_limiter.py
-COPY i18n/__init__.py ./i18n/__init__.py
-COPY i18n/languages.py ./i18n/languages.py
-COPY i18n/en.json ./i18n/en.json
-COPY i18n/ru.json ./i18n/ru.json
-
-# Minimal __init__.py for security (avoid importing auth/csrf/validators)
-RUN printf '"""Security modules: rate limiting only (proxy build)."""\n' > security/__init__.py
+# Copy proxy package (self-contained, no external shared modules)
+COPY proxy/ ./proxy/
 
 # Change ownership to non-root user
 RUN chown -R lex:lex /app

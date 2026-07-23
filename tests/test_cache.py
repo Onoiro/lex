@@ -1,7 +1,7 @@
 """Тесты для модуля кэширования."""
 
 import time
-from services.cache import CacheEntry, TranslationCache
+from proxy.services.cache import CacheEntry, TranslationCache
 
 
 class TestCacheEntry:

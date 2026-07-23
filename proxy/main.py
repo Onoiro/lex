@@ -7,21 +7,15 @@ Provides two endpoints:
 No auth or CSRF: protected by rate limiting. CORS enabled for client apps.
 """
 
-import os
-import sys
-
-# Add project root to path so we can import services/ and security/
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from dotenv import load_dotenv
 
-from services.translator import translate_word, get_supported_languages, get_api_language_names
-from services.cache import translation_cache
-from security.rate_limiter import RateLimiter, get_client_ip
+from proxy.services.translator import translate_word, get_supported_languages, get_api_language_names
+from proxy.services.cache import translation_cache
+from proxy.security.rate_limiter import RateLimiter, get_client_ip
 
 load_dotenv()
 

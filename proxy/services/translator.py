@@ -3,8 +3,8 @@ import httpx
 import asyncio
 from fastapi import HTTPException
 
-from services.cache import translation_cache
-from i18n.languages import LANGUAGE_NAMES_EN
+from proxy.services.cache import translation_cache
+from proxy.languages import LANGUAGE_NAMES_EN
 
 API_KEY = os.getenv("YANDEX_API_KEY")
 FOLDER_ID = os.getenv("YANDEX_FOLDER_ID", "b1gqq9rjega7119p3a2f")

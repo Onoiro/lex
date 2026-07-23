@@ -380,44 +380,14 @@ NATIVE_NAMES = {
 
 
 def get_language_name(code: str) -> str:
-    """Return a human-readable language name for a code in the current locale.
+    """Return a human-readable English name for a language code.
     
-    Uses static dictionaries as the primary source, Yandex API names as fallback.
-    Also appends the native name of the language in its own language,
-    e.g. "English (English, en)" or "Английский (English, en)".
+    Falls back to the code itself if unknown.
     
     Args:
         code: ISO language code (e.g. 'en', 'ce', 'ru').
         
     Returns:
-        Human-readable language name in the current locale with native name.
+        English language name.
     """
-    from i18n import _current_locale, _get_api_language_names
-    
-    locale = _current_locale.get("en", "en")
-    
-    # Use static English dictionary as the primary source
-    en_name = LANGUAGE_NAMES_EN.get(code)
-    
-    # Fall back to Yandex API name if not in static dict
-    if not en_name:
-        api_names = _get_api_language_names()
-        en_name = api_names.get(code)
-    
-    # Fall back to code itself
-    if not en_name:
-        en_name = code
-    
-    # Resolve Russian name from static dict using the code
-    if locale == "ru":
-        ru_name = LANGUAGE_NAMES_RU.get(code, en_name)
-    else:
-        ru_name = en_name  # Show English name for non-Russian locales
-    
-    # Get native name (language name written in its own language)
-    native = NATIVE_NAMES.get(code, en_name)
-    
-    if locale == "ru":
-        return f"{ru_name} ({native}, {code})"
-    
-    return f"{en_name} ({native}, {code})"
+    return LANGUAGE_NAMES_EN.get(code, code)

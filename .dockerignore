@@ -8,11 +8,6 @@ __pycache__/
 # Git
 .git/
 
-# Database
-data/
-*.db
-lex.db
-
 # Test reports
 coverage-reports/
 htmlcov/
@@ -20,9 +15,6 @@ htmlcov/
 # Python cache
 .pytest_cache/
 .ruff_cache/
-
-# Draft assets
-static/draft_logo_*.jpg
 
 # IDE
 .vscode/
@@ -41,6 +33,3 @@ docker-compose.yml
 
 # Logs
 *.log
-
-# Ruff cache
-.ruff_cache/

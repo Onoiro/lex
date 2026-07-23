@@ -1,7 +1,7 @@
 [project]
 name = "lex"
-version = "1.2.0"
-description = "Web translator and vocabulary assistant with Yandex Translate API"
+version = "1.2.1"
+description = "Lex — local-first translator and vocabulary assistant. Thin proxy for Yandex Translate API."
 authors = [{name = "Andrey Bogatyrev", email = "donoriono@gmail.com"}]
 readme = "README.md"
 homepage = "https://lex.2-way.ru"
@@ -9,15 +9,9 @@ repository = "https://github.com/Onoiro/lex"
 requires-python = ">=3.10"
 dependencies = [
     "fastapi>=0.137",
-    "jinja2>=3.1",
     "uvicorn>=0.49",
-    "sqlalchemy>=2.0",
-    "python-multipart>=0.0.32",
     "httpx>=0.28.1",
     "python-dotenv>=1.2.2",
-    "passlib[bcrypt]>=1.7.4",
-    "tomli>=2.0.0; python_version<'3.11'",
-    "rollbar>=1.4.0",
 ]
 classifiers = [
     "License :: OSI Approved :: MIT License",
@@ -35,9 +29,6 @@ classifiers = [
 dev = [
     "ruff>=0.15",
 ]
-
-[tool.coverage.run]
-omit = ["tests/*", "*/__pycache__/*", "migrate.py"]
 
 [tool.ruff]
 target-version = "py310"

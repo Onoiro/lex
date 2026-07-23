@@ -72,14 +72,6 @@ class RateLimiter:
             )
 
 
-# Глобальные экземпляры для разных endpoints
-# 10 запросов в минуту для добавления слов
-add_rate_limiter = RateLimiter(max_requests=10, window_seconds=60)
-
-# 10 запросов в минуту для перевода (защита API квоты)
-translate_rate_limiter = RateLimiter(max_requests=10, window_seconds=60)
-
-
 def get_client_ip(request: Request) -> str:
     """
     Получить IP адрес клиента из запроса.

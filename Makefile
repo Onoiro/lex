@@ -1,5 +1,5 @@
 .PHONY: help dev proxy client-dev client-build client-test client-lint client-typecheck \
-        proxy-lint proxy-test proxy-test-cov check lint test test-cov \
+        proxy-lint proxy-test proxy-test-cov check \
         android-sync android-build tauri-dev tauri-build \
         d-build d-run d-stop d-down d-logs d-rebuild \
         deploy clean
@@ -43,11 +43,11 @@ proxy-lint: ## Lint proxy code (ruff)
 	uv run --frozen ruff check proxy/
 
 proxy-test: ## Run proxy tests (pytest)
-	uv run --frozen pytest tests/test_proxy.py -v
+	uv run --frozen pytest tests/ -v
 
 proxy-test-cov: ## Run proxy tests with coverage
 	@mkdir -p coverage-reports
-	uv run --frozen pytest tests/test_proxy.py --cov=proxy --cov-report=term-missing --cov-report=xml:coverage-reports/proxy-coverage.xml
+	uv run --frozen pytest tests/ --cov=proxy --cov-report=term-missing --cov-report=xml:coverage-reports/proxy-coverage.xml
 
 # ======================================================================
 # All checks
@@ -58,7 +58,7 @@ check: ## Run all checks (client lint + typecheck + test, proxy lint + test)
 	cd client && npm run lint
 	cd client && npm run test
 	uv run --frozen ruff check proxy/
-	uv run --frozen pytest tests/test_proxy.py -v
+	uv run --frozen pytest tests/ -v
 
 # ======================================================================
 # Android (Capacitor)
@@ -106,7 +106,7 @@ d-rebuild: ## Rebuild and restart Docker container
 	docker compose up -d --build
 
 # ======================================================================
-# Deploy (production server)
+# Deploy (production)
 # ======================================================================
 
 deploy: ## Deploy: build client + rebuild & restart proxy container + prune unused images

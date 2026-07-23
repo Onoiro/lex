@@ -45,8 +45,8 @@ jobs:
       - name: Build
         run: npm run build
 
-  server-lint:
-    name: Server Lint
+  proxy-lint:
+    name: Proxy Lint
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -66,12 +66,12 @@ jobs:
         run: uv sync --frozen --all-groups --no-build
 
       - name: Run ruff
-        run: uv run --frozen --no-build ruff check .
+        run: uv run --frozen --no-build ruff check proxy/
 
-  server-test:
-    name: Server Test
+  proxy-test:
+    name: Proxy Test
     runs-on: ubuntu-latest
-    needs: server-lint
+    needs: proxy-lint
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -92,7 +92,7 @@ jobs:
       - name: Run tests with coverage
         run: |
           mkdir -p coverage-reports
-          uv run --frozen --no-build pytest --cov=. --cov-report=term-missing --cov-report=xml:coverage-reports/coverage.xml --junitxml=coverage-reports/test-results.xml
+          uv run --frozen --no-build pytest --cov=proxy --cov-report=term-missing --cov-report=xml:coverage-reports/coverage.xml --junitxml=coverage-reports/test-results.xml
 
       - name: Upload coverage report
         uses: actions/upload-artifact@v4
@@ -103,7 +103,7 @@ jobs:
   sonarqube:
     name: SonarQube Scan
     runs-on: ubuntu-latest
-    needs: [server-test, client-check]
+    needs: [proxy-test, client-check]
     if: github.event_name == 'push' && github.ref == 'refs/heads/master'
     steps:
       - name: Checkout code
@@ -111,7 +111,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Download server coverage report
+      - name: Download proxy coverage report
         uses: actions/download-artifact@v4
         with:
           name: coverage-report

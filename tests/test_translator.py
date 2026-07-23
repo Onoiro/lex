@@ -5,14 +5,14 @@ import os
 import httpx
 from unittest.mock import patch, MagicMock
 from fastapi import HTTPException
-from services.translator import (
+from proxy.services.translator import (
     translate_word,
     _translate_sync,
     _get_language_name,
     get_supported_languages,
     get_api_language_names,
 )
-from services.cache import translation_cache
+from proxy.services.cache import translation_cache
 
 
 @pytest.fixture(autouse=True)
@@ -60,7 +60,7 @@ class TestTranslateSync:
     def test_api_key_missing(self):
         """Returns error when API key is missing."""
         # Patch API_KEY to None to simulate missing key
-        with patch("services.translator.API_KEY", None):
+        with patch("proxy.services.translator.API_KEY", None):
             result, detected, debug = _translate_sync("word_no_key_test_xyz")
 
             assert result is None
@@ -69,8 +69,8 @@ class TestTranslateSync:
 
     def test_api_error_401_raises_http_exception(self):
         """401/403 errors raise HTTPException(500)."""
-        with patch("services.translator.API_KEY", "fake_key"), \
-             patch("services.translator.FOLDER_ID", "fake_folder"):
+        with patch("proxy.services.translator.API_KEY", "fake_key"), \
+             patch("proxy.services.translator.FOLDER_ID", "fake_folder"):
 
             mock_response = MagicMock()
             mock_response.status_code = 401
@@ -81,7 +81,7 @@ class TestTranslateSync:
             )
             mock_response.raise_for_status.side_effect = http_error
 
-            with patch("services.translator.httpx.Client") as mock_client_class:
+            with patch("proxy.services.translator.httpx.Client") as mock_client_class:
                 mock_client = MagicMock()
                 mock_client_class.return_value.__enter__.return_value = mock_client
                 mock_client.post.return_value = mock_response
@@ -94,8 +94,8 @@ class TestTranslateSync:
 
     def test_api_error_500_returns_debug_string(self):
         """Non-401/403 HTTP errors return debug string instead of raising."""
-        with patch("services.translator.API_KEY", "fake_key"), \
-             patch("services.translator.FOLDER_ID", "fake_folder"):
+        with patch("proxy.services.translator.API_KEY", "fake_key"), \
+             patch("proxy.services.translator.FOLDER_ID", "fake_folder"):
 
             mock_response = MagicMock()
             mock_response.status_code = 500
@@ -106,7 +106,7 @@ class TestTranslateSync:
             )
             mock_response.raise_for_status.side_effect = http_error
 
-            with patch("services.translator.httpx.Client") as mock_client_class:
+            with patch("proxy.services.translator.httpx.Client") as mock_client_class:
                 mock_client = MagicMock()
                 mock_client_class.return_value.__enter__.return_value = mock_client
                 mock_client.post.return_value = mock_response
@@ -119,8 +119,8 @@ class TestTranslateSync:
 
     def test_empty_api_response(self):
         """Handles empty API response."""
-        with patch("services.translator.API_KEY", "fake_key"), \
-             patch("services.translator.FOLDER_ID", "fake_folder"):
+        with patch("proxy.services.translator.API_KEY", "fake_key"), \
+             patch("proxy.services.translator.FOLDER_ID", "fake_folder"):
 
             mock_response = MagicMock()
             mock_response.status_code = 200
@@ -128,7 +128,7 @@ class TestTranslateSync:
             mock_response.json.return_value = {"translations": []}
             mock_response.raise_for_status.return_value = None
 
-            with patch("services.translator.httpx.Client") as mock_client_class:
+            with patch("proxy.services.translator.httpx.Client") as mock_client_class:
                 mock_client = MagicMock()
                 mock_client_class.return_value.__enter__.return_value = mock_client
                 mock_client.post.return_value = mock_response
@@ -141,8 +141,8 @@ class TestTranslateSync:
 
     def test_successful_api_response(self):
         """Handles successful API response."""
-        with patch("services.translator.API_KEY", "fake_key"), \
-             patch("services.translator.FOLDER_ID", "fake_folder"):
+        with patch("proxy.services.translator.API_KEY", "fake_key"), \
+             patch("proxy.services.translator.FOLDER_ID", "fake_folder"):
 
             mock_response = MagicMock()
             mock_response.status_code = 200
@@ -152,7 +152,7 @@ class TestTranslateSync:
             }
             mock_response.raise_for_status.return_value = None
 
-            with patch("services.translator.httpx.Client") as mock_client_class:
+            with patch("proxy.services.translator.httpx.Client") as mock_client_class:
                 mock_client = MagicMock()
                 mock_client_class.return_value.__enter__.return_value = mock_client
                 mock_client.post.return_value = mock_response
@@ -165,8 +165,8 @@ class TestTranslateSync:
 
     def test_successful_api_response_with_custom_target(self):
         """Sends targetLanguageCode in API request when target_language is set."""
-        with patch("services.translator.API_KEY", "fake_key"), \
-             patch("services.translator.FOLDER_ID", "fake_folder"):
+        with patch("proxy.services.translator.API_KEY", "fake_key"), \
+             patch("proxy.services.translator.FOLDER_ID", "fake_folder"):
 
             mock_response = MagicMock()
             mock_response.status_code = 200
@@ -176,7 +176,7 @@ class TestTranslateSync:
             }
             mock_response.raise_for_status.return_value = None
 
-            with patch("services.translator.httpx.Client") as mock_client_class:
+            with patch("proxy.services.translator.httpx.Client") as mock_client_class:
                 mock_client = MagicMock()
                 mock_client_class.return_value.__enter__.return_value = mock_client
                 mock_client.post.return_value = mock_response
@@ -193,8 +193,8 @@ class TestTranslateSync:
 
     def test_auto_source_language_no_source_code_in_payload(self):
         """Auto-detect mode does not send sourceLanguageCode in API request."""
-        with patch("services.translator.API_KEY", "fake_key"), \
-             patch("services.translator.FOLDER_ID", "fake_folder"):
+        with patch("proxy.services.translator.API_KEY", "fake_key"), \
+             patch("proxy.services.translator.FOLDER_ID", "fake_folder"):
 
             mock_response = MagicMock()
             mock_response.status_code = 200
@@ -204,7 +204,7 @@ class TestTranslateSync:
             }
             mock_response.raise_for_status.return_value = None
 
-            with patch("services.translator.httpx.Client") as mock_client_class:
+            with patch("proxy.services.translator.httpx.Client") as mock_client_class:
                 mock_client = MagicMock()
                 mock_client_class.return_value.__enter__.return_value = mock_client
                 mock_client.post.return_value = mock_response
@@ -220,8 +220,8 @@ class TestTranslateSync:
 
     def test_explicit_source_language_includes_source_code_in_payload(self):
         """Explicit source language sends sourceLanguageCode in API request."""
-        with patch("services.translator.API_KEY", "fake_key"), \
-             patch("services.translator.FOLDER_ID", "fake_folder"):
+        with patch("proxy.services.translator.API_KEY", "fake_key"), \
+             patch("proxy.services.translator.FOLDER_ID", "fake_folder"):
 
             mock_response = MagicMock()
             mock_response.status_code = 200
@@ -231,7 +231,7 @@ class TestTranslateSync:
             }
             mock_response.raise_for_status.return_value = None
 
-            with patch("services.translator.httpx.Client") as mock_client_class:
+            with patch("proxy.services.translator.httpx.Client") as mock_client_class:
                 mock_client = MagicMock()
                 mock_client_class.return_value.__enter__.return_value = mock_client
                 mock_client.post.return_value = mock_response
@@ -246,8 +246,8 @@ class TestTranslateSync:
 
     def test_saves_to_cache(self):
         """Saves successful translation to cache."""
-        with patch("services.translator.API_KEY", "fake_key"), \
-             patch("services.translator.FOLDER_ID", "fake_folder"):
+        with patch("proxy.services.translator.API_KEY", "fake_key"), \
+             patch("proxy.services.translator.FOLDER_ID", "fake_folder"):
 
             mock_response = MagicMock()
             mock_response.status_code = 200
@@ -257,7 +257,7 @@ class TestTranslateSync:
             }
             mock_response.raise_for_status.return_value = None
 
-            with patch("services.translator.httpx.Client") as mock_client_class:
+            with patch("proxy.services.translator.httpx.Client") as mock_client_class:
                 mock_client = MagicMock()
                 mock_client_class.return_value.__enter__.return_value = mock_client
                 mock_client.post.return_value = mock_response
@@ -270,8 +270,8 @@ class TestTranslateSync:
 
     def test_saves_to_cache_with_custom_target(self):
         """Cache key includes target language for non-default target."""
-        with patch("services.translator.API_KEY", "fake_key"), \
-             patch("services.translator.FOLDER_ID", "fake_folder"):
+        with patch("proxy.services.translator.API_KEY", "fake_key"), \
+             patch("proxy.services.translator.FOLDER_ID", "fake_folder"):
 
             mock_response = MagicMock()
             mock_response.status_code = 200
@@ -281,7 +281,7 @@ class TestTranslateSync:
             }
             mock_response.raise_for_status.return_value = None
 
-            with patch("services.translator.httpx.Client") as mock_client_class:
+            with patch("proxy.services.translator.httpx.Client") as mock_client_class:
                 mock_client = MagicMock()
                 mock_client_class.return_value.__enter__.return_value = mock_client
                 mock_client.post.return_value = mock_response
@@ -293,12 +293,12 @@ class TestTranslateSync:
 
     def test_network_error(self):
         """Handles network errors."""
-        with patch("services.translator.API_KEY", "fake_key"), \
-             patch("services.translator.FOLDER_ID", "fake_folder"):
+        with patch("proxy.services.translator.API_KEY", "fake_key"), \
+             patch("proxy.services.translator.FOLDER_ID", "fake_folder"):
 
             import httpx
 
-            with patch("services.translator.httpx.Client") as mock_client_class:
+            with patch("proxy.services.translator.httpx.Client") as mock_client_class:
                 mock_client = MagicMock()
                 mock_client_class.return_value.__enter__.return_value = mock_client
                 mock_client.post.side_effect = httpx.RequestError("Network error")
@@ -311,8 +311,8 @@ class TestTranslateSync:
 
     def test_json_parse_error(self):
         """Handles JSON parse errors."""
-        with patch("services.translator.API_KEY", "fake_key"), \
-             patch("services.translator.FOLDER_ID", "fake_folder"):
+        with patch("proxy.services.translator.API_KEY", "fake_key"), \
+             patch("proxy.services.translator.FOLDER_ID", "fake_folder"):
 
             import json
 
@@ -322,7 +322,7 @@ class TestTranslateSync:
             mock_response.json.side_effect = json.JSONDecodeError("Invalid JSON", "not json", 0)
             mock_response.raise_for_status.return_value = None
 
-            with patch("services.translator.httpx.Client") as mock_client_class:
+            with patch("proxy.services.translator.httpx.Client") as mock_client_class:
                 mock_client = MagicMock()
                 mock_client_class.return_value.__enter__.return_value = mock_client
                 mock_client.post.return_value = mock_response
@@ -351,13 +351,13 @@ class TestGetSupportedLanguages:
 
     def test_no_api_key_returns_empty(self):
         """Returns empty dict when API key is missing."""
-        with patch("services.translator.API_KEY", None):
+        with patch("proxy.services.translator.API_KEY", None):
             result = get_supported_languages()
             assert result == {}
 
     def test_successful_response(self):
         """Returns dict mapping language codes to [TARGET_LANG]."""
-        with patch("services.translator.API_KEY", "fake_key"):
+        with patch("proxy.services.translator.API_KEY", "fake_key"):
             mock_response = MagicMock()
             mock_response.status_code = 200
             mock_response.json.return_value = {
@@ -369,7 +369,7 @@ class TestGetSupportedLanguages:
             }
             mock_response.raise_for_status.return_value = None
 
-            with patch("services.translator.httpx.Client") as mock_client_class:
+            with patch("proxy.services.translator.httpx.Client") as mock_client_class:
                 mock_client = MagicMock()
                 mock_client_class.return_value.__enter__.return_value = mock_client
                 mock_client.post.return_value = mock_response
@@ -380,11 +380,11 @@ class TestGetSupportedLanguages:
 
     def test_api_error_returns_empty(self):
         """Returns empty dict on HTTP error status."""
-        with patch("services.translator.API_KEY", "fake_key"):
+        with patch("proxy.services.translator.API_KEY", "fake_key"):
             mock_response = MagicMock()
             mock_response.status_code = 403
 
-            with patch("services.translator.httpx.Client") as mock_client_class:
+            with patch("proxy.services.translator.httpx.Client") as mock_client_class:
                 mock_client = MagicMock()
                 mock_client_class.return_value.__enter__.return_value = mock_client
                 mock_client.post.return_value = mock_response
@@ -395,8 +395,8 @@ class TestGetSupportedLanguages:
 
     def test_network_error_returns_empty(self):
         """Returns empty dict on network error."""
-        with patch("services.translator.API_KEY", "fake_key"):
-            with patch("services.translator.httpx.Client") as mock_client_class:
+        with patch("proxy.services.translator.API_KEY", "fake_key"):
+            with patch("proxy.services.translator.httpx.Client") as mock_client_class:
                 mock_client = MagicMock()
                 mock_client_class.return_value.__enter__.return_value = mock_client
                 mock_client.post.side_effect = httpx.RequestError("Network error")
@@ -407,7 +407,7 @@ class TestGetSupportedLanguages:
 
     def test_language_without_code_is_skipped(self):
         """Languages without 'code' field are skipped."""
-        with patch("services.translator.API_KEY", "fake_key"):
+        with patch("proxy.services.translator.API_KEY", "fake_key"):
             mock_response = MagicMock()
             mock_response.status_code = 200
             mock_response.json.return_value = {
@@ -419,7 +419,7 @@ class TestGetSupportedLanguages:
             }
             mock_response.raise_for_status.return_value = None
 
-            with patch("services.translator.httpx.Client") as mock_client_class:
+            with patch("proxy.services.translator.httpx.Client") as mock_client_class:
                 mock_client = MagicMock()
                 mock_client_class.return_value.__enter__.return_value = mock_client
                 mock_client.post.return_value = mock_response
@@ -430,13 +430,13 @@ class TestGetSupportedLanguages:
 
     def test_empty_languages_list_returns_empty(self):
         """Returns empty dict when API returns no languages."""
-        with patch("services.translator.API_KEY", "fake_key"):
+        with patch("proxy.services.translator.API_KEY", "fake_key"):
             mock_response = MagicMock()
             mock_response.status_code = 200
             mock_response.json.return_value = {"languages": []}
             mock_response.raise_for_status.return_value = None
 
-            with patch("services.translator.httpx.Client") as mock_client_class:
+            with patch("proxy.services.translator.httpx.Client") as mock_client_class:
                 mock_client = MagicMock()
                 mock_client_class.return_value.__enter__.return_value = mock_client
                 mock_client.post.return_value = mock_response
@@ -451,13 +451,13 @@ class TestGetApiLanguageNames:
 
     def test_no_api_key_returns_empty(self):
         """Returns empty dict when API key is missing."""
-        with patch("services.translator.API_KEY", None):
+        with patch("proxy.services.translator.API_KEY", None):
             result = get_api_language_names()
             assert result == {}
 
     def test_successful_response(self):
         """Returns dict mapping language codes to English names."""
-        with patch("services.translator.API_KEY", "fake_key"):
+        with patch("proxy.services.translator.API_KEY", "fake_key"):
             mock_response = MagicMock()
             mock_response.status_code = 200
             mock_response.json.return_value = {
@@ -469,7 +469,7 @@ class TestGetApiLanguageNames:
             }
             mock_response.raise_for_status.return_value = None
 
-            with patch("services.translator.httpx.Client") as mock_client_class:
+            with patch("proxy.services.translator.httpx.Client") as mock_client_class:
                 mock_client = MagicMock()
                 mock_client_class.return_value.__enter__.return_value = mock_client
                 mock_client.post.return_value = mock_response
@@ -480,11 +480,11 @@ class TestGetApiLanguageNames:
 
     def test_api_error_returns_empty(self):
         """Returns empty dict on HTTP error status."""
-        with patch("services.translator.API_KEY", "fake_key"):
+        with patch("proxy.services.translator.API_KEY", "fake_key"):
             mock_response = MagicMock()
             mock_response.status_code = 403
 
-            with patch("services.translator.httpx.Client") as mock_client_class:
+            with patch("proxy.services.translator.httpx.Client") as mock_client_class:
                 mock_client = MagicMock()
                 mock_client_class.return_value.__enter__.return_value = mock_client
                 mock_client.post.return_value = mock_response
@@ -495,8 +495,8 @@ class TestGetApiLanguageNames:
 
     def test_network_error_returns_empty(self):
         """Returns empty dict on network error."""
-        with patch("services.translator.API_KEY", "fake_key"):
-            with patch("services.translator.httpx.Client") as mock_client_class:
+        with patch("proxy.services.translator.API_KEY", "fake_key"):
+            with patch("proxy.services.translator.httpx.Client") as mock_client_class:
                 mock_client = MagicMock()
                 mock_client_class.return_value.__enter__.return_value = mock_client
                 mock_client.post.side_effect = httpx.RequestError("Network error")
@@ -507,7 +507,7 @@ class TestGetApiLanguageNames:
 
     def test_language_without_name_is_skipped(self):
         """Languages without 'name' field are skipped."""
-        with patch("services.translator.API_KEY", "fake_key"):
+        with patch("proxy.services.translator.API_KEY", "fake_key"):
             mock_response = MagicMock()
             mock_response.status_code = 200
             mock_response.json.return_value = {
@@ -519,7 +519,7 @@ class TestGetApiLanguageNames:
             }
             mock_response.raise_for_status.return_value = None
 
-            with patch("services.translator.httpx.Client") as mock_client_class:
+            with patch("proxy.services.translator.httpx.Client") as mock_client_class:
                 mock_client = MagicMock()
                 mock_client_class.return_value.__enter__.return_value = mock_client
                 mock_client.post.return_value = mock_response
@@ -530,13 +530,13 @@ class TestGetApiLanguageNames:
 
     def test_empty_languages_list_returns_empty(self):
         """Returns empty dict when API returns no languages."""
-        with patch("services.translator.API_KEY", "fake_key"):
+        with patch("proxy.services.translator.API_KEY", "fake_key"):
             mock_response = MagicMock()
             mock_response.status_code = 200
             mock_response.json.return_value = {"languages": []}
             mock_response.raise_for_status.return_value = None
 
-            with patch("services.translator.httpx.Client") as mock_client_class:
+            with patch("proxy.services.translator.httpx.Client") as mock_client_class:
                 mock_client = MagicMock()
                 mock_client_class.return_value.__enter__.return_value = mock_client
                 mock_client.post.return_value = mock_response
@@ -552,7 +552,7 @@ class TestTranslateWord:
     @pytest.mark.anyio
     async def test_translate_word_calls_sync(self):
         """Async function calls sync version with source and target language."""
-        with patch("services.translator._translate_sync") as mock_sync:
+        with patch("proxy.services.translator._translate_sync") as mock_sync:
             mock_sync.return_value = ("тест", "en", "")
 
             result, detected = await translate_word("hello", "en")
@@ -564,7 +564,7 @@ class TestTranslateWord:
     @pytest.mark.anyio
     async def test_translate_word_default_source(self):
         """Async function uses default source language 'en' and target 'ru'."""
-        with patch("services.translator._translate_sync") as mock_sync:
+        with patch("proxy.services.translator._translate_sync") as mock_sync:
             mock_sync.return_value = ("тест", "en", "")
 
             result, detected = await translate_word("hello")
@@ -576,7 +576,7 @@ class TestTranslateWord:
     @pytest.mark.anyio
     async def test_translate_word_custom_target(self):
         """Async function passes custom target language to sync version."""
-        with patch("services.translator._translate_sync") as mock_sync:
+        with patch("proxy.services.translator._translate_sync") as mock_sync:
             mock_sync.return_value = ("Hallo", "en", "")
 
             result, detected = await translate_word("hello", "en", "de")
@@ -588,7 +588,7 @@ class TestTranslateWord:
     @pytest.mark.anyio
     async def test_translate_word_none_result(self):
         """Async function handles None result."""
-        with patch("services.translator._translate_sync") as mock_sync:
+        with patch("proxy.services.translator._translate_sync") as mock_sync:
             mock_sync.return_value = (None, None, "error")
 
             result, detected = await translate_word("unknown")
@@ -610,7 +610,7 @@ class TestTranslateWord:
     @pytest.mark.anyio
     async def test_translate_word_auto_source(self):
         """Async function works with auto source language."""
-        with patch("services.translator._translate_sync") as mock_sync:
+        with patch("proxy.services.translator._translate_sync") as mock_sync:
             mock_sync.return_value = ("тест", "fr", "")
 
             result, detected = await translate_word("bonjour", "auto")
@@ -633,7 +633,7 @@ class TestTranslationCache:
 
         # Test TTL works with short-lived cache entry
         import time
-        from services.cache import TranslationCache
+        from proxy.services.cache import TranslationCache
 
         # Create a short-lived cache for testing
         short_cache = TranslationCache(ttl_seconds=1)
