@@ -125,9 +125,9 @@ export function Add() {
     ? ""
     : settings.source_lang === "auto"
       ? t("add.auto_detect")
-      : getLanguageName(settings.source_lang);
+      : getLanguageName(settings.source_lang, "short");
   const targetLangName = settings?.target_lang
-    ? getLanguageName(settings.target_lang)
+    ? getLanguageName(settings.target_lang, "short")
     : "";
   const sourceLangCode = settings?.source_lang === "auto" ? "auto" : settings?.source_lang;
   const targetLangCode = settings?.target_lang;

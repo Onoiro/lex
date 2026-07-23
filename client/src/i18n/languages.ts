@@ -376,9 +376,15 @@ export const NATIVE_NAMES: Record<string, string> = {
 
 /**
  * Return a human-readable language name for a code in the current locale.
- * Format: "Name (Native, code)" e.g. "English (English, en)".
+ *
+ * @param code  Language code (e.g. "en", "ru", "auto")
+ * @param format  Display format:
+ *   - "full" (default): "English (English, en)"
+ *   - "short": "English"
+ *   - "native": "English" (native name)
+ *   - "code": "en"
  */
-export function getLanguageName(code: string): string {
+export function getLanguageName(code: string, format: "full" | "short" | "native" | "code" = "full"): string {
   const locale = getLocale();
 
   let enName = LANGUAGE_NAMES_EN[code];
@@ -389,6 +395,17 @@ export function getLanguageName(code: string): string {
   const ruName = locale === "ru" ? (LANGUAGE_NAMES_RU[code] ?? enName) : enName;
   const native = NATIVE_NAMES[code] ?? enName;
 
+  if (format === "short") {
+    return locale === "ru" ? ruName : enName;
+  }
+  if (format === "native") {
+    return native;
+  }
+  if (format === "code") {
+    return code;
+  }
+
+  // full (default)
   if (locale === "ru") {
     return `${ruName} (${native}, ${code})`;
   }
