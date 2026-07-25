@@ -611,8 +611,6 @@ describe("Review", () => {
       expect(screen.getByRole("button", { name: /I know/ })).toBeInTheDocument();
     });
 
-    expect(screen.getByText(/best:/)).toBeInTheDocument();
-    expect(screen.getByText(/avg:/)).toBeInTheDocument();
     expect(screen.getByText(/Known:/)).toBeInTheDocument();
     expect(screen.getByText(/Forgotten:/)).toBeInTheDocument();
   });

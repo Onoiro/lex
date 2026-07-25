@@ -19,6 +19,13 @@ interface WordView {
   direction: ReviewDirection;
 }
 
+interface SessionStats {
+  total: number;
+  known: number;
+  forgotten: number;
+  times: number[];
+}
+
 export function Review() {
   const [t] = useLocale();
   const [phase, setPhase] = useState<Phase>("loading");
@@ -28,7 +35,12 @@ export function Review() {
   const [elapsed, setElapsed] = useState(0);
   const [timerColor, setTimerColor] = useState("var(--pico-muted-color)");
   const [queueSize, setQueueSize] = useState(0);
-  
+  const [session, setSession] = useState<SessionStats>({
+    total: 0,
+    known: 0,
+    forgotten: 0,
+    times: [],
+  });
 
   // Refs for timers and state that shouldn't trigger re-renders
   const startTimeRef = useRef<number>(0);
@@ -199,6 +211,14 @@ export function Review() {
 
       setShowTranslation(!correct);
 
+      // Update session stats
+      setSession((prev) => ({
+        total: prev.total + 1,
+        known: prev.known + (correct ? 1 : 0),
+        forgotten: prev.forgotten + (correct ? 0 : 1),
+        times: [...prev.times, elapsedSec],
+      }));
+
       // Submit result and prefetch next word
       void submitResult(correct, elapsedSec).then(() => {
         const next = pickNextView();
@@ -241,6 +261,7 @@ export function Review() {
     setAnswered(false);
     setShowTranslation(false);
     consecutiveAutoRef.current = 0;
+    setSession({ total: 0, known: 0, forgotten: 0, times: [] });
     startTimer();
   }, [pickNextView, startTimer]);
 
@@ -264,6 +285,16 @@ export function Review() {
     if (inactivityTimeoutRef.current) clearTimeout(inactivityTimeoutRef.current);
     showNextWord();
   }, [showNextWord]);
+
+  // --- Render helpers ---
+
+  const avgTime = session.times.length > 0
+    ? session.times.reduce((a, b) => a + b, 0) / session.times.length
+    : null;
+
+  const bestTime = session.times.length > 0
+    ? Math.min(...session.times)
+    : null;
 
   // --- Render ---
 
@@ -309,8 +340,35 @@ export function Review() {
 
   if (phase === "paused") {
     return (
-      <div style={{ textAlign: "center", padding: "3rem 1rem" }}>
+      <div style={{ textAlign: "center", padding: "3rem 1rem", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "60vh" }}>
         <h2>{t("review.paused")}</h2>
+
+        {session.total > 0 && (
+          <div style={{ marginTop: "2rem", color: "var(--pico-muted-color)", fontSize: "0.95rem", lineHeight: 1.8 }}>
+            <div style={{ fontWeight: "bold", marginBottom: "0.5rem", color: "var(--pico-color)" }}>
+              {t("review.session_total", { total: session.total })}
+            </div>
+            <div>
+              {t("review.session_known", { count: session.known })}{" "}
+              {t("review.session_forgotten", { count: session.forgotten })}
+            </div>
+            {session.total > 0 && (
+              <div>
+                {Math.round((session.known / session.total) * 100)}%
+              </div>
+            )}
+            {avgTime !== null && (
+              <div>{t("review.session_avg_time", { time: formatTime(avgTime) })}</div>
+            )}
+            {bestTime !== null && (
+              <div>{t("review.session_best_time", { time: formatTime(bestTime) })}</div>
+            )}
+            <div style={{ marginTop: "0.5rem", opacity: 0.6 }}>
+              {t("review.session_progress")}
+            </div>
+          </div>
+        )}
+
         <button
           type="button"
           onClick={handleResume}
@@ -318,11 +376,6 @@ export function Review() {
         >
           {t("review.resume")}
         </button>
-        <div style={{ marginTop: "1rem" }}>
-          <Link to="/" role="button" className="outline secondary">
-            {t("review.home")}
-          </Link>
-        </div>
       </div>
     );
   }
@@ -338,47 +391,36 @@ export function Review() {
   const pct = total > 0 ? Math.round((word.know_count / total) * 100) : null;
 
   return (
-    <article style={{ display: "flex", flexDirection: "column", minHeight: "40vh" }}>
-      <header style={{ textAlign: "center", borderBottom: "none", paddingBottom: 0, position: "relative" }}>
-        <span style={{ position: "absolute", left: 0, top: 0, color: "var(--pico-muted-color)", fontSize: "0.85rem" }}>
-          {word.best_time !== null && word.avg_time !== null && (
-            <>
-              {t("review.stats_best", { time: formatTime(word.best_time) })}
-              {" | "}
-              {t("review.stats_avg", { time: formatTime(word.avg_time) })}
-            </>
-          )}
-        </span>
-        <span
-          style={{
-            position: "absolute",
-            right: 0,
-            top: 0,
-            color: timerColor,
-            fontSize: "0.95rem",
-            fontWeight: "bold",
-            fontVariantNumeric: "tabular-nums",
-          }}
-        >
-          {formatTime(elapsed)}
-        </span>
-        <span style={{ display: "block", marginTop: "0.5rem", color: "var(--pico-muted-color)", fontSize: "0.85rem" }}>
-          {total > 0 && (
-            <>
-              {t("review.stats_known", { count: word.know_count })}
-              {" | "}
-              {t("review.stats_forgotten", { count: word.forgot_count })}
-              {pct !== null && " " + t("review.stats_pct", { pct })}
-            </>
-          )}
-        </span>
-        <small style={{ display: "block", color: "var(--pico-muted-color)" }}>{t("review.remember")}</small>
-        <h2 data-testid="word-text" style={{ fontSize: "2.5rem", margin: "1rem 0" }}>{displayWord}</h2>
-      </header>
+    <article style={{ display: "flex", flexDirection: "column" }}>
+      {/* Word area with timer */}
+      <div style={{ textAlign: "center", padding: "2rem 1rem 1rem" }}>
+        <div style={{ display: "inline-flex", alignItems: "flex-start", gap: "1rem" }}>
+          <div style={{ textAlign: "center" }}>
+            <small style={{ display: "block", color: "var(--pico-muted-color)" }}>
+              {t("review.remember")}
+            </small>
+            <h2 data-testid="word-text" style={{ fontSize: "2.5rem", margin: "0.5rem 0" }}>
+              {displayWord}
+            </h2>
+          </div>
+          <span
+            style={{
+              color: timerColor,
+              fontSize: "0.95rem",
+              fontWeight: "bold",
+              fontVariantNumeric: "tabular-nums",
+              paddingTop: "0.25rem",
+            }}
+          >
+            {formatTime(elapsed)}
+          </span>
+        </div>
+      </div>
 
-      <footer style={{ marginTop: "auto" }}>
+      {/* Buttons + translation + word stats */}
+      <div style={{ textAlign: "center", padding: "0 1rem" }}>
         {!answered ? (
-          <div className="grid">
+          <div className="grid" style={{ width: "100%", maxWidth: "400px", margin: "0 auto" }}>
             <button
               type="button"
               className="outline secondary"
@@ -391,39 +433,52 @@ export function Review() {
             </button>
           </div>
         ) : (
-          <button
-            type="button"
-            className="outline"
-            style={{ width: "100%" }}
-            onClick={handleNext}
-          >
-            {t("review.next_word")}
-          </button>
+          <div style={{ width: "100%", maxWidth: "400px", margin: "0 auto" }}>
+            <button
+              type="button"
+              className="outline"
+              style={{ width: "100%" }}
+              onClick={handleNext}
+            >
+              {t("review.next_word")}
+            </button>
+          </div>
         )}
-      </footer>
 
-      <div style={{ textAlign: "center", marginTop: "1.5rem", paddingBottom: "1rem" }}>
-        {showTranslation ? (
-          <p data-testid="translation-text" style={{ fontSize: "2rem", fontWeight: "bold", margin: 0, color: "var(--pico-color)" }}>
-            {displayTranslation}
-          </p>
-        ) : answered ? (
-          <button
-            type="button"
-            className="outline"
-            style={{ width: "100%" }}
-            onClick={() => setShowTranslation(true)}
-          >
-            {t("review.show_translation")}
-          </button>
-        ) : null}
+        {/* Translation */}
+        <div style={{ marginTop: "1.5rem" }}>
+          {showTranslation ? (
+            <p data-testid="translation-text" style={{ fontSize: "2rem", fontWeight: "bold", margin: 0, color: "var(--pico-color)" }}>
+              {displayTranslation}
+            </p>
+          ) : answered ? (
+            <button
+              type="button"
+              className="outline"
+              style={{ width: "100%", maxWidth: "400px" }}
+              onClick={() => setShowTranslation(true)}
+            >
+              {t("review.show_translation")}
+            </button>
+          ) : null}
+        </div>
+
+        {/* Word-level stats */}
+        {total > 0 && (
+          <div style={{ marginTop: "1rem", color: "var(--pico-muted-color)", fontSize: "0.85rem" }}>
+            {t("review.stats_known", { count: word.know_count })}{" "}
+            {t("review.stats_forgotten", { count: word.forgot_count })}
+            {pct !== null && " " + t("review.stats_pct", { pct })}
+          </div>
+        )}
       </div>
 
-      <div style={{ textAlign: "center", paddingBottom: "1rem" }}>
-        <button type="button" className="outline secondary" style={{ width: "100%" }} onClick={handleStop}>
+      {/* Footer: stop button */}
+      <footer style={{ textAlign: "center", paddingBottom: "1rem", marginTop: "1rem" }}>
+        <button type="button" className="outline secondary" style={{ width: "100%", maxWidth: "400px" }} onClick={handleStop}>
           {t("review.stop")}
         </button>
-      </div>
+      </footer>
     </article>
   );
 }
