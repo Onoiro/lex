@@ -5,7 +5,7 @@ import { getAllWords, updateWord } from "@/data/wordRepository";
 import { getSettings } from "@/data/settingsRepository";
 import { applyReviewResult, pickWeightedWord, pickRandomDirection } from "@/domain/srs";
 import { updateResponseTime, formatTime } from "@/domain/stats";
-import { synthesizeSpeech } from "@/services/ttsApi";
+import { synthesizeSpeech, stopTts } from "@/services/ttsApi";
 import type { Word, ReviewDirection, LanguageSettings } from "@/types";
 
 const ANSWER_TIMEOUT = 10;
@@ -103,7 +103,10 @@ export function Review() {
 
   useEffect(() => {
     void loadWords();
-    return clearAllTimers;
+    return () => {
+      clearAllTimers();
+      stopTts();
+    };
   }, [loadWords, clearAllTimers]);
 
   const pickNextView = useCallback((): WordView | null => {
@@ -137,6 +140,7 @@ export function Review() {
   const playTts = useCallback((text: string, lang: string) => {
     const s = settingsRef.current;
     if (!s?.tts_enabled) return;
+    stopTts();
     void synthesizeSpeech(text, lang);
   }, []);
 
@@ -180,6 +184,8 @@ export function Review() {
     const next = nextViewRef.current;
     nextViewRef.current = null;
 
+    let view: WordView;
+
     if (!next) {
       // No prefetched word, pick a new one
       const fresh = pickNextView();
@@ -187,29 +193,28 @@ export function Review() {
         setPhase("done");
         return;
       }
-      setCurrentView(fresh);
+      view = fresh;
     } else {
-      setCurrentView(next);
+      view = next;
     }
 
+    setCurrentView(view);
     setAnswered(false);
     setShowTranslation(false);
     isAutoAnswerRef.current = false;
     startTimer();
 
     // Auto-play word audio if TTS is enabled
-    const view = nextViewRef.current ?? currentViewRef.current;
-    if (view) {
-      const s = settingsRef.current;
-      const displayWord = view.direction === "en_ru" ? view.word.word : view.word.translation;
-      const wordLang = view.direction === "en_ru" ? (s?.source_lang ?? "en") : (s?.target_lang ?? "ru");
-      playTts(displayWord, wordLang === "auto" ? "en" : wordLang);
-    }
+    const s = settingsRef.current;
+    const displayWord = view.direction === "en_ru" ? view.word.word : view.word.translation;
+    const wordLang = view.direction === "en_ru" ? (s?.source_lang ?? "en") : (s?.target_lang ?? "ru");
+    playTts(displayWord, wordLang === "auto" ? "en" : wordLang);
   }, [pickNextView, startTimer, playTts]);
 
   const showPauseScreen = useCallback(() => {
     if (inactivityTimeoutRef.current) clearTimeout(inactivityTimeoutRef.current);
     if (autoNextTimeoutRef.current) clearTimeout(autoNextTimeoutRef.current);
+    stopTts();
     setPhase("paused");
   }, []);
 
@@ -321,6 +326,7 @@ export function Review() {
 
   const handleStop = useCallback(() => {
     clearAllTimers();
+    stopTts();
     setPhase("paused");
   }, [clearAllTimers]);
 

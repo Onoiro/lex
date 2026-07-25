@@ -1,14 +1,19 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { synthesizeSpeech, clearTtsCache } from "./ttsApi";
+import { synthesizeSpeech, clearTtsCache, stopTts } from "./ttsApi";
 
 // Mock global fetch
 const mockFetch = vi.fn();
 vi.stubGlobal("fetch", mockFetch);
 
 // Mock Audio constructor
+const mockPlay = vi.fn().mockResolvedValue(undefined);
+const mockPause = vi.fn();
+const mockAddEventListener = vi.fn();
+
 class MockAudio {
-  play = vi.fn().mockResolvedValue(undefined);
-  addEventListener = vi.fn();
+  play = mockPlay;
+  pause = mockPause;
+  addEventListener = mockAddEventListener;
 }
 vi.stubGlobal("Audio", MockAudio);
 
@@ -21,7 +26,11 @@ vi.stubGlobal("URL", {
 
 beforeEach(() => {
   mockFetch.mockReset();
+  mockPlay.mockReset().mockResolvedValue(undefined);
+  mockPause.mockReset();
+  mockAddEventListener.mockReset();
   clearTtsCache();
+  stopTts();
 });
 
 afterEach(() => {
@@ -105,5 +114,68 @@ describe("synthesizeSpeech", () => {
 
     const options = mockFetch.mock.calls[0][1];
     expect(JSON.parse(options.body)).toEqual({ text: "hello", lang: "en" });
+  });
+});
+
+describe("stopTts", () => {
+  it("discards stale fetch results when stopTts is called before fetch resolves", async () => {
+    const mockBlob = new Blob(["fake audio"], { type: "audio/mpeg" });
+
+    // Create a controllable promise for fetch
+    let resolveFetch: (value: unknown) => void;
+    const fetchPromise = new Promise((resolve) => {
+      resolveFetch = resolve;
+    });
+    mockFetch.mockReturnValueOnce(fetchPromise);
+
+    // Start synthesis (fetch is pending)
+    const promise = synthesizeSpeech("hello", "en");
+
+    // Stop TTS while fetch is still pending
+    stopTts();
+
+    // Now resolve the fetch
+    resolveFetch!({ ok: true, blob: async () => mockBlob });
+
+    await promise;
+
+    // Audio.play should NOT have been called because the result is stale
+    expect(mockPlay).not.toHaveBeenCalled();
+  });
+
+  it("stops currently playing audio", async () => {
+    const mockBlob = new Blob(["fake audio"], { type: "audio/mpeg" });
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      blob: async () => mockBlob,
+    });
+
+    await synthesizeSpeech("hello", "en");
+
+    // Audio was played
+    expect(mockPlay).toHaveBeenCalledTimes(1);
+
+    // Stop TTS
+    stopTts();
+
+    // Audio.pause should have been called
+    expect(mockPause).toHaveBeenCalled();
+  });
+
+  it("new synthesizeSpeech stops previous audio", async () => {
+    const mockBlob = new Blob(["fake audio"], { type: "audio/mpeg" });
+    mockFetch.mockResolvedValue({
+      ok: true,
+      blob: async () => mockBlob,
+    });
+
+    // First synthesis (from cache, plays immediately)
+    await synthesizeSpeech("hello", "en");
+
+    // Second synthesis (different text, fetches new audio)
+    await synthesizeSpeech("world", "en");
+
+    // pause should have been called when second synthesis started
+    expect(mockPause).toHaveBeenCalled();
   });
 });
