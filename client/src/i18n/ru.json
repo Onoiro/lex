@@ -85,5 +85,10 @@
   "settings.choose_app_language": "Выберите язык интерфейса",
   "settings.translate": "Перевод",
   "settings.same_lang_warning": "Исходный и целевой языки совпадают. Перевод может не дать полезного результата.",
-  "settings.app_version": "Версия {version}"
+  "settings.app_version": "Версия {version}",
+  "tts.listen_word": "Прослушать слово",
+  "tts.listen_translation": "Прослушать перевод",
+  "settings.tts": "Озвучивание",
+  "settings.tts_review": "Авто-озвучка в повторе",
+  "settings.tts_description": "Если включено, слова и переводы автоматически озвучиваются во время повторения."
 }

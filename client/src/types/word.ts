@@ -52,6 +52,8 @@ export interface LanguageSettings {
   lang_list?: string;
   /** When lang_list was last updated (Unix ms). */
   lang_list_updated_at?: number;
+  /** Whether TTS (text-to-speech) is enabled in review mode. */
+  tts_enabled: boolean;
 }
 
 /** Default language settings. */
@@ -59,6 +61,7 @@ export const DEFAULT_LANGUAGE_SETTINGS: LanguageSettings = {
   source_lang: "auto",
   target_lang: "ru",
   locale: "en",
+  tts_enabled: false,
 };
 
 /** How long to cache the language count before refetching (24 hours). */

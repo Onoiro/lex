@@ -72,6 +72,20 @@ export default defineConfig({
               },
             },
           },
+          {
+            urlPattern: /\/tts$/,
+            handler: "NetworkFirst",
+            options: {
+              cacheName: "lex-tts-api",
+              expiration: {
+                maxEntries: 100,
+                maxAgeSeconds: 86400,
+              },
+              cacheableResponse: {
+                statuses: [0, 200],
+              },
+            },
+          },
         ],
       },
       devOptions: {
@@ -89,6 +103,7 @@ export default defineConfig({
     proxy: {
       "/translate": "http://localhost:8004",
       "/languages": "http://localhost:8004",
+      "/tts": "http://localhost:8004",
     },
   },
 });

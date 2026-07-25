@@ -3,6 +3,7 @@ import { useLocale } from "@/i18n";
 import { getLanguageName, LANGUAGE_NAMES_EN, LANGUAGE_NAMES_RU } from "@/i18n/languages";
 import { validateWord, validateTranslation } from "@/domain/validators";
 import { translateWord, getLanguages } from "@/services/translateApi";
+import { synthesizeSpeech } from "@/services/ttsApi";
 import { addWord } from "@/data/wordRepository";
 import { getSettings, saveSettings } from "@/data/settingsRepository";
 import { LANG_LIST_TTL_MS } from "@/types";
@@ -27,6 +28,7 @@ export function Add() {
   const [settings, setSettings] = useState<LanguageSettings | null>(null);
   const [userEditingTranslation, setUserEditingTranslation] = useState(false);
   const [langOptions, setLangOptions] = useState<LanguageInfo[]>([]);
+  const [ttsLoading, setTtsLoading] = useState<string | null>(null);
 
   const wordRef = useRef<HTMLInputElement>(null);
   const messageTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -134,6 +136,23 @@ export function Add() {
 
   const handleTranslationEdit = () => {
     setUserEditingTranslation(true);
+  };
+
+  const handlePlayWord = async () => {
+    const trimmed = word.trim();
+    if (!trimmed || !settings) return;
+    const lang = settings.source_lang === "auto" ? "en" : settings.source_lang;
+    setTtsLoading("word");
+    await synthesizeSpeech(trimmed, lang);
+    setTtsLoading(null);
+  };
+
+  const handlePlayTranslation = async () => {
+    const trimmed = translation.trim();
+    if (!trimmed || !settings) return;
+    setTtsLoading("translation");
+    await synthesizeSpeech(trimmed, settings.target_lang);
+    setTtsLoading(null);
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -288,22 +307,49 @@ export function Add() {
 
         <form onSubmit={handleSave} style={{ marginBottom: 0 }}>
           {/* Word input */}
-          <input
-            ref={wordRef}
-            type="text"
-            id="word"
-            value={word}
-            onChange={(e) => setWord(e.target.value)}
-            required
-            placeholder={t("add.word_placeholder_new")}
-            autoComplete="off"
-            style={{
-              width: "100%",
-              fontSize: "1.1rem",
-              marginBottom: "1rem",
-              boxSizing: "border-box",
-            }}
-          />
+          <div style={{ position: "relative" }}>
+            <input
+              ref={wordRef}
+              type="text"
+              id="word"
+              value={word}
+              onChange={(e) => setWord(e.target.value)}
+              required
+              placeholder={t("add.word_placeholder_new")}
+              autoComplete="off"
+              style={{
+                width: "100%",
+                fontSize: "1.1rem",
+                marginBottom: "1rem",
+                boxSizing: "border-box",
+                paddingRight: "2.5rem",
+              }}
+            />
+            {word.trim() && (
+              <button
+                type="button"
+                className="outline"
+                data-testid="tts-word-btn"
+                onClick={handlePlayWord}
+                disabled={ttsLoading === "word"}
+                title={t("tts.listen_word")}
+                style={{
+                  position: "absolute",
+                  right: "0.5rem",
+                  top: "0.4rem",
+                  padding: "0.25rem 0.5rem",
+                  fontSize: "1rem",
+                  lineHeight: 1,
+                  cursor: "pointer",
+                  border: "none",
+                  background: "none",
+                  color: "var(--pico-primary)",
+                }}
+              >
+                {ttsLoading === "word" ? "⏳" : "🔊"}
+              </button>
+            )}
+          </div>
 
           {/* Translation output */}
           <div style={{ position: "relative" }}>
@@ -326,6 +372,7 @@ export function Add() {
                 overflowY: "auto",
                 resize: "vertical",
                 marginBottom: "0.5rem",
+                paddingRight: "2.5rem",
               }}
             />
             {translating && (
@@ -340,6 +387,30 @@ export function Add() {
               >
                 ⏳
               </span>
+            )}
+            {!translating && translation.trim() && (
+              <button
+                type="button"
+                className="outline"
+                data-testid="tts-translation-btn"
+                onClick={handlePlayTranslation}
+                disabled={ttsLoading === "translation"}
+                title={t("tts.listen_translation")}
+                style={{
+                  position: "absolute",
+                  right: "0.5rem",
+                  top: "0.4rem",
+                  padding: "0.25rem 0.5rem",
+                  fontSize: "1rem",
+                  lineHeight: 1,
+                  cursor: "pointer",
+                  border: "none",
+                  background: "none",
+                  color: "var(--pico-primary)",
+                }}
+              >
+                {ttsLoading === "translation" ? "⏳" : "🔊"}
+              </button>
             )}
           </div>
 

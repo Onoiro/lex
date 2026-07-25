@@ -12,6 +12,7 @@ export function Settings() {
   const [sourceLang, setSourceLang] = useState("auto");
   const [targetLang, setTargetLang] = useState("ru");
   const [locale, setLocaleState] = useState("en");
+  const [ttsEnabled, setTtsEnabled] = useState(false);
   const [saved, setSaved] = useState(false);
   const [langOptions, setLangOptions] = useState<LanguageInfo[]>([]);
 
@@ -25,6 +26,7 @@ export function Settings() {
       setSourceLang(settings.source_lang);
       setTargetLang(settings.target_lang);
       setLocaleState(settings.locale);
+      setTtsEnabled(settings.tts_enabled);
 
       // Try cached list first
       const now = Date.now();
@@ -77,7 +79,7 @@ export function Settings() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    await saveSettings({ source_lang: sourceLang, target_lang: targetLang, locale });
+    await saveSettings({ source_lang: sourceLang, target_lang: targetLang, locale, tts_enabled: ttsEnabled });
     setLocale(locale);
     setSaved(true);
     setTimeout(() => setSaved(false), 3000);
@@ -166,6 +168,24 @@ export function Settings() {
               {sameLangWarning}
             </small>
           )}
+        </fieldset>
+
+        <fieldset>
+          <legend>{t("settings.tts")}</legend>
+          <label htmlFor="tts_enabled">
+            <input
+              type="checkbox"
+              id="tts_enabled"
+              role="switch"
+              checked={ttsEnabled}
+              onChange={(e) => setTtsEnabled(e.target.checked)}
+              style={{ marginRight: "0.5rem" }}
+            />
+            {t("settings.tts_review")}
+          </label>
+          <small style={{ display: "block", marginTop: "0.5rem", color: "var(--pico-muted-color)" }}>
+            {t("settings.tts_description")}
+          </small>
         </fieldset>
 
         <button type="submit">{t("settings.save")}</button>

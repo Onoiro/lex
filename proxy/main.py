@@ -1,20 +1,22 @@
 """Translate proxy: thin FastAPI service that hides Yandex API key.
 
-Provides two endpoints:
+Provides three endpoints:
   POST /translate — translate a word
   GET  /languages — list supported languages
+  POST /tts       — synthesize speech (text-to-speech)
 
 No auth or CSRF: protected by rate limiting. CORS enabled for client apps.
 """
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel
 from dotenv import load_dotenv
 
 from proxy.services.translator import translate_word, get_supported_languages, get_api_language_names
 from proxy.services.cache import translation_cache
+from proxy.services.tts import synthesize_speech, speech_cache
 from proxy.security.rate_limiter import RateLimiter, get_client_ip
 
 load_dotenv()
@@ -29,14 +31,20 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Rate limiter: 30 translate requests per minute
+# Rate limiters: 30 requests per minute per endpoint
 translate_limiter = RateLimiter(max_requests=30, window_seconds=60)
+tts_limiter = RateLimiter(max_requests=30, window_seconds=60)
 
 
 class TranslateRequest(BaseModel):
     word: str
     source_lang: str = "auto"
     target_lang: str = "ru"
+
+
+class TtsRequest(BaseModel):
+    text: str
+    lang: str
 
 
 @app.get("/")
@@ -94,3 +102,41 @@ async def languages():
 @app.get("/cache/stats")
 async def cache_stats():
     return {"size": translation_cache.size()}
+
+
+@app.post("/tts")
+async def tts(request: Request, body: TtsRequest):
+    # Rate limit
+    ip = get_client_ip(request)
+    if not tts_limiter.is_allowed(ip):
+        return JSONResponse(
+            status_code=429,
+            content={"error": "Rate limit exceeded. Try again later."},
+            headers={"Retry-After": "60"},
+        )
+
+    text = body.text.strip()
+    if not text:
+        return JSONResponse(
+            status_code=400,
+            content={"error": "Text is required."},
+        )
+
+    audio = await synthesize_speech(text, body.lang)
+
+    if audio is None:
+        return JSONResponse(
+            status_code=502,
+            content={"error": "Speech synthesis failed. Check API key or network."},
+        )
+
+    return Response(
+        content=audio,
+        media_type="audio/mpeg",
+        headers={"Cache-Control": "public, max-age=86400"},
+    )
+
+
+@app.get("/tts/cache/stats")
+async def tts_cache_stats():
+    return {"size": speech_cache.size()}
