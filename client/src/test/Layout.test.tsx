@@ -1,13 +1,28 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { Layout } from "@/components/Layout";
 import { setLocale } from "@/i18n";
-import { version } from "../../package.json";
+
+const DESKTOP_WIDTH = 1024;
+const MOBILE_WIDTH = 375;
 
 describe("Layout", () => {
   beforeEach(() => {
     setLocale("en");
+    Object.defineProperty(window, "innerWidth", {
+      writable: true,
+      configurable: true,
+      value: DESKTOP_WIDTH,
+    });
+  });
+
+  afterEach(() => {
+    Object.defineProperty(window, "innerWidth", {
+      writable: true,
+      configurable: true,
+      value: DESKTOP_WIDTH,
+    });
   });
 
   it("renders navigation links in English", () => {
@@ -26,7 +41,37 @@ describe("Layout", () => {
     expect(screen.getByText("Test content")).toBeInTheDocument();
   });
 
-  it("renders footer with version", () => {
+  it("renders bottom nav icons on mobile", () => {
+    Object.defineProperty(window, "innerWidth", {
+      writable: true,
+      configurable: true,
+      value: MOBILE_WIDTH,
+    });
+
+    const { container } = render(
+      <MemoryRouter>
+        <Layout>
+          <div />
+        </Layout>
+      </MemoryRouter>,
+    );
+
+    // Bottom nav should be visible on mobile
+    expect(container.querySelectorAll(".bottom-nav-item")).toHaveLength(4);
+    expect(screen.getByText("🌍")).toBeInTheDocument();
+    expect(screen.getByText("🧠")).toBeInTheDocument();
+    expect(screen.getByText("📖")).toBeInTheDocument();
+    // Settings link with title
+    expect(screen.getByRole("link", { name: "⚙ ⚙" })).toBeInTheDocument();
+  });
+
+  it("renders desktop nav on desktop", () => {
+    Object.defineProperty(window, "innerWidth", {
+      writable: true,
+      configurable: true,
+      value: DESKTOP_WIDTH,
+    });
+
     render(
       <MemoryRouter>
         <Layout>
@@ -35,7 +80,11 @@ describe("Layout", () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getByText(new RegExp(`Lex v${version.replaceAll(".", "\\.")}`))).toBeInTheDocument();
+    // Desktop nav links
+    expect(screen.getByText("Lex")).toBeInTheDocument();
+    expect(screen.getByText("Translate")).toBeInTheDocument();
+    expect(screen.getByText("Review")).toBeInTheDocument();
+    expect(screen.getByText("Dictionary")).toBeInTheDocument();
   });
 
   it("renders navigation links in Russian", () => {

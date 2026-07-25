@@ -82,4 +82,16 @@ describe("Settings", () => {
       expect(options.length).toBeGreaterThan(10);
     });
   });
+
+  it("shows app version", async () => {
+    render(
+      <MemoryRouter>
+        <Settings />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText(/Version/)).toBeInTheDocument();
+    });
+  });
 });

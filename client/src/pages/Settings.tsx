@@ -5,6 +5,7 @@ import { getSettings, saveSettings } from "@/data/settingsRepository";
 import { getLanguages } from "@/services/translateApi";
 import { LANG_LIST_TTL_MS } from "@/types";
 import type { LanguageInfo } from "@/services/translateApi";
+import { version } from "../../package.json";
 
 export function Settings() {
   const [t] = useLocale();
@@ -169,6 +170,10 @@ export function Settings() {
 
         <button type="submit">{t("settings.save")}</button>
       </form>
+
+      <p style={{ marginTop: "2rem", fontSize: "0.85rem", color: "var(--pico-muted-color)", textAlign: "center" }}>
+        {t("settings.app_version", { version })}
+      </p>
     </>
   );
 }

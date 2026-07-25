@@ -1,68 +1,96 @@
+import { useState, useEffect } from "react";
 import { NavLink, Link } from "react-router-dom";
 import { useLocale } from "@/i18n";
-import { version } from "../../package.json";
 
 interface LayoutProps {
   children: React.ReactNode;
 }
 
+const MOBILE_BREAKPOINT = 768;
+
 export function Layout({ children }: LayoutProps) {
   const [t] = useLocale();
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < MOBILE_BREAKPOINT);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
 
   const navItems = [
-    { to: "/add", label: t("nav.translate") },
-    { to: "/review", label: t("nav.review") },
-    { to: "/dictionary", label: t("nav.dictionary") },
-    { to: "/settings", label: t("nav.settings"), title: t("nav.settings.title") },
+    { to: "/add", label: t("nav.translate"), icon: "🌍" },
+    { to: "/review", label: t("nav.review"), icon: "🧠" },
+    { to: "/dictionary", label: t("nav.dictionary"), icon: "📖" },
+    { to: "/settings", label: t("nav.settings"), icon: "⚙", title: t("nav.settings.title") },
   ];
 
   return (
     <div className="container">
-      <header>
-        <nav>
-          <ul>
-            <li>
-              <Link to="/" className="contrast">
-                <strong>{t("nav.home")}</strong>
-              </Link>
-            </li>
-          </ul>
-          <ul>
-            {navItems.map((item) => (
-              <li key={item.to}>
-                <NavLink
-                  to={item.to}
-                  className={({ isActive }) => (isActive ? "" : "secondary")}
-                  title={item.title}
-                >
-                  {item.label}
-                </NavLink>
+      {/* Top nav — desktop only */}
+      {!isMobile && (
+        <header>
+          <nav>
+            <ul>
+              <li>
+                <Link to="/" className="contrast">
+                  <strong>{t("nav.home")}</strong>
+                </Link>
               </li>
-            ))}
-          </ul>
-        </nav>
-      </header>
+            </ul>
+            <ul>
+              {navItems.map((item) => (
+                <li key={item.to}>
+                  <NavLink
+                    to={item.to}
+                    className={({ isActive }) => (isActive ? "" : "secondary")}
+                    title={item.title}
+                  >
+                    {item.label}
+                  </NavLink>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        </header>
+      )}
 
       <main>{children}</main>
 
-      <footer
-        style={{
-          position: "fixed",
-          left: 0,
-          bottom: 0,
-          right: 0,
-          margin: 0,
-          padding: "0.75rem",
-          background: "var(--pico-background-color)",
-          color: "var(--pico-muted-color)",
-          textAlign: "center",
-          borderTop: "1px solid var(--pico-muted-border-color)",
-          fontSize: "0.85rem",
-          zIndex: 100,
-        }}
-      >
-        {t("footer.version", { version })}
-      </footer>
+      {/* Bottom nav — mobile only */}
+      {isMobile && (
+        <nav
+          className="bottom-nav"
+          style={{
+            position: "fixed",
+            left: 0,
+            bottom: 0,
+            right: 0,
+            margin: 0,
+            borderTop: "1px solid var(--pico-muted-border-color)",
+            background: "var(--pico-background-color)",
+            zIndex: 100,
+            display: "flex",
+            justifyContent: "space-around",
+            padding: "0.25rem 0",
+          }}
+        >
+          {navItems.map((item) => (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              title={item.title}
+              className={({ isActive }) =>
+                `bottom-nav-item${isActive ? " active" : ""}`
+              }
+            >
+              <span className="bottom-nav-icon">{item.icon}</span>
+              <span className="bottom-nav-label">{item.label}</span>
+            </NavLink>
+          ))}
+        </nav>
+      )}
     </div>
   );
 }

@@ -81,9 +81,9 @@
   "settings.save": "Сохранить",
   "settings.auto_detect": "Автоопределение",
   "settings.lang_updated": "Настройки языков обновлены.",
-  "footer.version": "Lex v{version}",
   "settings.app_language": "Язык приложения",
   "settings.choose_app_language": "Выберите язык интерфейса",
   "settings.translate": "Перевод",
-  "settings.same_lang_warning": "Исходный и целевой языки совпадают. Перевод может не дать полезного результата."
+  "settings.same_lang_warning": "Исходный и целевой языки совпадают. Перевод может не дать полезного результата.",
+  "settings.app_version": "Версия {version}"
 }
