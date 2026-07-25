@@ -14,6 +14,83 @@ API_KEY = os.getenv("YANDEX_API_KEY")
 FOLDER_ID = os.getenv("YANDEX_FOLDER_ID", "b1gqq9rjega7119p3a2f")
 TTS_URL = "https://tts.api.cloud.yandex.net/speech/v1/tts:synthesize"
 
+# Voice mapping: which SpeechKit voice to use for each Translate language code.
+# Without explicit voice, SpeechKit defaults to a Russian voice (alena) for all
+# languages, producing a Russian accent. These voices provide native pronunciation.
+VOICE_MAP: dict[str, str] = {
+    "ru": "alena",
+    "en": "john",
+    "de": "lea",
+    "fr": "amira",
+    "kk": "zhanar",
+    "tr": "nigora",
+    "uz": "madira",
+    "uk": "alena",
+    "es": "alena",
+    "it": "alena",
+    "pt": "alena",
+    "pl": "alena",
+    "nl": "alena",
+    "sv": "alena",
+    "fi": "alena",
+    "no": "alena",
+    "da": "alena",
+    "cs": "alena",
+    "el": "alena",
+    "hu": "alena",
+    "he": "alena",
+    "hi": "alena",
+    "ar": "alena",
+    "ja": "alena",
+    "ko": "alena",
+    "zh": "alena",
+    "th": "alena",
+    "vi": "alena",
+    "id": "alena",
+    "ms": "alena",
+    "bg": "alena",
+    "ro": "alena",
+    "hr": "alena",
+    "sk": "alena",
+    "sl": "alena",
+    "lt": "alena",
+    "lv": "alena",
+    "et": "alena",
+    "ka": "alena",
+    "az": "alena",
+    "hy": "alena",
+    "sr": "alena",
+    "ta": "alena",
+    "te": "alena",
+    "ml": "alena",
+    "mr": "alena",
+    "bn": "alena",
+    "gu": "alena",
+    "kn": "alena",
+    "pa": "alena",
+    "fa": "alena",
+    "be": "alena",
+    "ky": "alena",
+    "tg": "alena",
+    "tk": "alena",
+    "mn": "alena",
+    "km": "alena",
+    "lo": "alena",
+    "my": "alena",
+    "ne": "alena",
+    "si": "alena",
+    "am": "alena",
+    "ha": "alena",
+    "sw": "alena",
+    "af": "alena",
+    "sq": "alena",
+    "is": "alena",
+    "ga": "alena",
+    "mt": "alena",
+    "cy": "alena",
+    "eo": "alena",
+}
+
 # Mapping from Yandex Translate language codes to SpeechKit TTS language codes.
 # SpeechKit uses region-qualified codes (e.g. en-US, ru-RU).
 LANG_MAP: dict[str, str] = {
@@ -157,6 +234,7 @@ def _synthesize_sync(text: str, lang: str) -> bytes | None:
         return None
 
     speechkit_lang = map_language(lang)
+    voice = VOICE_MAP.get(lang, "alena")
 
     try:
         with httpx.Client(timeout=10.0) as client:
@@ -168,6 +246,7 @@ def _synthesize_sync(text: str, lang: str) -> bytes | None:
                 data={
                     "text": text,
                     "lang": speechkit_lang,
+                    "voice": voice,
                     "format": "mp3",
                     "folderId": FOLDER_ID,
                 },

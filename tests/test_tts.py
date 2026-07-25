@@ -101,6 +101,7 @@ class TestSynthesizeSync:
         call_args = mock_client.post.call_args
         assert call_args.kwargs["data"]["text"] == "hello"
         assert call_args.kwargs["data"]["lang"] == "en-US"
+        assert call_args.kwargs["data"]["voice"] == "john"
         assert call_args.kwargs["data"]["format"] == "mp3"
         assert call_args.kwargs["headers"]["Authorization"] == "Api-Key test-key"
 
