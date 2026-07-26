@@ -7,39 +7,50 @@
 
 # Lex
 
-Lex is a local-first translator and vocabulary trainer. Your dictionary, spaced repetition, and settings are stored locally on your device — no account needed, no server required. Internet is only needed for translation via a thin proxy to Yandex Translate API.
+Lex is a translator and vocabulary trainer. Your dictionary, spaced repetition, and settings are stored locally on your device - no account needed, no server required. Internet is only needed for translation via a thin proxy to Yandex Translate API.
 
 **Try it live:** [lex.2-way.ru](https://lex.2-way.ru)
 
 ## Features
 
-- **Local-first** — Dictionary, SRS, and settings stored in IndexedDB (Dexie.js). Works offline.
-- **Translate words** — Auto-translate from 100+ languages via Yandex Translate API (through proxy)
-- **Spaced repetition (SM-2)** — Words you forget more often appear more frequently in reviews
-- **Response time tracking** — Best/average times, live timer with color thresholds
-- **Auto-answer & pause** — Auto-records "Forgot" after 10s, pauses after 3 consecutive auto-answers or 30s inactivity
-- **TTS** — Text-to-speech for words and translations via Speechkin
-- **PWA** — Installable, offline-capable via service worker
-- **Android** — Native app via Capacitor (RuStore, AppGallery)
-- **Desktop** — Native installers via Tauri (Windows MSI/NSIS, macOS DMG, Linux deb/AppImage)
-- **i18n** — English and Russian UI
-- **Import/Export** — Backup and transfer dictionary between devices as JSON
+- **Local-first** - Dictionary, SRS, and settings stored in IndexedDB (Dexie.js). Works offline.
+- **Translate words** - Auto-translate from 100+ languages via Yandex Translate API (through proxy)
+- **Spaced repetition (SM-2)** - Words you forget more often appear more frequently in reviews
+- **Response time tracking** - Best/average times, live timer with color thresholds
+- **Auto-answer & pause** - Auto-records "Forgot" after 10s, pauses after 3 consecutive auto-answers or 30s inactivity
+- **TTS** - Text-to-speech for words and translations via Yandex SpeechKit
+- **PWA** - Installable, offline-capable via service worker
+- **Android** - Native app via Capacitor (RuStore, AppGallery)
+- **Desktop** - Native installers via Tauri (Windows MSI/NSIS, macOS DMG, Linux deb/AppImage)
+- **i18n** - English and Russian UI
+- **Import/Export** - Backup and transfer dictionary between devices as JSON
 
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────────┐
-│                    Client (React)                    │
-│  ┌──────────┐  ┌──────────┐  ┌───────────────────┐  │
-│  │   Pages   │  │  Domain  │  │  Data (Dexie/IDB) │  │
-│  │  (React)  │  │  (SRS)   │  │  wordRepository   │  │
-│  └────┬─────┘  └──────────┘  └───────────────────┘  │
-│       │                                              │
-│       ▼                                              │
-│  ┌──────────────┐                                   │
-│  │ translateApi │ ──── HTTP ────► Proxy (FastAPI)   │
-│  └──────────────┘                (Yandex API key)   │
-└─────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────┐
+│                     Client (React)                    │
+│  ┌──────────┐   ┌──────────┐   ┌──────────────────┐  │
+│  │  Pages   │   │  Domain  │   │  Data (Dexie/IDB)│  │
+│  │ (React)  │   │  (SRS)   │   │ wordRepo, settings│  │
+│  └──┬───┬───┘   └──────────┘   └──────────────────┘  │
+│     │   └──────────────┐                              │
+│     ▼                  ▼                              │
+│  ┌────────────┐   ┌──────────┐                       │
+│  │translateApi│   │  ttsApi  │                       │
+│  └─────┬──────┘   └────┬─────┘                       │
+│        │               │                              │
+└────────┼───────────────┼──────────────────────────────┘
+         │               │
+         ▼               ▼
+┌─────────────────────────────────────┐
+│        Proxy (FastAPI, port 8004)    │
+│  POST /translate   POST /tts        │
+│  GET  /languages   GET  /cache/stats│
+│  GET  /            GET  /tts/cache  │
+│                                     │
+│  Yandex Translate API + SpeechKit   │
+└─────────────────────────────────────┘
 ```
 
 - **Client:** React 19 + TypeScript, Vite 7, Dexie.js (IndexedDB), Pico CSS, vite-plugin-pwa
@@ -82,7 +93,7 @@ make proxy
 make client-dev
 ```
 
-Open http://localhost:5173 — Vite proxies `/translate` and `/languages` to the proxy automatically.
+Open http://localhost:5173 - Vite proxies `/translate` and `/languages` to the proxy automatically.
 
 ### Production Deploy
 
@@ -134,7 +145,7 @@ Requires Rust + system libraries (see [Tauri prerequisites](https://tauri.app/st
 ### Reviewing Words
 
 1. Go to **Review** page → click **Start training**
-2. A word appears — try to recall the translation
+2. A word appears - try to recall the translation
 3. Click **I know** or **I don't remember**
 4. Timer: green (record), orange (5s), red (10s). Auto-answer after 10s.
 5. Training pauses after 3 consecutive auto-answers or 30s inactivity.
@@ -149,7 +160,7 @@ Requires Rust + system libraries (see [Tauri prerequisites](https://tauri.app/st
 Since Lex is local-first, each device has its own independent dictionary (stored in browser IndexedDB). To move your dictionary to another device:
 
 1. Open **Dictionary** on the source device
-2. Click **Export** — downloads `lex-dictionary.json`
+2. Click **Export** - downloads `lex-dictionary.json`
 3. Open **Dictionary** on the target device
 4. Click **Import** and select the JSON file
 5. Duplicates are automatically skipped, missing fields get defaults
@@ -159,7 +170,7 @@ Since Lex is local-first, each device has its own independent dictionary (stored
 Simplified SM-2:
 - **Correct:** Interval grows (1 → 6 → interval × 2.5, capped at 30 days)
 - **Wrong:** Interval resets to 0
-- **Selection:** Weighted random — weight = 1 / (interval + 1)
+- **Selection:** Weighted random - weight = 1 / (interval + 1)
 - **Stats:** know_count, forgot_count, best_time, avg_time per word
 
 ## Development
@@ -211,7 +222,7 @@ All commands are run via `make`. Run `make help` to see the full list.
 │   ├── services/
 │   │   ├── translator.py      # Yandex Translate API client
 │   │   ├── cache.py           # Translation cache (TTL)
-│   │   └── tts.py             # Speechkin TTS client
+│   │   └── tts.py             # Yandex SpeechKit TTS client
 │   ├── security/
 │   │   └── rate_limiter.py    # Rate limiting
 │   ├── Dockerfile
@@ -225,3 +236,7 @@ All commands are run via `make`. Run `make help` to see the full list.
 ## License
 
 This project may be used for personal or non-commercial purposes.
+
+## Contact
+
+Questions or feedback? Email: donoriono@gmail.com
