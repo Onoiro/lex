@@ -5,7 +5,7 @@ Lex — local-first приложение-переводчик и помощни�
 
 **Демо:** [lex.2-way.ru](https://lex.2-way.ru)
 
-**Текущая версия:** 0.11.7
+**Текущая версия:** 1.3.1
 
 ## Архитектура
 
@@ -25,7 +25,7 @@ Lex — local-first приложение-переводчик и помощни�
 ```
 
 - **Client:** React 19 + TypeScript, Vite 7, Dexie.js (IndexedDB), Pico CSS, vite-plugin-pwa
-- **Proxy:** FastAPI, порт 8004. Скрывает Yandex API key. Эндпоинты: POST `/translate`, GET `/languages`
+- **Proxy:** FastAPI, порт 8004. Скрывает Yandex API key. Эндпоинты: POST `/translate`, GET `/languages`, POST `/tts`, GET `/`, GET `/cache/stats`, GET `/tts/cache/stats`
 
 ## Используемые технологии
 
@@ -98,7 +98,7 @@ make d-run    # docker compose up -d
 │   │   ├── domain/            # srs.ts (SM-2), stats.ts, validators.ts
 │   │   ├── i18n/              # index.ts, languages.ts, en.json, ru.json
 │   │   ├── pages/             # Home, Add, Review, Dictionary, Settings
-│   │   ├── services/          # translateApi.ts (proxy client)
+│   │   ├── services/          # translateApi.ts (proxy client), ttsApi.ts
 │   │   ├── types/             # Word, LanguageSettings
 │   │   └── main.tsx           # App entry, SW registration, native plugins
 │   ├── capacitor.config.ts    # Android config (ru.lex.app)
@@ -110,12 +110,13 @@ make d-run    # docker compose up -d
 │   └── package.json
 ├── proxy/                     # Translate proxy (FastAPI, порт 8004)
 │   ├── __init__.py
-│   ├── main.py                # /translate, /languages
+│   ├── main.py                # /translate, /languages, /tts, /, /cache/stats, /tts/cache/stats
 │   ├── languages.py           # Language metadata (names, native names)
 │   ├── services/
 │   │   ├── __init__.py
 │   │   ├── translator.py      # Yandex Translate API client
-│   │   └── cache.py           # Translation cache (TTL)
+│   │   ├── cache.py           # Translation cache (TTL)
+│   │   └── tts.py             # Speechkin TTS client
 │   ├── security/
 │   │   ├── __init__.py
 │   │   └── rate_limiter.py    # Rate limiting
@@ -126,7 +127,8 @@ make d-run    # docker compose up -d
 │   ├── test_proxy.py
 │   ├── test_translator.py
 │   ├── test_cache.py
-│   └── test_rate_limiter.py
+│   ├── test_rate_limiter.py
+│   └── test_tts.py
 ├── pyproject.toml             # Python project config (uv, ruff)
 ├── Makefile                   # Build/run scripts
 ├── docker-compose.yml         # Docker (proxy)
@@ -146,8 +148,8 @@ make d-run    # docker compose up -d
 - **VITE_PROXY_URL:** env var для proxy base URL (пустая строка = relative path).
 
 ### Proxy
-- Скрывает Yandex API key. Rate limiting. Кэш переводов.
-- Эндпоинты: POST `/translate` (body: word, source_lang, target_lang), GET `/languages`.
+- Скрывает Yandex API key. Rate limiting. Кэш переводов. TTS (text-to-speech).
+- Эндпоинты: POST `/translate` (body: word, source_lang, target_lang), GET `/languages`, POST `/tts`, GET `/`, GET `/cache/stats`, GET `/tts/cache/stats`.
 - Самодостаточный модуль: все зависимости внутри `proxy/` (services/, security/, languages.py).
 - **Линтинг:** `uv run ruff check proxy/` — без ошибок.
 - **Тестирование:** `uv run pytest tests/ -v`.
@@ -155,7 +157,8 @@ make d-run    # docker compose up -d
 
 ## Алгоритм повторений (SM-2)
 - Упрощённая версия SM-2. Интервалы растут при правильных ответах, сбрасываются при ошибках.
-- Потолок интервала: 30 дней.
+- **Correct:** Interval grows (1 → 6 → interval × 2.5, capped at 30 days)
+- **Wrong:** Interval and repetitions reset to 0.
 - Выбор слова: взвешенный рандом, вес = 1 / (интервал + 1). Меньший интервал = выше шанс.
 - Статистика: know_count, forgot_count, best_time, avg_time для каждого слова.
 - Таймер: потолок 10 сек. После 5 сек — оранжевый, после 10 — красный. Авто-ответ «Не помню» через 10 сек.
@@ -167,4 +170,4 @@ make d-run    # docker compose up -d
 - CI для кросс-компиляции Tauri (Windows MSI/NSIS, macOS DMG)
 
 ---
-**Последнее обновление:** 24 июля 2026
+**Последнее обновление:** 26 июля 2026

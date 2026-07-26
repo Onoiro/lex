@@ -18,6 +18,7 @@ Lex is a local-first translator and vocabulary trainer. Your dictionary, spaced 
 - **Spaced repetition (SM-2)** — Words you forget more often appear more frequently in reviews
 - **Response time tracking** — Best/average times, live timer with color thresholds
 - **Auto-answer & pause** — Auto-records "Forgot" after 10s, pauses after 3 consecutive auto-answers or 30s inactivity
+- **TTS** — Text-to-speech for words and translations via Speechkin
 - **PWA** — Installable, offline-capable via service worker
 - **Android** — Native app via Capacitor (RuStore, AppGallery)
 - **Desktop** — Native installers via Tauri (Windows MSI/NSIS, macOS DMG, Linux deb/AppImage)
@@ -42,7 +43,7 @@ Lex is a local-first translator and vocabulary trainer. Your dictionary, spaced 
 ```
 
 - **Client:** React 19 + TypeScript, Vite 7, Dexie.js (IndexedDB), Pico CSS, vite-plugin-pwa
-- **Proxy:** FastAPI, port 8004. Hides Yandex API key. Endpoints: POST `/translate`, GET `/languages`
+- **Proxy:** FastAPI, port 8004. Hides Yandex API key. Endpoints: POST `/translate`, GET `/languages`, POST `/tts`, GET `/`, GET `/cache/stats`, GET `/tts/cache/stats`
 
 ## Tech Stack
 
@@ -57,8 +58,8 @@ Lex is a local-first translator and vocabulary trainer. Your dictionary, spaced 
 
 ### Proxy (`proxy/`)
 - Python 3.13, FastAPI
-- Hides Yandex API key, rate limiting, translation cache
-- Endpoints: POST `/translate`, GET `/languages`
+- Hides Yandex API key, rate limiting, translation cache, TTS (text-to-speech)
+- Endpoints: POST `/translate`, GET `/languages`, POST `/tts`, GET `/`, GET `/cache/stats`, GET `/tts/cache/stats`
 
 ## Quick Start
 
@@ -156,7 +157,7 @@ Since Lex is local-first, each device has its own independent dictionary (stored
 ## Spaced Repetition Algorithm
 
 Simplified SM-2:
-- **Correct:** Interval grows (1 → 6 → 15 → 30 days, capped at 30)
+- **Correct:** Interval grows (1 → 6 → interval × 2.5, capped at 30 days)
 - **Wrong:** Interval resets to 0
 - **Selection:** Weighted random — weight = 1 / (interval + 1)
 - **Stats:** know_count, forgot_count, best_time, avg_time per word
@@ -172,7 +173,7 @@ All commands are run via `make`. Run `make help` to see the full list.
 | `make proxy` | Start translate proxy (port 8004) |
 | `make client-dev` | Start client dev server (port 5173) |
 | `make client-build` | Build client for production |
-| `make client-test` | Run client tests (vitest, 113 tests) |
+| `make client-test` | Run client tests (vitest, 149 tests) |
 | `make client-lint` | Lint client code (eslint) |
 | `make client-typecheck` | Type-check client (tsc) |
 | `make proxy-lint` | Lint proxy code (ruff) |
@@ -198,14 +199,22 @@ All commands are run via `make`. Run `make help` to see the full list.
 │   │   ├── domain/            # srs.ts, stats.ts, validators.ts
 │   │   ├── i18n/              # index.ts, languages.ts, en/ru.json
 │   │   ├── pages/             # Home, Add, Review, Dictionary, Settings
-│   │   ├── services/          # translateApi.ts
+│   │   ├── services/          # translateApi.ts, ttsApi.ts
 │   │   └── types/             # Word, LanguageSettings
 │   ├── capacitor.config.ts    # Android config
 │   ├── src-tauri/             # Desktop (Tauri 2)
 │   ├── android/               # Capacitor Android project
 │   └── vite.config.ts         # Vite + PWA plugin + dev proxy
 ├── proxy/                     # Translate proxy (FastAPI, port 8004)
-│   ├── main.py                # /translate, /languages
+│   ├── main.py                # /translate, /languages, /tts, /, /cache/stats, /tts/cache/stats
+│   ├── languages.py           # Language metadata
+│   ├── services/
+│   │   ├── translator.py      # Yandex Translate API client
+│   │   ├── cache.py           # Translation cache (TTL)
+│   │   └── tts.py             # Speechkin TTS client
+│   ├── security/
+│   │   └── rate_limiter.py    # Rate limiting
+│   ├── Dockerfile
 │   └── requirements.txt
 ├── tests/                     # Proxy tests (pytest)
 ├── pyproject.toml             # Python config (uv, ruff)
