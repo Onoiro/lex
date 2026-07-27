@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { synthesizeSpeech, clearTtsCache, stopTts } from "./ttsApi";
+import { synthesizeSpeech, clearTtsCache, stopTts, initTtsUnlock } from "./ttsApi";
 
 // Mock global fetch
 const mockFetch = vi.fn();
@@ -35,6 +35,15 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.restoreAllMocks();
+});
+
+describe("initTtsUnlock", () => {
+  it("registers touchstart and click listeners", () => {
+    const spy = vi.spyOn(document, "addEventListener");
+    initTtsUnlock();
+    expect(spy).toHaveBeenCalledWith("touchstart", expect.any(Function), expect.objectContaining({ once: true }));
+    expect(spy).toHaveBeenCalledWith("click", expect.any(Function), expect.objectContaining({ once: true }));
+  });
 });
 
 describe("synthesizeSpeech", () => {

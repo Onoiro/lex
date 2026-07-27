@@ -13,6 +13,7 @@ import { Review } from "@/pages/Review";
 import { Dictionary } from "@/pages/Dictionary";
 import { Settings } from "@/pages/Settings";
 import { useInitLocale } from "@/i18n";
+import { initTtsUnlock } from "@/services/ttsApi";
 
 function App() {
   useInitLocale();
@@ -67,3 +68,6 @@ if ("serviceWorker" in navigator) {
 
 // Initialize native plugins
 void setupNativePlugins();
+
+// Unlock audio playback on mobile browsers (iOS/Android require user gesture)
+initTtsUnlock();

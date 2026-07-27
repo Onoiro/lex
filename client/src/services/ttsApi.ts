@@ -9,6 +9,37 @@ let currentAudio: HTMLAudioElement | null = null;
 /** Monotonic token to invalidate stale fetch/playback requests. */
 let generationToken = 0;
 
+/**
+ * Mobile browsers (iOS Safari, Android Chrome) block audio.play() unless it
+ * originates from a synchronous user gesture. Once any audio element plays
+ * successfully during a gesture, subsequent programmatic play() calls are
+ * allowed. We unlock audio on the first touch/click by playing a short
+ * silent clip.
+ */
+let audioUnlocked = false;
+
+// Minimal silent MP3 (1 frame, ~26ms of silence) as a data URL.
+const SILENCE_MP3 =
+  "data:audio/mpeg;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAA//tQwAADB4DgWmCAAAAEAYUQoAAIkABX4AHAQfA4EAACAAAUtLS0sAAAAPAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAA//tQwAADB4DgWmCAAAAEAYUQoAAIkABX4AHAQfA4EAACAAAUtLS0sAAAAPAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAA//tQwAADB4DgWmCAAAAEAYUQoAAIkABX4AHAQfA4EAACAAAUtLS0sAAAAP";
+
+function unlockAudio(): void {
+  if (audioUnlocked) return;
+  audioUnlocked = true;
+  const silent = new Audio(SILENCE_MP3);
+  silent.volume = 0;
+  void silent.play().catch(() => {
+    // If unlock fails, reset so we can try again on next gesture
+    audioUnlocked = false;
+  });
+}
+
+/** Register global listeners to unlock audio on first user gesture. */
+export function initTtsUnlock(): void {
+  const opts: AddEventListenerOptions = { once: true, passive: true };
+  document.addEventListener("touchstart", unlockAudio, opts);
+  document.addEventListener("click", unlockAudio, opts);
+}
+
 /** Stop any currently playing audio and invalidate all pending requests. */
 export function stopTts(): void {
   generationToken++;
