@@ -19,6 +19,11 @@ export function setDebounceMs(ms: number) {
   _debounceMs = ms;
 }
 
+function autoResize(el: HTMLTextAreaElement) {
+  el.style.height = "auto";
+  el.style.height = `${el.scrollHeight}px`;
+}
+
 export function Add() {
   const [t] = useLocale();
   const [word, setWord] = useState("");
@@ -30,7 +35,8 @@ export function Add() {
   const [langOptions, setLangOptions] = useState<LanguageInfo[]>([]);
   const [ttsLoading, setTtsLoading] = useState<string | null>(null);
 
-  const wordRef = useRef<HTMLInputElement>(null);
+  const wordRef = useRef<HTMLTextAreaElement>(null);
+  const translationRef = useRef<HTMLTextAreaElement>(null);
   const messageTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const debounceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -46,6 +52,15 @@ export function Add() {
       if (debounceTimeoutRef.current) clearTimeout(debounceTimeoutRef.current);
     };
   }, []);
+
+  // Auto-resize textareas when their values change
+  useEffect(() => {
+    if (wordRef.current) autoResize(wordRef.current);
+  }, [word]);
+
+  useEffect(() => {
+    if (translationRef.current) autoResize(translationRef.current);
+  }, [translation]);
 
   useEffect(() => {
     void getSettings().then(setSettings);
@@ -308,20 +323,27 @@ export function Add() {
         <form onSubmit={handleSave} style={{ marginBottom: 0 }}>
           {/* Word input */}
           <div style={{ position: "relative" }}>
-            <input
+            <textarea
               ref={wordRef}
-              type="text"
               id="word"
               value={word}
-              onChange={(e) => setWord(e.target.value)}
+              onChange={(e) => {
+                setWord(e.target.value);
+                autoResize(e.target);
+              }}
               required
               placeholder={t("add.word_placeholder_new")}
               autoComplete="off"
+              rows={2}
               style={{
                 width: "100%",
                 fontSize: "1.1rem",
                 marginBottom: "1rem",
                 boxSizing: "border-box",
+                whiteSpace: "pre-wrap",
+                wordBreak: "break-word",
+                overflowY: "hidden",
+                resize: "vertical",
                 paddingRight: "2.5rem",
               }}
             />
@@ -354,11 +376,13 @@ export function Add() {
           {/* Translation output */}
           <div style={{ position: "relative" }}>
             <textarea
+              ref={translationRef}
               id="translation"
               value={translation}
               onChange={(e) => {
                 setTranslation(e.target.value);
                 setUserEditingTranslation(true);
+                autoResize(e.target);
               }}
               onFocus={handleTranslationEdit}
               required
@@ -369,7 +393,7 @@ export function Add() {
                 whiteSpace: "pre-wrap",
                 wordBreak: "break-word",
                 boxSizing: "border-box",
-                overflowY: "auto",
+                overflowY: "hidden",
                 resize: "vertical",
                 marginBottom: "0.5rem",
                 paddingRight: "2.5rem",
