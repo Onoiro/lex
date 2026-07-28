@@ -1,34 +1,78 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { synthesizeSpeech, clearTtsCache, stopTts, initTtsUnlock } from "./ttsApi";
 
+// ── Mocks ──────────────────────────────────────────────────────
+
 // Mock global fetch
 const mockFetch = vi.fn();
 vi.stubGlobal("fetch", mockFetch);
 
-// Mock Audio constructor
-const mockPlay = vi.fn().mockResolvedValue(undefined);
-const mockPause = vi.fn();
-const mockAddEventListener = vi.fn();
+// Mock AudioContext
+// Note: use getters so that class fields always read the current mock function
+let mockSourceStart: ReturnType<typeof vi.fn>;
+let mockSourceStop: ReturnType<typeof vi.fn>;
+let mockSourceConnect: ReturnType<typeof vi.fn>;
+let mockSourceDisconnect: ReturnType<typeof vi.fn>;
+let mockDecodeAudioData: ReturnType<typeof vi.fn>;
+let mockResume: ReturnType<typeof vi.fn>;
+let mockCtxState = "running";
 
-class MockAudio {
-  play = mockPlay;
-  pause = mockPause;
-  addEventListener = mockAddEventListener;
+function resetAudioContextMocks() {
+  mockSourceStart = vi.fn();
+  mockSourceStop = vi.fn();
+  mockSourceConnect = vi.fn();
+  mockSourceDisconnect = vi.fn();
+  mockDecodeAudioData = vi.fn();
+  mockResume = vi.fn().mockResolvedValue(undefined);
+  mockCtxState = "running";
 }
-vi.stubGlobal("Audio", MockAudio);
 
-// Mock URL.createObjectURL/revokeObjectURL
-vi.stubGlobal("URL", {
-  ...URL,
-  createObjectURL: vi.fn().mockReturnValue("blob:test"),
-  revokeObjectURL: vi.fn(),
-});
+resetAudioContextMocks();
+
+class MockAudioBufferSourceNode {
+  buffer: AudioBuffer | null = null;
+  onended: (() => void) | null = null;
+  get connect() { return mockSourceConnect; }
+  get disconnect() { return mockSourceDisconnect; }
+  get start() { return mockSourceStart; }
+  get stop() { return mockSourceStop; }
+}
+
+class MockAudioContext {
+  get state() { return mockCtxState; }
+  get resume() { return mockResume; }
+  get decodeAudioData() { return mockDecodeAudioData; }
+  createBufferSource = vi.fn(() => new MockAudioBufferSourceNode());
+  destination = {} as AudioDestinationNode;
+}
+
+vi.stubGlobal("AudioContext", MockAudioContext);
+vi.stubGlobal("webkitAudioContext", undefined);
+
+// ── Helpers ────────────────────────────────────────────────────
+
+/** Create a mock fetch response that returns a blob-like object with arrayBuffer. */
+function mockResponse() {
+  return {
+    ok: true,
+    blob: async () => ({
+      arrayBuffer: async () => new ArrayBuffer(0),
+    }),
+  };
+}
+
+/** Make decodeAudioData call the callback synchronously with a fake AudioBuffer. */
+function enableDecode() {
+  mockDecodeAudioData = vi.fn(
+    (_buf: ArrayBuffer, cb: (buf: AudioBuffer) => void) => {
+      cb({} as AudioBuffer);
+    },
+  );
+}
 
 beforeEach(() => {
   mockFetch.mockReset();
-  mockPlay.mockReset().mockResolvedValue(undefined);
-  mockPause.mockReset();
-  mockAddEventListener.mockReset();
+  resetAudioContextMocks();
   clearTtsCache();
   stopTts();
 });
@@ -36,6 +80,8 @@ beforeEach(() => {
 afterEach(() => {
   vi.restoreAllMocks();
 });
+
+// ── Tests ──────────────────────────────────────────────────────
 
 describe("initTtsUnlock", () => {
   it("registers touchstart and click listeners", () => {
@@ -58,28 +104,19 @@ describe("synthesizeSpeech", () => {
   });
 
   it("fetches audio from /tts endpoint", async () => {
-    const mockBlob = new Blob(["fake audio"], { type: "audio/mpeg" });
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      blob: async () => mockBlob,
-    });
+    mockFetch.mockResolvedValueOnce(mockResponse());
 
     await synthesizeSpeech("hello", "en");
 
     expect(mockFetch).toHaveBeenCalledTimes(1);
-    const call = mockFetch.mock.calls[0];
-    expect(call[0]).toContain("/tts");
-    const options = call[1];
-    expect(options.method).toBe("POST");
-    expect(JSON.parse(options.body)).toEqual({ text: "hello", lang: "en" });
+    const [url, opts] = mockFetch.mock.calls[0];
+    expect(url).toContain("/tts");
+    expect(opts.method).toBe("POST");
+    expect(JSON.parse(opts.body)).toEqual({ text: "hello", lang: "en" });
   });
 
   it("caches audio and does not refetch for same text+lang", async () => {
-    const mockBlob = new Blob(["fake audio"], { type: "audio/mpeg" });
-    mockFetch.mockResolvedValue({
-      ok: true,
-      blob: async () => mockBlob,
-    });
+    mockFetch.mockResolvedValue(mockResponse());
 
     await synthesizeSpeech("hello", "en");
     await synthesizeSpeech("hello", "en");
@@ -88,11 +125,7 @@ describe("synthesizeSpeech", () => {
   });
 
   it("fetches separately for different languages", async () => {
-    const mockBlob = new Blob(["fake audio"], { type: "audio/mpeg" });
-    mockFetch.mockResolvedValue({
-      ok: true,
-      blob: async () => mockBlob,
-    });
+    mockFetch.mockResolvedValue(mockResponse());
 
     await synthesizeSpeech("hello", "en");
     await synthesizeSpeech("hello", "ru");
@@ -113,28 +146,19 @@ describe("synthesizeSpeech", () => {
   });
 
   it("trims text before sending", async () => {
-    const mockBlob = new Blob(["fake audio"], { type: "audio/mpeg" });
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      blob: async () => mockBlob,
-    });
+    mockFetch.mockResolvedValueOnce(mockResponse());
 
     await synthesizeSpeech("  hello  ", "en");
 
-    const options = mockFetch.mock.calls[0][1];
-    expect(JSON.parse(options.body)).toEqual({ text: "hello", lang: "en" });
+    const [, opts] = mockFetch.mock.calls[0];
+    expect(JSON.parse(opts.body)).toEqual({ text: "hello", lang: "en" });
   });
 });
 
 describe("stopTts", () => {
   it("discards stale fetch results when stopTts is called before fetch resolves", async () => {
-    const mockBlob = new Blob(["fake audio"], { type: "audio/mpeg" });
-
-    // Create a controllable promise for fetch
     let resolveFetch: (value: unknown) => void;
-    const fetchPromise = new Promise((resolve) => {
-      resolveFetch = resolve;
-    });
+    const fetchPromise = new Promise((resolve) => { resolveFetch = resolve; });
     mockFetch.mockReturnValueOnce(fetchPromise);
 
     // Start synthesis (fetch is pending)
@@ -144,47 +168,45 @@ describe("stopTts", () => {
     stopTts();
 
     // Now resolve the fetch
-    resolveFetch!({ ok: true, blob: async () => mockBlob });
+    resolveFetch!({
+      ok: true,
+      blob: async () => ({
+        arrayBuffer: async () => new ArrayBuffer(0),
+      }),
+    });
 
     await promise;
 
-    // Audio.play should NOT have been called because the result is stale
-    expect(mockPlay).not.toHaveBeenCalled();
+    // decodeAudioData should NOT have been called because the result is stale
+    expect(mockDecodeAudioData).not.toHaveBeenCalled();
   });
 
   it("stops currently playing audio", async () => {
-    const mockBlob = new Blob(["fake audio"], { type: "audio/mpeg" });
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      blob: async () => mockBlob,
-    });
+    mockFetch.mockResolvedValueOnce(mockResponse());
+    enableDecode();
 
     await synthesizeSpeech("hello", "en");
 
-    // Audio was played
-    expect(mockPlay).toHaveBeenCalledTimes(1);
+    // Audio source start should have been called
+    expect(mockSourceStart).toHaveBeenCalledTimes(1);
 
     // Stop TTS
     stopTts();
 
-    // Audio.pause should have been called
-    expect(mockPause).toHaveBeenCalled();
+    // Audio source stop should have been called
+    expect(mockSourceStop).toHaveBeenCalled();
   });
 
   it("new synthesizeSpeech stops previous audio", async () => {
-    const mockBlob = new Blob(["fake audio"], { type: "audio/mpeg" });
-    mockFetch.mockResolvedValue({
-      ok: true,
-      blob: async () => mockBlob,
-    });
+    mockFetch.mockResolvedValue(mockResponse());
+    enableDecode();
 
-    // First synthesis (from cache, plays immediately)
     await synthesizeSpeech("hello", "en");
-
-    // Second synthesis (different text, fetches new audio)
     await synthesizeSpeech("world", "en");
 
-    // pause should have been called when second synthesis started
-    expect(mockPause).toHaveBeenCalled();
+    // stopTts (inside second synthesizeSpeech) should have stopped previous source
+    expect(mockSourceStop).toHaveBeenCalled();
+    // Second source should have started
+    expect(mockSourceStart).toHaveBeenCalledTimes(2);
   });
 });
