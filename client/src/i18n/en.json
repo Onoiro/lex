@@ -95,5 +95,14 @@
   "settings.theme_choose": "Color theme",
   "settings.theme_light": "Light",
   "settings.theme_dark": "Dark",
-  "settings.theme_auto": "Auto (system)"
+  "settings.theme_auto": "Auto (system)",
+  "settings.accent": "Accent color",
+  "settings.accent_choose": "Choose accent color",
+  "settings.accent_default": "Default (blue)",
+  "settings.accent_amber": "Amber",
+  "settings.accent_violet": "Violet",
+  "settings.accent_green": "Green",
+  "settings.accent_pumpkin": "Pumpkin",
+  "settings.accent_sand": "Sand",
+  "settings.accent_slate": "Slate"
 }

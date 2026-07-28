@@ -51,4 +51,11 @@ describe("saveSettings", () => {
     const settings = await getSettings();
     expect(settings.theme).toBe("dark");
   });
+
+  it("saves and restores accent preference", async () => {
+    await saveSettings({ accent: "violet" });
+
+    const settings = await getSettings();
+    expect(settings.accent).toBe("violet");
+  });
 });

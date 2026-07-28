@@ -5,7 +5,7 @@ import { getSettings, saveSettings } from "@/data/settingsRepository";
 import { getLanguages } from "@/services/translateApi";
 import { applyTheme } from "@/services/theme";
 import { LANG_LIST_TTL_MS } from "@/types";
-import type { Theme } from "@/types";
+import type { Theme, Accent } from "@/types";
 import type { LanguageInfo } from "@/services/translateApi";
 import { version } from "../../package.json";
 
@@ -16,6 +16,7 @@ export function Settings() {
   const [locale, setLocaleState] = useState("en");
   const [ttsEnabled, setTtsEnabled] = useState(false);
   const [theme, setTheme] = useState<Theme>("auto");
+  const [accent, setAccent] = useState<Accent>("default");
   const [saved, setSaved] = useState(false);
   const [langOptions, setLangOptions] = useState<LanguageInfo[]>([]);
 
@@ -31,6 +32,7 @@ export function Settings() {
       setLocaleState(settings.locale);
       setTtsEnabled(settings.tts_enabled);
       setTheme(settings.theme);
+      setAccent(settings.accent);
 
       // Try cached list first
       const now = Date.now();
@@ -83,8 +85,8 @@ export function Settings() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    await saveSettings({ source_lang: sourceLang, target_lang: targetLang, locale, tts_enabled: ttsEnabled, theme });
-    applyTheme(theme);
+    await saveSettings({ source_lang: sourceLang, target_lang: targetLang, locale, tts_enabled: ttsEnabled, theme, accent });
+    applyTheme(theme, accent);
     setLocale(locale);
     setSaved(true);
     setTimeout(() => setSaved(false), 3000);
@@ -205,6 +207,25 @@ export function Settings() {
             <option value="light">{t("settings.theme_light")}</option>
             <option value="dark">{t("settings.theme_dark")}</option>
             <option value="auto">{t("settings.theme_auto")}</option>
+          </select>
+        </fieldset>
+
+        <fieldset>
+          <legend>{t("settings.accent")}</legend>
+          <label htmlFor="accent">{t("settings.accent_choose")}</label>
+          <select
+            id="accent"
+            value={accent}
+            onChange={(e) => setAccent(e.target.value as Accent)}
+            required
+          >
+            <option value="default">{t("settings.accent_default")}</option>
+            <option value="amber">{t("settings.accent_amber")}</option>
+            <option value="violet">{t("settings.accent_violet")}</option>
+            <option value="green">{t("settings.accent_green")}</option>
+            <option value="pumpkin">{t("settings.accent_pumpkin")}</option>
+            <option value="sand">{t("settings.accent_sand")}</option>
+            <option value="slate">{t("settings.accent_slate")}</option>
           </select>
         </fieldset>
 

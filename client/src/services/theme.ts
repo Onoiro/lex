@@ -1,4 +1,4 @@
-import type { Theme } from "@/types";
+import type { Theme, Accent } from "@/types";
 
 let mediaListener: ((e: MediaQueryListEvent) => void) | null = null;
 let mediaQuery: MediaQueryList | null = null;
@@ -13,10 +13,16 @@ function resolveTheme(theme: Theme): "light" | "dark" {
   return theme;
 }
 
-/** Apply the given theme to the document root element. */
-export function applyTheme(theme: Theme): void {
+/** Apply the given theme and accent to the document root element. */
+export function applyTheme(theme: Theme, accent: Accent = "default"): void {
   const resolved = resolveTheme(theme);
   document.documentElement.setAttribute("data-theme", resolved);
+
+  if (accent === "default") {
+    document.documentElement.removeAttribute("data-accent");
+  } else {
+    document.documentElement.setAttribute("data-accent", accent);
+  }
 
   // Manage system listener for "auto" mode
   if (mediaQuery) {

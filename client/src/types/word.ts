@@ -39,6 +39,9 @@ export interface ReviewResult {
 /** Theme preference: "auto" follows the system color scheme. */
 export type Theme = "light" | "dark" | "auto";
 
+/** Accent color (Pico CSS color variants). */
+export type Accent = "default" | "amber" | "violet" | "green" | "pumpkin" | "sand" | "slate";
+
 /** User language settings (stored locally, replaces server cookies). */
 export interface LanguageSettings {
   /** Source language code, or "auto" for auto-detection. */
@@ -59,6 +62,8 @@ export interface LanguageSettings {
   tts_enabled: boolean;
   /** Color theme preference. */
   theme: Theme;
+  /** Accent color preference. */
+  accent: Accent;
 }
 
 /** Default language settings. */
@@ -68,6 +73,7 @@ export const DEFAULT_LANGUAGE_SETTINGS: LanguageSettings = {
   locale: "en",
   tts_enabled: false,
   theme: "auto",
+  accent: "default",
 };
 
 /** How long to cache the language count before refetching (24 hours). */
