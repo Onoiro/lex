@@ -36,6 +36,9 @@ export interface ReviewResult {
   elapsed: number;
 }
 
+/** Theme preference: "auto" follows the system color scheme. */
+export type Theme = "light" | "dark" | "auto";
+
 /** User language settings (stored locally, replaces server cookies). */
 export interface LanguageSettings {
   /** Source language code, or "auto" for auto-detection. */
@@ -54,6 +57,8 @@ export interface LanguageSettings {
   lang_list_updated_at?: number;
   /** Whether TTS (text-to-speech) is enabled in review mode. */
   tts_enabled: boolean;
+  /** Color theme preference. */
+  theme: Theme;
 }
 
 /** Default language settings. */
@@ -62,6 +67,7 @@ export const DEFAULT_LANGUAGE_SETTINGS: LanguageSettings = {
   target_lang: "ru",
   locale: "en",
   tts_enabled: false,
+  theme: "auto",
 };
 
 /** How long to cache the language count before refetching (24 hours). */

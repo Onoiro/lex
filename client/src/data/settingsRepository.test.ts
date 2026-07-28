@@ -44,4 +44,11 @@ describe("saveSettings", () => {
     expect(settings.target_lang).toBe("fr");
     expect(settings.locale).toBe("ru");
   });
+
+  it("saves and restores theme preference", async () => {
+    await saveSettings({ theme: "dark" });
+
+    const settings = await getSettings();
+    expect(settings.theme).toBe("dark");
+  });
 });

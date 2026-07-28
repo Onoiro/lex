@@ -13,6 +13,8 @@ import { Review } from "@/pages/Review";
 import { Dictionary } from "@/pages/Dictionary";
 import { Settings } from "@/pages/Settings";
 import { useInitLocale } from "@/i18n";
+import { applyTheme } from "@/services/theme";
+import { getSettings } from "@/data/settingsRepository";
 import { initTtsUnlock } from "@/services/ttsApi";
 
 function App() {
@@ -68,6 +70,12 @@ if ("serviceWorker" in navigator) {
 
 // Initialize native plugins
 void setupNativePlugins();
+
+// Apply saved theme on startup
+void (async () => {
+  const settings = await getSettings();
+  applyTheme(settings.theme);
+})();
 
 // Unlock audio playback on mobile browsers (iOS/Android require user gesture)
 initTtsUnlock();

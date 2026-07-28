@@ -90,5 +90,10 @@
   "tts.listen_translation": "Прослушать перевод",
   "settings.tts": "Озвучивание",
   "settings.tts_review": "Авто-озвучка в повторе",
-  "settings.tts_description": "Если включено, слова и переводы автоматически озвучиваются во время повторения."
+  "settings.tts_description": "Если включено, слова и переводы автоматически озвучиваются во время повторения.",
+  "settings.theme": "Оформление",
+  "settings.theme_choose": "Цветовая тема",
+  "settings.theme_light": "Светлая",
+  "settings.theme_dark": "Тёмная",
+  "settings.theme_auto": "Авто (системная)"
 }

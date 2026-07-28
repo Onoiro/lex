@@ -3,7 +3,9 @@ import { useLocale, setLocale, SUPPORTED_LOCALES } from "@/i18n";
 import { getLanguageName, LANGUAGE_NAMES_EN, LANGUAGE_NAMES_RU } from "@/i18n/languages";
 import { getSettings, saveSettings } from "@/data/settingsRepository";
 import { getLanguages } from "@/services/translateApi";
+import { applyTheme } from "@/services/theme";
 import { LANG_LIST_TTL_MS } from "@/types";
+import type { Theme } from "@/types";
 import type { LanguageInfo } from "@/services/translateApi";
 import { version } from "../../package.json";
 
@@ -13,6 +15,7 @@ export function Settings() {
   const [targetLang, setTargetLang] = useState("ru");
   const [locale, setLocaleState] = useState("en");
   const [ttsEnabled, setTtsEnabled] = useState(false);
+  const [theme, setTheme] = useState<Theme>("auto");
   const [saved, setSaved] = useState(false);
   const [langOptions, setLangOptions] = useState<LanguageInfo[]>([]);
 
@@ -27,6 +30,7 @@ export function Settings() {
       setTargetLang(settings.target_lang);
       setLocaleState(settings.locale);
       setTtsEnabled(settings.tts_enabled);
+      setTheme(settings.theme);
 
       // Try cached list first
       const now = Date.now();
@@ -79,7 +83,8 @@ export function Settings() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    await saveSettings({ source_lang: sourceLang, target_lang: targetLang, locale, tts_enabled: ttsEnabled });
+    await saveSettings({ source_lang: sourceLang, target_lang: targetLang, locale, tts_enabled: ttsEnabled, theme });
+    applyTheme(theme);
     setLocale(locale);
     setSaved(true);
     setTimeout(() => setSaved(false), 3000);
@@ -186,6 +191,21 @@ export function Settings() {
           <small style={{ display: "block", marginTop: "0.5rem", color: "var(--pico-muted-color)" }}>
             {t("settings.tts_description")}
           </small>
+        </fieldset>
+
+        <fieldset>
+          <legend>{t("settings.theme")}</legend>
+          <label htmlFor="theme">{t("settings.theme_choose")}</label>
+          <select
+            id="theme"
+            value={theme}
+            onChange={(e) => setTheme(e.target.value as Theme)}
+            required
+          >
+            <option value="light">{t("settings.theme_light")}</option>
+            <option value="dark">{t("settings.theme_dark")}</option>
+            <option value="auto">{t("settings.theme_auto")}</option>
+          </select>
         </fieldset>
 
         <button type="submit">{t("settings.save")}</button>

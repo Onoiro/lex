@@ -184,7 +184,7 @@ All commands are run via `make`. Run `make help` to see the full list.
 | `make proxy` | Start translate proxy (port 8004) |
 | `make client-dev` | Start client dev server (port 5173) |
 | `make client-build` | Build client for production |
-| `make client-test` | Run client tests (vitest, 149 tests) |
+| `make client-test` | Run client tests (vitest, 151 tests) |
 | `make client-lint` | Lint client code (eslint) |
 | `make client-typecheck` | Type-check client (tsc) |
 | `make proxy-lint` | Lint proxy code (ruff) |
@@ -210,7 +210,7 @@ All commands are run via `make`. Run `make help` to see the full list.
 │   │   ├── domain/            # srs.ts, stats.ts, validators.ts
 │   │   ├── i18n/              # index.ts, languages.ts, en/ru.json
 │   │   ├── pages/             # Home, Add, Review, Dictionary, Settings
-│   │   ├── services/          # translateApi.ts, ttsApi.ts
+│   │   ├── services/          # translateApi.ts, ttsApi.ts, theme.ts
 │   │   └── types/             # Word, LanguageSettings
 │   ├── capacitor.config.ts    # Android config
 │   ├── src-tauri/             # Desktop (Tauri 2)

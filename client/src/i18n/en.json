@@ -90,5 +90,10 @@
   "tts.listen_translation": "Listen to the translation",
   "settings.tts": "Text-to-speech",
   "settings.tts_review": "Auto-play audio in review",
-  "settings.tts_description": "When enabled, words and translations are automatically pronounced during review sessions."
+  "settings.tts_description": "When enabled, words and translations are automatically pronounced during review sessions.",
+  "settings.theme": "Appearance",
+  "settings.theme_choose": "Color theme",
+  "settings.theme_light": "Light",
+  "settings.theme_dark": "Dark",
+  "settings.theme_auto": "Auto (system)"
 }

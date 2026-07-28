@@ -5,7 +5,7 @@ Lex — local-first приложение-переводчик и помощни�
 
 **Демо:** [lex.2-way.ru](https://lex.2-way.ru)
 
-**Текущая версия:** 1.3.1
+**Текущая версия:** 1.4.0
 
 ## Архитектура
 
@@ -98,7 +98,7 @@ make d-run    # docker compose up -d
 │   │   ├── domain/            # srs.ts (SM-2), stats.ts, validators.ts
 │   │   ├── i18n/              # index.ts, languages.ts, en.json, ru.json
 │   │   ├── pages/             # Home, Add, Review, Dictionary, Settings
-│   │   ├── services/          # translateApi.ts (proxy client), ttsApi.ts
+│   │   ├── services/          # translateApi.ts (proxy client), ttsApi.ts, theme.ts
 │   │   ├── types/             # Word, LanguageSettings
 │   │   └── main.tsx           # App entry, SW registration, native plugins
 │   ├── capacitor.config.ts    # Android config (ru.lex.app)
@@ -165,9 +165,8 @@ make d-run    # docker compose up -d
 - Пауза: при 3 подряд авто-ответах или 30 сек бездействия.
 
 ## Дальнейшие планы
-- Добавить тёмную тему (Pico CSS поддерживает)
 - Пагинация и поиск по словарю при росте
 - CI для кросс-компиляции Tauri (Windows MSI/NSIS, macOS DMG)
 
 ---
-**Последнее обновление:** 26 июля 2026
+**Последнее обновление:** 29 июля 2026
