@@ -120,8 +120,8 @@ export function Settings() {
       )}
 
       <form onSubmit={handleSave}>
-        <fieldset>
-          <legend>{t("settings.app_language")}</legend>
+        <section style={{ marginBottom: "1.5rem" }}>
+          <h3 style={{ marginBottom: "1rem", fontSize: "1.1rem" }}>🌐 {t("settings.app_language")}</h3>
           <label htmlFor="locale">{t("settings.choose_app_language")}</label>
           <select
             id="locale"
@@ -135,10 +135,10 @@ export function Settings() {
               </option>
             ))}
           </select>
-        </fieldset>
+        </section>
 
-        <fieldset>
-          <legend>{t("settings.translate")}</legend>
+        <section style={{ marginBottom: "1.5rem" }}>
+          <h3 style={{ marginBottom: "1rem", fontSize: "1.1rem" }}>🌍 {t("settings.translate")}</h3>
           <label htmlFor="source_lang">{t("settings.source_lang")}</label>
           <select
             id="source_lang"
@@ -175,10 +175,10 @@ export function Settings() {
               {sameLangWarning}
             </small>
           )}
-        </fieldset>
+        </section>
 
-        <fieldset>
-          <legend>{t("settings.tts")}</legend>
+        <section style={{ marginBottom: "1.5rem" }}>
+          <h3 style={{ marginBottom: "1rem", fontSize: "1.1rem" }}>🔊 {t("settings.tts")}</h3>
           <label htmlFor="tts_enabled">
             <input
               type="checkbox"
@@ -193,10 +193,10 @@ export function Settings() {
           <small style={{ display: "block", marginTop: "0.5rem", color: "var(--pico-muted-color)" }}>
             {t("settings.tts_description")}
           </small>
-        </fieldset>
+        </section>
 
-        <fieldset>
-          <legend>{t("settings.theme")}</legend>
+        <section style={{ marginBottom: "1.5rem" }}>
+          <h3 style={{ marginBottom: "1rem", fontSize: "1.1rem" }}>🎨 {t("settings.theme")}</h3>
           <label htmlFor="theme">{t("settings.theme_choose")}</label>
           <select
             id="theme"
@@ -208,11 +208,8 @@ export function Settings() {
             <option value="dark">{t("settings.theme_dark")}</option>
             <option value="auto">{t("settings.theme_auto")}</option>
           </select>
-        </fieldset>
 
-        <fieldset>
-          <legend>{t("settings.accent")}</legend>
-          <label htmlFor="accent">{t("settings.accent_choose")}</label>
+          <label htmlFor="accent" style={{ marginTop: "1rem" }}>{t("settings.accent_choose")}</label>
           <select
             id="accent"
             value={accent}
@@ -227,7 +224,7 @@ export function Settings() {
             <option value="sand">{t("settings.accent_sand")}</option>
             <option value="slate">{t("settings.accent_slate")}</option>
           </select>
-        </fieldset>
+        </section>
 
         <button type="submit">{t("settings.save")}</button>
       </form>

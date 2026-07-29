@@ -16,7 +16,7 @@ describe("Home", () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getByText("Lex — Translator and Vocabulary Trainer")).toBeInTheDocument();
+    expect(screen.getByText("Lex - translator and vocabulary trainer")).toBeInTheDocument();
     expect(screen.getByText("Your personal translator and vocabulary trainer.")).toBeInTheDocument();
   });
 
