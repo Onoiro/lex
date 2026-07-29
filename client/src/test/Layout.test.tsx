@@ -57,7 +57,8 @@ describe("Layout", () => {
     );
 
     // Bottom nav should be visible on mobile
-    expect(container.querySelectorAll(".bottom-nav-item")).toHaveLength(4);
+    expect(container.querySelectorAll(".bottom-nav-item")).toHaveLength(5);
+    expect(screen.getByText("🏠")).toBeInTheDocument();
     expect(screen.getByText("🌍")).toBeInTheDocument();
     expect(screen.getByText("🧠")).toBeInTheDocument();
     expect(screen.getByText("📖")).toBeInTheDocument();

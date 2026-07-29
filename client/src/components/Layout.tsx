@@ -20,11 +20,15 @@ export function Layout({ children }: LayoutProps) {
   }, []);
 
   const navItems = [
+    { to: "/", label: t("nav.home_label"), icon: "🏠" },
     { to: "/add", label: t("nav.translate"), icon: "🌍" },
     { to: "/review", label: t("nav.review"), icon: "🧠" },
     { to: "/dictionary", label: t("nav.dictionary"), icon: "📖" },
     { to: "/settings", label: t("nav.settings"), icon: "⚙", title: t("nav.settings.title") },
   ];
+
+  // Desktop already has a brand link to "/", skip it in the nav items
+  const desktopNavItems = navItems.filter((item) => item.to !== "/");
 
   return (
     <div className="container">
@@ -40,7 +44,7 @@ export function Layout({ children }: LayoutProps) {
               </li>
             </ul>
             <ul>
-              {navItems.map((item) => (
+              {desktopNavItems.map((item) => (
                 <li key={item.to}>
                   <NavLink
                     to={item.to}
