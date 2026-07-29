@@ -5,7 +5,7 @@ import { getSettings, saveSettings } from "@/data/settingsRepository";
 import { getLanguages } from "@/services/translateApi";
 import { applyTheme } from "@/services/theme";
 import { LANG_LIST_TTL_MS } from "@/types";
-import type { Theme, Accent } from "@/types";
+import type { Theme, Skin } from "@/types";
 import type { LanguageInfo } from "@/services/translateApi";
 import { version } from "../../package.json";
 
@@ -16,7 +16,7 @@ export function Settings() {
   const [locale, setLocaleState] = useState("en");
   const [ttsEnabled, setTtsEnabled] = useState(false);
   const [theme, setTheme] = useState<Theme>("auto");
-  const [accent, setAccent] = useState<Accent>("default");
+  const [skin, setSkin] = useState<Skin>("default");
   const [saved, setSaved] = useState(false);
   const [langOptions, setLangOptions] = useState<LanguageInfo[]>([]);
 
@@ -32,7 +32,7 @@ export function Settings() {
       setLocaleState(settings.locale);
       setTtsEnabled(settings.tts_enabled);
       setTheme(settings.theme);
-      setAccent(settings.accent);
+      setSkin(settings.skin);
 
       // Try cached list first
       const now = Date.now();
@@ -85,8 +85,8 @@ export function Settings() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    await saveSettings({ source_lang: sourceLang, target_lang: targetLang, locale, tts_enabled: ttsEnabled, theme, accent });
-    applyTheme(theme, accent);
+    await saveSettings({ source_lang: sourceLang, target_lang: targetLang, locale, tts_enabled: ttsEnabled, theme, skin });
+    applyTheme(theme, skin);
     setLocale(locale);
     setSaved(true);
     setTimeout(() => setSaved(false), 3000);
@@ -209,21 +209,63 @@ export function Settings() {
             <option value="auto">{t("settings.theme_auto")}</option>
           </select>
 
-          <label htmlFor="accent" style={{ marginTop: "1rem" }}>{t("settings.accent_choose")}</label>
+          <label htmlFor="skin" style={{ marginTop: "1rem" }}>{t("settings.skin_choose")}</label>
           <select
-            id="accent"
-            value={accent}
-            onChange={(e) => setAccent(e.target.value as Accent)}
+            id="skin"
+            value={skin}
+            onChange={(e) => setSkin(e.target.value as Skin)}
             required
           >
-            <option value="default">{t("settings.accent_default")}</option>
-            <option value="amber">{t("settings.accent_amber")}</option>
-            <option value="violet">{t("settings.accent_violet")}</option>
-            <option value="green">{t("settings.accent_green")}</option>
-            <option value="pumpkin">{t("settings.accent_pumpkin")}</option>
-            <option value="sand">{t("settings.accent_sand")}</option>
-            <option value="slate">{t("settings.accent_slate")}</option>
+            <option value="default">{t("settings.skin_default")}</option>
+            <option value="ocean">{t("settings.skin_ocean")}</option>
+            <option value="forest">{t("settings.skin_forest")}</option>
+            <option value="sunset">{t("settings.skin_sunset")}</option>
+            <option value="midnight">{t("settings.skin_midnight")}</option>
+            <option value="rose">{t("settings.skin_rose")}</option>
+            <option value="mono">{t("settings.skin_mono")}</option>
           </select>
+
+          {/* Live preview swatches for each skin */}
+          <div style={{ marginTop: "0.75rem", display: "flex", flexWrap: "wrap", gap: "0.75rem" }}>
+            {([
+              { value: "default", bg: "#fff", fg: "#1095c1" },
+              { value: "ocean", bg: "#f0f7fa", fg: "#0ea5e9" },
+              { value: "forest", bg: "#f2f7f0", fg: "#16a34a" },
+              { value: "sunset", bg: "#fdf6f0", fg: "#f97316" },
+              { value: "midnight", bg: "#f5f3fa", fg: "#7c3aed" },
+              { value: "rose", bg: "#fdf5f7", fg: "#e11d48" },
+              { value: "mono", bg: "#fff", fg: "#333" },
+            ] as const).map((s) => (
+              <button
+                key={s.value}
+                type="button"
+                onClick={() => setSkin(s.value)}
+                aria-label={t(`settings.skin_${s.value}`)}
+                style={{
+                  width: "2.5rem",
+                  height: "2.5rem",
+                  borderRadius: "50%",
+                  border: skin === s.value ? "3px solid var(--pico-primary)" : "1px solid var(--pico-muted-border-color)",
+                  background: s.bg,
+                  cursor: "pointer",
+                  padding: 0,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <span
+                  style={{
+                    width: "1rem",
+                    height: "1rem",
+                    borderRadius: "50%",
+                    background: s.fg,
+                    display: "block",
+                  }}
+                />
+              </button>
+            ))}
+          </div>
         </section>
 
         <button type="submit">{t("settings.save")}</button>

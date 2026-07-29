@@ -52,10 +52,10 @@ describe("saveSettings", () => {
     expect(settings.theme).toBe("dark");
   });
 
-  it("saves and restores accent preference", async () => {
-    await saveSettings({ accent: "violet" });
+  it("saves and restores skin preference", async () => {
+    await saveSettings({ skin: "ocean" });
 
     const settings = await getSettings();
-    expect(settings.accent).toBe("violet");
+    expect(settings.skin).toBe("ocean");
   });
 });

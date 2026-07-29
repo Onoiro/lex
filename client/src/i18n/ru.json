@@ -97,13 +97,12 @@
   "settings.theme_light": "Светлая",
   "settings.theme_dark": "Тёмная",
   "settings.theme_auto": "Авто (системная)",
-  "settings.accent": "Акцентный цвет",
-  "settings.accent_choose": "Выберите акцентный цвет",
-  "settings.accent_default": "По умолчанию (синий)",
-  "settings.accent_amber": "Янтарный",
-  "settings.accent_violet": "Фиолетовый",
-  "settings.accent_green": "Зелёный",
-  "settings.accent_pumpkin": "Тыквенный",
-  "settings.accent_sand": "Песочный",
-  "settings.accent_slate": "Серо-синий"
+  "settings.skin_choose": "Выберите цветовую тему",
+  "settings.skin_default": "По умолчанию (синяя)",
+  "settings.skin_ocean": "Океан",
+  "settings.skin_forest": "Лес",
+  "settings.skin_sunset": "Закат",
+  "settings.skin_midnight": "Полночь",
+  "settings.skin_rose": "Роза",
+  "settings.skin_mono": "Монохром"
 }

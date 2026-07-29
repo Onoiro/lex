@@ -97,13 +97,12 @@
   "settings.theme_light": "Light",
   "settings.theme_dark": "Dark",
   "settings.theme_auto": "Auto (system)",
-  "settings.accent": "Accent color",
-  "settings.accent_choose": "Choose accent color",
-  "settings.accent_default": "Default (blue)",
-  "settings.accent_amber": "Amber",
-  "settings.accent_violet": "Violet",
-  "settings.accent_green": "Green",
-  "settings.accent_pumpkin": "Pumpkin",
-  "settings.accent_sand": "Sand",
-  "settings.accent_slate": "Slate"
+  "settings.skin_choose": "Choose color skin",
+  "settings.skin_default": "Default (blue)",
+  "settings.skin_ocean": "Ocean",
+  "settings.skin_forest": "Forest",
+  "settings.skin_sunset": "Sunset",
+  "settings.skin_midnight": "Midnight",
+  "settings.skin_rose": "Rose",
+  "settings.skin_mono": "Mono"
 }

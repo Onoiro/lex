@@ -74,7 +74,7 @@ void setupNativePlugins();
 // Apply saved theme on startup
 void (async () => {
   const settings = await getSettings();
-  applyTheme(settings.theme, settings.accent);
+  applyTheme(settings.theme, settings.skin);
 })();
 
 // Unlock audio playback on mobile browsers (iOS/Android require user gesture)
