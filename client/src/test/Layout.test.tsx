@@ -63,7 +63,7 @@ describe("Layout", () => {
     expect(screen.getByText("🧠")).toBeInTheDocument();
     expect(screen.getByText("📖")).toBeInTheDocument();
     // Settings link with title
-    expect(screen.getByRole("link", { name: "⚙ ⚙ Settings" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "⚙ Settings" })).toBeInTheDocument();
   });
 
   it("renders desktop nav on desktop", () => {
