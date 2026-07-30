@@ -34,6 +34,7 @@ export function Add() {
   const [userEditingTranslation, setUserEditingTranslation] = useState(false);
   const [langOptions, setLangOptions] = useState<LanguageInfo[]>([]);
   const [ttsLoading, setTtsLoading] = useState<string | null>(null);
+  const [detectedLang, setDetectedLang] = useState<string>("");
 
   const wordRef = useRef<HTMLTextAreaElement>(null);
   const translationRef = useRef<HTMLTextAreaElement>(null);
@@ -126,6 +127,7 @@ export function Add() {
 
     if (!trimmed) {
       setTranslation("");
+      setDetectedLang("");
       return;
     }
 
@@ -137,6 +139,7 @@ export function Add() {
       setTranslating(true);
       try {
         const result = await translateWord(word, settings.source_lang, settings.target_lang);
+        setDetectedLang(result.detectedLanguage);
         if (result.translation) {
           setTranslation(result.translation);
         } else {
@@ -156,7 +159,7 @@ export function Add() {
   const handlePlayWord = async () => {
     const trimmed = word.trim();
     if (!trimmed || !settings) return;
-    const lang = settings.source_lang === "auto" ? "en" : settings.source_lang;
+    const lang = settings.source_lang === "auto" ? (detectedLang || "en") : settings.source_lang;
     setTtsLoading("word");
     await synthesizeSpeech(trimmed, lang);
     setTtsLoading(null);
@@ -185,6 +188,7 @@ export function Add() {
       showMessage("success", t("add.success"));
       setWord("");
       setTranslation("");
+      setDetectedLang("");
       setUserEditingTranslation(false);
     } catch (err) {
       if ((err as Error).message.includes("already exists")) {
@@ -209,6 +213,7 @@ export function Add() {
     setSettings({ ...settings, ...swapped });
     // Clear translation when swapping languages
     setTranslation("");
+    setDetectedLang("");
     setUserEditingTranslation(false);
   };
 
@@ -221,6 +226,7 @@ export function Add() {
     await saveSettings({ ...settings, source_lang: lang });
     setSettings({ ...settings, source_lang: lang });
     setTranslation("");
+    setDetectedLang("");
     setUserEditingTranslation(false);
   };
 
@@ -233,6 +239,7 @@ export function Add() {
     await saveSettings({ ...settings, target_lang: lang });
     setSettings({ ...settings, target_lang: lang });
     setTranslation("");
+    setDetectedLang("");
     setUserEditingTranslation(false);
   };
 
@@ -448,7 +455,7 @@ export function Add() {
                 fontSize: "0.8rem",
               }}
             >
-              {settings?.source_lang ?? "auto"} → {settings?.target_lang}
+              {(settings?.source_lang === "auto" ? detectedLang : settings?.source_lang) ?? "auto"} → {settings?.target_lang}
             </small>
           )}
 
