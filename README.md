@@ -211,6 +211,7 @@ All commands are run via `make`. Run `make help` to see the full list.
 │   │   ├── i18n/              # index.ts, languages.ts, en/ru.json
 │   │   ├── pages/             # Home, Add, Review, Dictionary, Settings
 │   │   ├── services/          # translateApi.ts, ttsApi.ts, theme.ts
+│   │   ├── test/              # Component and service tests (Vitest)
 │   │   └── types/             # Word, LanguageSettings
 │   ├── capacitor.config.ts    # Android config
 │   ├── src-tauri/             # Desktop (Tauri 2)

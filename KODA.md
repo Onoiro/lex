@@ -5,23 +5,34 @@ Lex — local-first приложение-переводчик и помощни�
 
 **Демо:** [lex.2-way.ru](https://lex.2-way.ru)
 
-**Текущая версия:** 1.4.1
+**Текущая версия:** 1.5.2
 
 ## Архитектура
 
 ```
-┌─────────────────────────────────────────────────────┐
-│                    Client (React)                    │
-│  ┌──────────┐  ┌──────────┐  ┌───────────────────┐  │
-│  │   Pages   │  │  Domain  │  │  Data (Dexie/IDB) │  │
-│  │  (React)  │  │  (SRS)   │  │  wordRepository   │  │
-│  └────┬─────┘  └──────────┘  └───────────────────┘  │
-│       │                                              │
-│       ▼                                              │
-│  ┌──────────────┐                                   │
-│  │ translateApi │ ──── HTTP ────► Proxy (FastAPI)   │
-│  └──────────────┘                (Yandex API key)   │
-└─────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────┐
+│                     Client (React)                    │
+│  ┌──────────┐   ┌──────────┐   ┌──────────────────┐  │
+│  │  Pages   │   │  Domain  │   │  Data (Dexie/IDB)│  │
+│  │ (React)  │   │  (SRS)   │   │ wordRepo, settings│  │
+│  └──┬───┬───┘   └──────────┘   └──────────────────┘  │
+│     │   └──────────────┐                              │
+│     ▼                  ▼                              │
+│  ┌────────────┐   ┌──────────┐                       │
+│  │translateApi│   │  ttsApi  │                       │
+│  └─────┬──────┘   └────┬─────┘                       │
+│        │               │                              │
+└────────┼───────────────┼──────────────────────────────┘
+         │               │
+         ▼               ▼
+┌─────────────────────────────────────┐
+│        Proxy (FastAPI, port 8004)    │
+│  POST /translate   POST /tts        │
+│  GET  /languages   GET  /cache/stats│
+│  GET  /            GET  /tts/cache  │
+│                                     │
+│  Yandex Translate API + SpeechKit   │
+└─────────────────────────────────────┘
 ```
 
 - **Client:** React 19 + TypeScript, Vite 7, Dexie.js (IndexedDB), Pico CSS, vite-plugin-pwa
@@ -99,6 +110,7 @@ make d-run    # docker compose up -d
 │   │   ├── i18n/              # index.ts, languages.ts, en.json, ru.json
 │   │   ├── pages/             # Home, Add, Review, Dictionary, Settings
 │   │   ├── services/          # translateApi.ts (proxy client), ttsApi.ts, theme.ts
+│   │   ├── test/              # Component and service tests (Vitest)
 │   │   ├── types/             # Word, LanguageSettings
 │   │   └── main.tsx           # App entry, SW registration, native plugins
 │   ├── capacitor.config.ts    # Android config (ru.lex.app)
@@ -165,8 +177,8 @@ make d-run    # docker compose up -d
 - Пауза: при 3 подряд авто-ответах или 30 сек бездействия.
 
 ## Дальнейшие планы
-- Пагинация и поиск по словарю при росте
+- Пагинация по словарю при росте
 - CI для кросс-компиляции Tauri (Windows MSI/NSIS, macOS DMG)
 
 ---
-**Последнее обновление:** 29 июля 2026
+**Последнее обновление:** 31 июля 2026
