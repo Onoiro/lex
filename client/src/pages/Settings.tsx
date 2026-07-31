@@ -128,8 +128,7 @@ export function Settings() {
 
   return (
     <>
-      <h2>{t("settings.heading")}</h2>
-      <p>{t("settings.description")}</p>
+      <h2 style={{ textAlign: "center" }}>{t("settings.heading")}</h2>
 
       {saved && (
         <article
@@ -164,6 +163,7 @@ export function Settings() {
 
         <section style={{ marginBottom: "1.5rem" }}>
           <h3 style={{ marginBottom: "1rem", fontSize: "1.1rem" }}>🌍 {t("settings.translate")}</h3>
+          <p style={{ marginBottom: "1rem", color: "var(--pico-muted-color)" }}>{t("settings.description")}</p>
           <label htmlFor="source_lang">{t("settings.source_lang")}</label>
           <select
             id="source_lang"

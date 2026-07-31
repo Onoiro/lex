@@ -25,7 +25,7 @@ describe("Settings", () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getByText("Language settings")).toBeInTheDocument();
+    expect(screen.getByText("Settings")).toBeInTheDocument();
     expect(screen.getByText(/By default/)).toBeInTheDocument();
   });
 
