@@ -7,6 +7,7 @@ function makeWord(overrides: Partial<Word> = {}): Word {
     id: 1,
     word: "test",
     translation: "тест",
+    word_lang: "en",
     interval: 0,
     repetitions: 0,
     next_review: 0,

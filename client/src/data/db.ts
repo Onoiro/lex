@@ -20,6 +20,10 @@ export class LexDatabase extends Dexie {
       words: "++id, &word, next_review",
       settings: "id",
     });
+    this.version(3).stores({
+      words: "++id, &word, next_review",
+      settings: "id",
+    });
   }
 }
 

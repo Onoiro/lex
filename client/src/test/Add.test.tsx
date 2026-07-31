@@ -178,6 +178,7 @@ describe("Add", () => {
     await db.words.add({
       word: "hello",
       translation: "привет",
+      word_lang: "en",
       interval: 0,
       repetitions: 0,
       next_review: 0,

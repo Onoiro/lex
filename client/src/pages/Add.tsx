@@ -184,7 +184,8 @@ export function Add() {
     }
 
     try {
-      await addWord(validWord, validTranslation);
+      const lang = settings!.source_lang === "auto" ? (detectedLang || "en") : settings!.source_lang;
+      await addWord(validWord, validTranslation, lang);
       showMessage("success", t("add.success"));
       setWord("");
       setTranslation("");

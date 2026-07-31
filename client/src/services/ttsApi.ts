@@ -6,43 +6,33 @@ const audioCache = new Map<string, Blob>();
 /** Monotonic token to invalidate stale fetch/playback requests. */
 let generationToken = 0;
 
-/** Currently playing AudioBufferSourceNode, or null. */
-let currentSource: AudioBufferSourceNode | null = null;
+/** Currently playing audio element, or null if nothing is playing. */
+let currentAudio: HTMLAudioElement | null = null;
 
-// ── Web Audio API ──────────────────────────────────────────────
+// ── Audio unlock (mobile & desktop browsers) ───────────────────
 //
-// Mobile browsers (iOS Safari, Android Firefox/Chrome) block audio
-// playback unless it's initiated by a synchronous user gesture. The
-// Web Audio API provides a reliable unlock mechanism:
-//
-// 1. AudioContext is created in "suspended" state on mobile.
-// 2. resume() is called during the first user gesture (touchstart/click).
-// 3. After resume(), decodeAudioData() + start() work programmatically
-//    even outside of user gestures.
-//
-// AudioBufferSourceNode can only be started once, so we create a new
-// one for each play request.
+// Browsers block programmatic audio playback unless it originates
+// from a user gesture. We unlock audio on the first touch/click
+// by creating an AudioContext and resuming it — this is the
+// standard cross-browser mechanism that doesn't require decoding
+// any audio file.
 
-let audioCtx: AudioContext | null = null;
-
-function getAudioContext(): AudioContext {
-  if (!audioCtx) {
-    const AnyAudioContext =
-      window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-    audioCtx = new AnyAudioContext();
-  }
-  return audioCtx;
-}
-
-/** Resume the AudioContext on first user gesture to unlock audio. */
 let audioUnlocked = false;
 
 function unlockAudio(): void {
   if (audioUnlocked) return;
   audioUnlocked = true;
-  const ctx = getAudioContext();
-  if (ctx.state === "suspended") {
-    void ctx.resume();
+  try {
+    const AnyAudioContext =
+      window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+    if (AnyAudioContext) {
+      const ctx = new AnyAudioContext();
+      if (ctx.state === "suspended") {
+        void ctx.resume();
+      }
+    }
+  } catch {
+    // AudioContext not available — fallback: nothing to do
   }
 }
 
@@ -51,71 +41,45 @@ export function initTtsUnlock(): void {
   const opts: AddEventListenerOptions = { once: true, passive: true };
   document.addEventListener("touchstart", unlockAudio, opts);
   document.addEventListener("click", unlockAudio, opts);
-  // Also try to resume immediately if context is already running
-  // (e.g. desktop, or if another page interaction already unlocked it)
-  if (getAudioContext().state === "running") {
-    audioUnlocked = true;
-  }
 }
 
 // ── Playback helpers ───────────────────────────────────────────
 
-/** Stop any currently playing audio. */
+/** Stop any currently playing audio and invalidate all pending requests. */
 export function stopTts(): void {
   generationToken++;
-  if (currentSource) {
-    try {
-      currentSource.stop();
-    } catch {
-      // Ignore — source may have already stopped
-    }
-    currentSource.disconnect();
-    currentSource = null;
+  if (currentAudio) {
+    currentAudio.pause();
+    currentAudio = null;
   }
 }
 
-/**
- * Decode MP3 bytes and play them through the Web Audio API.
- * Returns true if playback was started, false on error.
- */
-function playAudioBuffer(arrayBuffer: ArrayBuffer, token: number): boolean {
-  if (token !== generationToken) return false;
+/** Play audio from a Blob via HTMLAudioElement. */
+function playBlob(blob: Blob, token: number): void {
+  if (token !== generationToken) return;
 
-  // Stop any currently playing audio WITHOUT incrementing generationToken
-  if (currentSource) {
-    try {
-      currentSource.stop();
-    } catch {
-      // Ignore — source may have already stopped
-    }
-    currentSource.disconnect();
-    currentSource = null;
+  // Stop any currently playing audio before starting new
+  if (currentAudio) {
+    currentAudio.pause();
+    currentAudio = null;
   }
 
-  const ctx = getAudioContext();
-  if (ctx.state === "suspended") {
-    // Audio not unlocked yet — silently fail
-    return false;
-  }
+  const url = URL.createObjectURL(blob);
+  const audio = new Audio(url);
+  currentAudio = audio;
 
-  // Decode asynchronously, then play
-  void ctx.decodeAudioData(arrayBuffer, (buffer) => {
-    if (token !== generationToken) return;
-
-    const source = ctx.createBufferSource();
-    source.buffer = buffer;
-    source.connect(ctx.destination);
-    source.start(0);
-    currentSource = source;
-
-    source.onended = () => {
-      if (currentSource === source) {
-        currentSource = null;
-      }
-    };
+  audio.addEventListener("ended", () => {
+    URL.revokeObjectURL(url);
+    if (currentAudio === audio) currentAudio = null;
   });
-
-  return true;
+  audio.addEventListener("error", () => {
+    URL.revokeObjectURL(url);
+    if (currentAudio === audio) currentAudio = null;
+  });
+  void audio.play().catch(() => {
+    URL.revokeObjectURL(url);
+    if (currentAudio === audio) currentAudio = null;
+  });
 }
 
 /**
@@ -134,20 +98,12 @@ export async function synthesizeSpeech(text: string, lang: string): Promise<void
   // Allocate a fresh token AFTER stopTts so the token is not invalidated
   const token = ++generationToken;
 
-  // Ensure AudioContext is unlocked — if still suspended, try to resume
-  // (this may be called from a user gesture handler)
-  const ctx = getAudioContext();
-  if (ctx.state === "suspended") {
-    await ctx.resume();
-  }
-
   const cacheKey = `${lang}:${trimmed}`;
 
   // Check cache first
   const cached = audioCache.get(cacheKey);
   if (cached) {
-    const buf = await cached.arrayBuffer();
-    playAudioBuffer(buf, token);
+    playBlob(cached, token);
     return;
   }
 
@@ -166,9 +122,7 @@ export async function synthesizeSpeech(text: string, lang: string): Promise<void
     if (token !== generationToken) return;
 
     audioCache.set(cacheKey, blob);
-
-    const arrayBuffer = await blob.arrayBuffer();
-    playAudioBuffer(arrayBuffer, token);
+    playBlob(blob, token);
   } catch {
     // Silent fail
   }

@@ -207,7 +207,7 @@ export function Review() {
     // Auto-play word audio if TTS is enabled
     const s = settingsRef.current;
     const displayWord = view.direction === "en_ru" ? view.word.word : view.word.translation;
-    const wordLang = view.direction === "en_ru" ? (s?.source_lang ?? "en") : (s?.target_lang ?? "ru");
+    const wordLang = view.direction === "en_ru" ? (view.word.word_lang || "en") : (s?.target_lang ?? "ru");
     playTts(displayWord, wordLang === "auto" ? "en" : wordLang);
   }, [pickNextView, startTimer, playTts]);
 
@@ -249,7 +249,7 @@ export function Review() {
         const s = settingsRef.current;
         if (view) {
           const displayTranslation = view.direction === "en_ru" ? view.word.translation : view.word.word;
-          const transLang = view.direction === "en_ru" ? (s?.target_lang ?? "ru") : (s?.source_lang ?? "en");
+          const transLang = view.direction === "en_ru" ? (s?.target_lang ?? "ru") : (view.word.word_lang || "en");
           playTts(displayTranslation, transLang === "auto" ? "en" : transLang);
         }
       }
@@ -310,7 +310,7 @@ export function Review() {
     // Auto-play word audio if TTS is enabled
     const s = settingsRef.current;
     const displayWord = view.direction === "en_ru" ? view.word.word : view.word.translation;
-    const wordLang = view.direction === "en_ru" ? (s?.source_lang ?? "en") : (s?.target_lang ?? "ru");
+    const wordLang = view.direction === "en_ru" ? (view.word.word_lang || "en") : (s?.target_lang ?? "ru");
     playTts(displayWord, wordLang === "auto" ? "en" : wordLang);
   }, [pickNextView, startTimer, playTts]);
 
@@ -509,7 +509,7 @@ export function Review() {
               onClick={() => {
                 setShowTranslation(true);
                 const s = settingsRef.current;
-                const transLang = direction === "en_ru" ? (s?.target_lang ?? "ru") : (s?.source_lang ?? "en");
+                const transLang = direction === "en_ru" ? (s?.target_lang ?? "ru") : (word.word_lang || "en");
                 playTts(displayTranslation, transLang === "auto" ? "en" : transLang);
               }}
             >

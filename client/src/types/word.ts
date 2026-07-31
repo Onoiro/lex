@@ -9,6 +9,8 @@ export interface Word {
   word: string;
   /** The translation text. */
   translation: string;
+  /** Detected language of the word (e.g. "en", "ru"). Used for TTS. */
+  word_lang: string;
   /** Repetition interval in days (0 = new word). */
   interval: number;
   /** Number of successful reviews. */

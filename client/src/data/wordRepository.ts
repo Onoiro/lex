@@ -5,6 +5,7 @@ import type { Word } from "@/types";
 export async function addWord(
   word: string,
   translation: string,
+  wordLang: string = "en",
 ): Promise<number> {
   const existing = await db.words.where("word").equals(word).first();
   if (existing) {
@@ -14,6 +15,7 @@ export async function addWord(
   const id = await db.words.add({
     word,
     translation,
+    word_lang: wordLang,
     interval: 0,
     repetitions: 0,
     next_review: 0,
@@ -81,6 +83,7 @@ export async function importWords(data: Word[]): Promise<{
     await db.words.add({
       word: entry.word,
       translation: entry.translation,
+      word_lang: entry.word_lang ?? "en",
       interval: entry.interval ?? 0,
       repetitions: entry.repetitions ?? 0,
       next_review: entry.next_review ?? 0,

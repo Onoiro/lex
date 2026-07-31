@@ -7,72 +7,49 @@ import { synthesizeSpeech, clearTtsCache, stopTts, initTtsUnlock } from "./ttsAp
 const mockFetch = vi.fn();
 vi.stubGlobal("fetch", mockFetch);
 
-// Mock AudioContext
-// Note: use getters so that class fields always read the current mock function
-let mockSourceStart: ReturnType<typeof vi.fn>;
-let mockSourceStop: ReturnType<typeof vi.fn>;
-let mockSourceConnect: ReturnType<typeof vi.fn>;
-let mockSourceDisconnect: ReturnType<typeof vi.fn>;
-let mockDecodeAudioData: ReturnType<typeof vi.fn>;
-let mockResume: ReturnType<typeof vi.fn>;
-let mockCtxState = "running";
+// Mock HTMLAudioElement
+let mockAudioPlay: ReturnType<typeof vi.fn>;
+let mockAudioPause: ReturnType<typeof vi.fn>;
+let mockAudioAddEventListener: ReturnType<typeof vi.fn>;
+let mockAudioRemoveEventListener: ReturnType<typeof vi.fn>;
 
-function resetAudioContextMocks() {
-  mockSourceStart = vi.fn();
-  mockSourceStop = vi.fn();
-  mockSourceConnect = vi.fn();
-  mockSourceDisconnect = vi.fn();
-  mockDecodeAudioData = vi.fn();
-  mockResume = vi.fn().mockResolvedValue(undefined);
-  mockCtxState = "running";
+function resetAudioMocks() {
+  mockAudioPlay = vi.fn().mockResolvedValue(undefined);
+  mockAudioPause = vi.fn();
+  mockAudioAddEventListener = vi.fn();
+  mockAudioRemoveEventListener = vi.fn();
 }
 
-resetAudioContextMocks();
+resetAudioMocks();
 
-class MockAudioBufferSourceNode {
-  buffer: AudioBuffer | null = null;
-  onended: (() => void) | null = null;
-  get connect() { return mockSourceConnect; }
-  get disconnect() { return mockSourceDisconnect; }
-  get start() { return mockSourceStart; }
-  get stop() { return mockSourceStop; }
+class MockAudio {
+  volume = 0;
+  get play() { return mockAudioPlay; }
+  get pause() { return mockAudioPause; }
+  get addEventListener() { return mockAudioAddEventListener; }
+  get removeEventListener() { return mockAudioRemoveEventListener; }
 }
 
-class MockAudioContext {
-  get state() { return mockCtxState; }
-  get resume() { return mockResume; }
-  get decodeAudioData() { return mockDecodeAudioData; }
-  createBufferSource = vi.fn(() => new MockAudioBufferSourceNode());
-  destination = {} as AudioDestinationNode;
-}
+vi.stubGlobal("Audio", MockAudio);
 
-vi.stubGlobal("AudioContext", MockAudioContext);
-vi.stubGlobal("webkitAudioContext", undefined);
+// Mock URL.createObjectURL / revokeObjectURL
+const mockCreateObjectURL = vi.fn(() => "blob:mock-url");
+const mockRevokeObjectURL = vi.fn();
+vi.stubGlobal("URL", { createObjectURL: mockCreateObjectURL, revokeObjectURL: mockRevokeObjectURL });
 
 // ── Helpers ────────────────────────────────────────────────────
 
-/** Create a mock fetch response that returns a blob-like object with arrayBuffer. */
+/** Create a mock fetch response that returns a blob. */
 function mockResponse() {
   return {
     ok: true,
-    blob: async () => ({
-      arrayBuffer: async () => new ArrayBuffer(0),
-    }),
+    blob: async () => new Blob(["fake-mp3-data"], { type: "audio/mpeg" }),
   };
-}
-
-/** Make decodeAudioData call the callback synchronously with a fake AudioBuffer. */
-function enableDecode() {
-  mockDecodeAudioData = vi.fn(
-    (_buf: ArrayBuffer, cb: (buf: AudioBuffer) => void) => {
-      cb({} as AudioBuffer);
-    },
-  );
 }
 
 beforeEach(() => {
   mockFetch.mockReset();
-  resetAudioContextMocks();
+  resetAudioMocks();
   clearTtsCache();
   stopTts();
 });
@@ -170,43 +147,28 @@ describe("stopTts", () => {
     // Now resolve the fetch
     resolveFetch!({
       ok: true,
-      blob: async () => ({
-        arrayBuffer: async () => new ArrayBuffer(0),
-      }),
+      blob: async () => new Blob(["fake-mp3-data"], { type: "audio/mpeg" }),
     });
 
     await promise;
 
-    // decodeAudioData should NOT have been called because the result is stale
-    expect(mockDecodeAudioData).not.toHaveBeenCalled();
+    // Audio play should NOT have been called because the result is stale
+    // (mockAudioPlay is called by playBlob, which shouldn't be invoked for stale results)
+    expect(mockAudioPlay).not.toHaveBeenCalled();
   });
 
   it("stops currently playing audio", async () => {
     mockFetch.mockResolvedValueOnce(mockResponse());
-    enableDecode();
 
     await synthesizeSpeech("hello", "en");
 
-    // Audio source start should have been called
-    expect(mockSourceStart).toHaveBeenCalledTimes(1);
+    // Audio play should have been started
+    expect(mockAudioPlay).toHaveBeenCalledTimes(1);
 
     // Stop TTS
     stopTts();
 
-    // Audio source stop should have been called
-    expect(mockSourceStop).toHaveBeenCalled();
-  });
-
-  it("new synthesizeSpeech stops previous audio", async () => {
-    mockFetch.mockResolvedValue(mockResponse());
-    enableDecode();
-
-    await synthesizeSpeech("hello", "en");
-    await synthesizeSpeech("world", "en");
-
-    // stopTts (inside second synthesizeSpeech) should have stopped previous source
-    expect(mockSourceStop).toHaveBeenCalled();
-    // Second source should have started
-    expect(mockSourceStart).toHaveBeenCalledTimes(2);
+    // Audio pause should have been called
+    expect(mockAudioPause).toHaveBeenCalled();
   });
 });

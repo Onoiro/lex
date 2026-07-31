@@ -141,6 +141,7 @@ describe("importWords", () => {
       {
         word: "hello",
         translation: "привет",
+        word_lang: "en",
         interval: 0,
         repetitions: 0,
         next_review: 0,
@@ -153,6 +154,7 @@ describe("importWords", () => {
       {
         word: "world",
         translation: "мир",
+        word_lang: "en",
         interval: 6,
         repetitions: 2,
         next_review: 1000,
@@ -179,6 +181,7 @@ describe("importWords", () => {
       {
         word: "hello",
         translation: "other",
+        word_lang: "en",
         interval: 0,
         repetitions: 0,
         next_review: 0,
@@ -191,6 +194,7 @@ describe("importWords", () => {
       {
         word: "world",
         translation: "мир",
+        word_lang: "en",
         interval: 0,
         repetitions: 0,
         next_review: 0,
