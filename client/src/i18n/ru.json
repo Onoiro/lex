@@ -104,5 +104,12 @@
   "settings.skin_sunset": "Закат",
   "settings.skin_midnight": "Полночь",
   "settings.skin_rose": "Роза",
-  "settings.skin_mono": "Монохром"
+  "settings.skin_mono": "Монохром",
+  "settings.danger_zone": "Опасная зона",
+  "settings.reset_title": "Сбросить все данные",
+  "settings.reset_description": "Полностью удалить все слова и настройки с этого устройства. Действие необратимо.",
+  "settings.reset_btn": "Сбросить всё",
+  "settings.reset_confirm1": "Будет безвозвратно удалено {count} слово(а) и все настройки. Вы уверены?",
+  "settings.reset_confirm2": "Последний шанс! Все данные будут потеряны навсегда. Продолжить?",
+  "settings.reset_done": "Все данные сброшены."
 }

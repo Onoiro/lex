@@ -104,5 +104,12 @@
   "settings.skin_sunset": "Sunset",
   "settings.skin_midnight": "Midnight",
   "settings.skin_rose": "Rose",
-  "settings.skin_mono": "Mono"
+  "settings.skin_mono": "Mono",
+  "settings.danger_zone": "Danger zone",
+  "settings.reset_title": "Reset all data",
+  "settings.reset_description": "Permanently delete all words and settings from this device. This action cannot be undone.",
+  "settings.reset_btn": "Reset everything",
+  "settings.reset_confirm1": "This will permanently delete {count} word(s) and all settings. Are you sure?",
+  "settings.reset_confirm2": "Last chance! All data will be lost forever. Continue?",
+  "settings.reset_done": "All data has been reset."
 }

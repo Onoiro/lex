@@ -2,9 +2,11 @@ import { useState, useEffect } from "react";
 import { useLocale, setLocale, SUPPORTED_LOCALES } from "@/i18n";
 import { getLanguageName, LANGUAGE_NAMES_EN, LANGUAGE_NAMES_RU } from "@/i18n/languages";
 import { getSettings, saveSettings } from "@/data/settingsRepository";
+import { getWordCount } from "@/data/wordRepository";
+import { resetAllData } from "@/data/db";
 import { getLanguages } from "@/services/translateApi";
 import { applyTheme } from "@/services/theme";
-import { LANG_LIST_TTL_MS } from "@/types";
+import { DEFAULT_LANGUAGE_SETTINGS, LANG_LIST_TTL_MS } from "@/types";
 import type { Theme, Skin } from "@/types";
 import type { LanguageInfo } from "@/services/translateApi";
 import { version } from "../../package.json";
@@ -19,6 +21,7 @@ export function Settings() {
   const [skin, setSkin] = useState<Skin>("default");
   const [saved, setSaved] = useState(false);
   const [langOptions, setLangOptions] = useState<LanguageInfo[]>([]);
+  const [resetDone, setResetDone] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -90,6 +93,28 @@ export function Settings() {
     setLocale(locale);
     setSaved(true);
     setTimeout(() => setSaved(false), 3000);
+  };
+
+  const handleReset = async () => {
+    const count = await getWordCount();
+    if (!confirm(t("settings.reset_confirm1", { count }))) return;
+    if (!confirm(t("settings.reset_confirm2"))) return;
+
+    await resetAllData();
+
+    // Reset local state to defaults
+    const defaults = DEFAULT_LANGUAGE_SETTINGS;
+    setSourceLang(defaults.source_lang);
+    setTargetLang(defaults.target_lang);
+    setLocaleState(defaults.locale);
+    setTtsEnabled(defaults.tts_enabled);
+    setTheme(defaults.theme);
+    setSkin(defaults.skin);
+    applyTheme(defaults.theme, defaults.skin);
+    setLocale(defaults.locale);
+
+    setResetDone(true);
+    setTimeout(() => setResetDone(false), 3000);
   };
 
   const names = locale === "ru" ? LANGUAGE_NAMES_RU : LANGUAGE_NAMES_EN;
@@ -270,6 +295,54 @@ export function Settings() {
 
         <button type="submit">{t("settings.save")}</button>
       </form>
+
+      {resetDone && (
+        <article
+          style={{
+            background: "var(--pico-ins-color)",
+            color: "var(--pico-primary-inverse)",
+            padding: "1rem",
+            marginBottom: "1rem",
+          }}
+        >
+          {t("settings.reset_done")}
+        </article>
+      )}
+
+      <details
+        style={{
+          marginTop: "2rem",
+          borderColor: "var(--pico-del-color)",
+        }}
+      >
+        <summary
+          style={{
+            color: "var(--pico-del-color)",
+            fontWeight: 600,
+          }}
+        >
+          ⚠️ {t("settings.danger_zone")}
+        </summary>
+        <article style={{ marginTop: "1rem" }}>
+          <h3 style={{ fontSize: "1.1rem", marginBottom: "0.5rem" }}>
+            {t("settings.reset_title")}
+          </h3>
+          <p style={{ color: "var(--pico-muted-color)", marginBottom: "1rem" }}>
+            {t("settings.reset_description")}
+          </p>
+          <button
+            type="button"
+            className="contrast"
+            style={{
+              background: "var(--pico-del-color)",
+              borderColor: "var(--pico-del-color)",
+            }}
+            onClick={() => void handleReset()}
+          >
+            {t("settings.reset_btn")}
+          </button>
+        </article>
+      </details>
 
       <p style={{ marginTop: "2rem", fontSize: "0.85rem", color: "var(--pico-muted-color)", textAlign: "center" }}>
         {t("settings.app_version", { version })}

@@ -5,7 +5,7 @@ Lex — local-first приложение-переводчик и помощни�
 
 **Демо:** [lex.2-way.ru](https://lex.2-way.ru)
 
-**Текущая версия:** 1.5.2
+**Текущая версия:** 1.6.0
 
 ## Архитектура
 
@@ -55,7 +55,7 @@ Lex — local-first приложение-переводчик и помощни�
 ### Proxy (`proxy/`)
 - **Язык:** Python 3.13
 - **Фреймворк:** FastAPI
-- **Управление пакетами:** pip (requirements.txt)
+- **Управление пакетами:** uv (pyproject.toml, uv.lock; requirements.txt для Docker)
 - **Порт:** 8004
 
 ## Сборка и запуск
@@ -181,4 +181,4 @@ make d-run    # docker compose up -d
 - CI для кросс-компиляции Tauri (Windows MSI/NSIS, macOS DMG)
 
 ---
-**Последнее обновление:** 31 июля 2026
+**Последнее обновление:** 1 августа 2026

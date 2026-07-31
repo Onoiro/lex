@@ -24,6 +24,7 @@ Lex is a translator and vocabulary trainer. Your dictionary, spaced repetition, 
 - **Desktop** - Native installers via Tauri (Windows MSI/NSIS, macOS DMG, Linux deb/AppImage)
 - **i18n** - English and Russian UI
 - **Import/Export** - Backup and transfer dictionary between devices as JSON
+- **Reset all data** - Permanently delete all words and settings from the device (with double confirmation)
 
 ## Architecture
 
@@ -184,7 +185,7 @@ All commands are run via `make`. Run `make help` to see the full list.
 | `make proxy` | Start translate proxy (port 8004) |
 | `make client-dev` | Start client dev server (port 5173) |
 | `make client-build` | Build client for production |
-| `make client-test` | Run client tests (vitest, 152 tests) |
+| `make client-test` | Run client tests (vitest, 158 tests) |
 | `make client-lint` | Lint client code (eslint) |
 | `make client-typecheck` | Type-check client (tsc) |
 | `make proxy-lint` | Lint proxy code (ruff) |

@@ -28,3 +28,11 @@ export class LexDatabase extends Dexie {
 }
 
 export const db = new LexDatabase();
+
+/** Delete all words and settings, then restore default settings. */
+export async function resetAllData(): Promise<void> {
+  await db.words.clear();
+  await db.settings.clear();
+  const { DEFAULT_LANGUAGE_SETTINGS } = await import("@/types");
+  await db.settings.put({ id: "app", ...DEFAULT_LANGUAGE_SETTINGS });
+}
