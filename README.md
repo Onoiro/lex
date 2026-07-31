@@ -153,7 +153,7 @@ Requires Rust + system libraries (see [Tauri prerequisites](https://tauri.app/st
 
 ### Dictionary
 
-- View all words with stats (known/forgotten, best/avg time, interval, success rate)
+- View all words with stats (known/forgotten, best/avg time, rank, success rate)
 - Search, delete, export, and import words
 
 ### Transferring Dictionary Between Devices
@@ -171,7 +171,10 @@ Since Lex is local-first, each device has its own independent dictionary (stored
 Simplified SM-2:
 - **Correct:** Interval grows (1 → 6 → interval × 2.5, capped at 30 days)
 - **Wrong:** Interval resets to 0
-- **Selection:** Weighted random - weight = 1 / (interval + 1)
+- **Selection:** Weighted random - weight = 1 / (interval + 1) × (1 + RT_COEFF × normAvgTime)
+  - RT_COEFF = 1.0 (Reaction Time Coefficient) - slower recall increases review frequency
+  - normAvgTime = clamp(avg_time / 10, 0, 1), null → 1.0 (new words get max priority)
+- **Rank:** Each word has a rank (1-100) shown in the dictionary, computed from its weight. 100 = shown most often, 1 = shown least often.
 - **Stats:** know_count, forgot_count, best_time, avg_time per word
 
 ## Development
@@ -185,7 +188,7 @@ All commands are run via `make`. Run `make help` to see the full list.
 | `make proxy` | Start translate proxy (port 8004) |
 | `make client-dev` | Start client dev server (port 5173) |
 | `make client-build` | Build client for production |
-| `make client-test` | Run client tests (vitest, 158 tests) |
+| `make client-test` | Run client tests (vitest, 172 tests) |
 | `make client-lint` | Lint client code (eslint) |
 | `make client-typecheck` | Type-check client (tsc) |
 | `make proxy-lint` | Lint proxy code (ruff) |

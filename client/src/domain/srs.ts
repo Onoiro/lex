@@ -3,6 +3,43 @@ import type { ReviewDirection, Word } from "@/types";
 const MAX_INTERVAL = 30;
 const SECONDS_PER_DAY = 86400;
 
+/** Reaction Time Coefficient — how much avg response time affects review weight. */
+const RT_COEFF = 1.0;
+
+/** Answer timer ceiling in seconds (matches Review.tsx ANSWER_TIMEOUT). */
+const TIMER_CEILING = 10;
+
+/** Maximum possible weight: interval=0, normAvgTime=1.0 → 1/1 × (1+1×1) = 2.0. */
+const MAX_WEIGHT = 2.0;
+
+/**
+ * Normalize average response time to [0, 1] range.
+ * null (unreviewed) → 1.0 (max priority, like a slow word).
+ */
+export function normalizeAvgTime(avgTime: number | null): number {
+  if (avgTime === null) return 1.0;
+  return Math.min(avgTime / TIMER_CEILING, 1.0);
+}
+
+/**
+ * Compute the review weight of a word.
+ *
+ * Weight = 1 / (interval + 1) × (1 + RT_COEFF × normAvgTime).
+ * Higher weight = shown more frequently.
+ */
+export function computeWeight(word: Word): number {
+  return (1.0 / (word.interval + 1)) * (1 + RT_COEFF * normalizeAvgTime(word.avg_time));
+}
+
+/**
+ * Compute a display rank (1–100) for a word based on its weight.
+ * 100 = shown most frequently, 1 = shown least frequently.
+ */
+export function computeRank(word: Word): number {
+  const rank = Math.round((computeWeight(word) / MAX_WEIGHT) * 100);
+  return Math.max(1, Math.min(100, rank));
+}
+
 /**
  * Apply SM-2 based review result to a word.
  *
@@ -56,15 +93,15 @@ export function applyReviewResult(
 /**
  * Pick a word using weighted random selection.
  *
- * Weight = 1 / (interval + 1). Words with lower intervals
- * (more frequently forgotten) are picked more often.
+ * Weight = 1 / (interval + 1) × (1 + RT_COEFF × normAvgTime).
+ * Words with lower intervals and slower response times are picked more often.
  */
 export function pickWeightedWord(words: Word[]): Word | null {
   if (words.length === 0) {
     return null;
   }
 
-  const weights = words.map((w) => 1.0 / (w.interval + 1));
+  const weights = words.map((w) => computeWeight(w));
   const total = weights.reduce((sum, w) => sum + w, 0);
 
   let r = Math.random() * total;

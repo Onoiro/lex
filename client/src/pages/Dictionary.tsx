@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { useLocale } from "@/i18n";
 import { getAllWords, deleteWord, exportWords, importWords } from "@/data/wordRepository";
 import { formatTime } from "@/domain/stats";
+import { computeRank } from "@/domain/srs";
 import type { Word } from "@/types";
 
 export function Dictionary() {
@@ -138,7 +139,7 @@ export function Dictionary() {
               <th style={{ width: "25%" }}>{t("dictionary.col_translation")}</th>
               <th style={{ width: "10%", textAlign: "center" }}>{t("dictionary.col_known_no")}</th>
               <th style={{ width: "12%", textAlign: "center" }}>{t("dictionary.col_time")}</th>
-              <th style={{ width: "10%", textAlign: "center" }}>{t("dictionary.col_interval")}</th>
+              <th style={{ width: "10%", textAlign: "center" }}>{t("dictionary.col_rank")}</th>
               <th style={{ width: "8%", textAlign: "center" }}>{t("dictionary.col_pct")}</th>
               <th style={{ width: "10%", textAlign: "center", padding: "0.75rem" }}>{t("dictionary.col_delete")}</th>
             </tr>
@@ -171,7 +172,7 @@ export function Dictionary() {
                     ) : "—"}
                   </td>
                   <td style={{ textAlign: "center", fontSize: "0.85rem", color: "var(--pico-muted-color)" }}>
-                    {w.interval > 0 ? `${w.interval}д` : "—"}
+                    {computeRank(w)}
                   </td>
                   <td style={{ textAlign: "center", fontSize: "0.85rem", color: "var(--pico-muted-color)" }}>
                     {pct !== null ? `${pct}%` : "—"}

@@ -65,7 +65,7 @@
   "dictionary.col_translation": "Перевод",
   "dictionary.col_known_no": "Знаю/Нет",
   "dictionary.col_time": "Время",
-  "dictionary.col_interval": "Интервал",
+  "dictionary.col_rank": "Ранг",
   "dictionary.col_pct": "%",
   "dictionary.col_delete": "Удалить",
   "dictionary.confirm_delete": "Точно удалить слово «{word}»?",

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { applyReviewResult, pickWeightedWord, pickRandomDirection } from "./srs";
+import { applyReviewResult, pickWeightedWord, pickRandomDirection, normalizeAvgTime, computeWeight, computeRank } from "./srs";
 import type { Word } from "@/types";
 
 function makeWord(overrides: Partial<Word> = {}): Word {
@@ -127,6 +127,119 @@ describe("pickWeightedWord", () => {
     }
 
     expect(lowPicks).toBeGreaterThan(trials * 0.9);
+  });
+
+  it("favors words with slower response times at same interval", () => {
+    const fast = makeWord({ id: 1, word: "fast", interval: 6, avg_time: 0.5 });
+    const slow = makeWord({ id: 2, word: "slow", interval: 6, avg_time: 9 });
+
+    // Both have interval 6, but slow has higher avg_time
+    // fast weight: 1/7 × (1 + 1.0 × 0.05) ≈ 0.150
+    // slow weight: 1/7 × (1 + 1.0 × 0.9)  ≈ 0.271
+    // slow should be picked ~64% of the time
+    let slowPicks = 0;
+    const trials = 1000;
+    for (let i = 0; i < trials; i++) {
+      const picked = pickWeightedWord([fast, slow]);
+      if (picked?.id === 2) slowPicks++;
+    }
+
+    expect(slowPicks).toBeGreaterThan(trials * 0.55);
+  });
+
+  it("treats unreviewed words (null avg_time) as highest priority", () => {
+    const reviewed = makeWord({ id: 1, word: "reviewed", interval: 0, avg_time: 0.5 });
+    const unreviewed = makeWord({ id: 2, word: "new", interval: 0, avg_time: null });
+
+    // Both interval 0, but unreviewed gets normAvgTime = 1.0
+    // reviewed weight: 1/1 × (1 + 1.0 × 0.05) = 1.05
+    // unreviewed weight: 1/1 × (1 + 1.0 × 1.0) = 2.0
+    // unreviewed should be picked ~66% of the time
+    let newPicks = 0;
+    const trials = 1000;
+    for (let i = 0; i < trials; i++) {
+      const picked = pickWeightedWord([reviewed, unreviewed]);
+      if (picked?.id === 2) newPicks++;
+    }
+
+    expect(newPicks).toBeGreaterThan(trials * 0.6);
+  });
+});
+
+describe("normalizeAvgTime", () => {
+  it("returns 1.0 for null (unreviewed)", () => {
+    expect(normalizeAvgTime(null)).toBe(1.0);
+  });
+
+  it("returns 0.0 for zero time", () => {
+    expect(normalizeAvgTime(0)).toBe(0.0);
+  });
+
+  it("returns 0.5 for 5 seconds (half of ceiling)", () => {
+    expect(normalizeAvgTime(5)).toBe(0.5);
+  });
+
+  it("returns 1.0 for 10 seconds (ceiling)", () => {
+    expect(normalizeAvgTime(10)).toBe(1.0);
+  });
+
+  it("clamps values above 10 to 1.0", () => {
+    expect(normalizeAvgTime(15)).toBe(1.0);
+    expect(normalizeAvgTime(100)).toBe(1.0);
+  });
+});
+
+describe("computeWeight", () => {
+  it("returns max weight (2.0) for new word with null avg_time", () => {
+    const word = makeWord({ interval: 0, avg_time: null });
+    expect(computeWeight(word)).toBeCloseTo(2.0, 5);
+  });
+
+  it("returns lower weight for well-known word (high interval, fast response)", () => {
+    const word = makeWord({ interval: 30, avg_time: 0.5 });
+    // 1/31 × (1 + 1.0 × 0.05) ≈ 0.0339
+    expect(computeWeight(word)).toBeCloseTo(0.0339, 3);
+  });
+
+  it("returns higher weight for forgotten word (low interval, slow response)", () => {
+    const word = makeWord({ interval: 0, avg_time: 9 });
+    // 1/1 × (1 + 1.0 × 0.9) = 1.9
+    expect(computeWeight(word)).toBeCloseTo(1.9, 5);
+  });
+});
+
+describe("computeRank", () => {
+  it("returns 100 for new word (max weight)", () => {
+    const word = makeWord({ interval: 0, avg_time: null });
+    expect(computeRank(word)).toBe(100);
+  });
+
+  it("returns 1 for well-known word (min weight)", () => {
+    const word = makeWord({ interval: 30, avg_time: 0.5 });
+    expect(computeRank(word)).toBeGreaterThanOrEqual(1);
+    expect(computeRank(word)).toBeLessThanOrEqual(5);
+  });
+
+  it("returns mid-range rank for moderately known word", () => {
+    const word = makeWord({ interval: 6, avg_time: 5 });
+    // weight = 1/7 × (1 + 1.0 × 0.5) = 0.2143
+    // rank = round(0.2143 / 2.0 × 100) = round(10.7) = 11
+    expect(computeRank(word)).toBe(11);
+  });
+
+  it("always returns value in [1, 100]", () => {
+    const words = [
+      makeWord({ interval: 0, avg_time: null }),
+      makeWord({ interval: 30, avg_time: 0.1 }),
+      makeWord({ interval: 6, avg_time: 5 }),
+      makeWord({ interval: 1, avg_time: 10 }),
+      makeWord({ interval: 15, avg_time: 3 }),
+    ];
+    for (const w of words) {
+      const rank = computeRank(w);
+      expect(rank).toBeGreaterThanOrEqual(1);
+      expect(rank).toBeLessThanOrEqual(100);
+    }
   });
 });
 

@@ -65,7 +65,7 @@
   "dictionary.col_translation": "Translation",
   "dictionary.col_known_no": "Known/No",
   "dictionary.col_time": "Time",
-  "dictionary.col_interval": "Interval",
+  "dictionary.col_rank": "Rank",
   "dictionary.col_pct": "%",
   "dictionary.col_delete": "Delete",
   "dictionary.confirm_delete": "Are you sure you want to delete the word '{word}'?",
