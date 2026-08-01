@@ -6,6 +6,7 @@ export async function addWord(
   word: string,
   translation: string,
   wordLang: string = "en",
+  note?: string,
 ): Promise<number> {
   const existing = await db.words.where("word").equals(word).first();
   if (existing) {
@@ -16,6 +17,7 @@ export async function addWord(
     word,
     translation,
     word_lang: wordLang,
+    ...(note ? { note } : {}),
     interval: 0,
     repetitions: 0,
     next_review: 0,
@@ -84,6 +86,7 @@ export async function importWords(data: Word[]): Promise<{
       word: entry.word,
       translation: entry.translation,
       word_lang: entry.word_lang ?? "en",
+      ...(entry.note ? { note: entry.note } : {}),
       interval: entry.interval ?? 0,
       repetitions: entry.repetitions ?? 0,
       next_review: entry.next_review ?? 0,

@@ -1,5 +1,6 @@
 export const MAX_WORD_LENGTH = 100;
 export const MAX_TRANSLATION_LENGTH = 500;
+export const MAX_NOTE_LENGTH = 500;
 
 const ALLOWED_SPECIAL_CHARS = new Set([" ", "-", "'", "."]);
 
@@ -70,20 +71,20 @@ export function validateWord(word: string): string | null {
 }
 
 /**
- * Validate and normalize a translation.
- * Returns the normalized translation, or null if invalid.
+ * Validate and normalize a note / association.
+ * Notes are optional, so empty or whitespace-only returns empty string.
+ * Returns the normalized note, or null if too long.
  */
-export function validateTranslation(translation: string): string | null {
-  if (!translation || !translation.trim()) {
+export function validateNote(note: string): string | null {
+  if (!note || !note.trim()) {
+    return "";
+  }
+
+  const trimmed = note.trim();
+
+  if (trimmed.length > MAX_NOTE_LENGTH) {
     return null;
   }
 
-  const trimmed = translation.trim();
-
-  if (trimmed.length > MAX_TRANSLATION_LENGTH) {
-    return null;
-  }
-
-  // NFC normalization
   return trimmed.normalize("NFC");
 }
