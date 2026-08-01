@@ -100,6 +100,51 @@ describe("Dictionary", () => {
     });
   });
 
+  it("renders note column header", async () => {
+    await addWord("hello", "привет");
+
+    render(
+      <MemoryRouter>
+        <Dictionary />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText("Note")).toBeInTheDocument();
+    });
+  });
+
+  it("shows note text in table when word has note", async () => {
+    await addWord("hello", "привет", "en", "my association");
+
+    render(
+      <MemoryRouter>
+        <Dictionary />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText("my association")).toBeInTheDocument();
+    });
+  });
+
+  it("shows dash when word has no note", async () => {
+    await addWord("hello", "привет");
+
+    render(
+      <MemoryRouter>
+        <Dictionary />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText("hello")).toBeInTheDocument();
+    });
+
+    const cells = screen.getAllByText("—");
+    expect(cells.length).toBeGreaterThan(0);
+  });
+
   it("renders export and import buttons", async () => {
     await addWord("hello", "привет");
 

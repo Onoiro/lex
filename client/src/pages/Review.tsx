@@ -34,6 +34,7 @@ export function Review() {
   const [currentView, setCurrentView] = useState<WordView | null>(null);
   const [answered, setAnswered] = useState(false);
   const [showTranslation, setShowTranslation] = useState(false);
+  const [showHint, setShowHint] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const [timerColor, setTimerColor] = useState("var(--pico-muted-color)");
   const [queueSize, setQueueSize] = useState(0);
@@ -201,6 +202,7 @@ export function Review() {
     setCurrentView(view);
     setAnswered(false);
     setShowTranslation(false);
+    setShowHint(false);
     isAutoAnswerRef.current = false;
     startTimer();
 
@@ -303,6 +305,7 @@ export function Review() {
     setPhase("training");
     setAnswered(false);
     setShowTranslation(false);
+    setShowHint(false);
     consecutiveAutoRef.current = 0;
     setSession({ total: 0, known: 0, forgotten: 0, times: [] });
     startTimer();
@@ -472,6 +475,22 @@ export function Review() {
                 {t("review.stats_known", { count: word.know_count })}{" "}
                 {t("review.stats_forgotten", { count: word.forgot_count })}
                 {pct !== null && " " + t("review.stats_pct", { pct })}
+              </div>
+            )}
+            {word.note && !answered && !showHint && (
+              <button
+                type="button"
+                className="outline"
+                data-testid="hint-btn"
+                onClick={() => setShowHint(true)}
+                style={{ marginTop: "1rem", fontSize: "0.85rem", padding: "0.25rem 0.75rem" }}
+              >
+                {t("review.show_hint")}
+              </button>
+            )}
+            {showHint && word.note && (
+              <div data-testid="hint-text" style={{ marginTop: "1rem", fontSize: "0.95rem", color: "var(--pico-muted-color)", fontStyle: "italic" }}>
+                {t("review.hint")} {word.note}
               </div>
             )}
           </div>

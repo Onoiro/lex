@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { validateWord, validateTranslation, MAX_WORD_LENGTH, MAX_TRANSLATION_LENGTH } from "./validators";
+import { validateWord, validateTranslation, validateNote, MAX_WORD_LENGTH, MAX_TRANSLATION_LENGTH, MAX_NOTE_LENGTH } from "./validators";
 
 describe("validateWord", () => {
   it("returns normalized word for valid input", () => {
@@ -74,5 +74,32 @@ describe("validateTranslation", () => {
   it("allows long translations within limit", () => {
     const long = "a".repeat(MAX_TRANSLATION_LENGTH);
     expect(validateTranslation(long)).toBe(long);
+  });
+});
+
+describe("validateNote", () => {
+  it("returns empty string for empty input", () => {
+    expect(validateNote("")).toBe("");
+  });
+
+  it("returns empty string for whitespace-only input", () => {
+    expect(validateNote("   ")).toBe("");
+  });
+
+  it("returns trimmed note for valid input", () => {
+    expect(validateNote("  association  ")).toBe("association");
+  });
+
+  it("returns null for note exceeding max length", () => {
+    expect(validateNote("a".repeat(MAX_NOTE_LENGTH + 1))).toBeNull();
+  });
+
+  it("allows note within max length", () => {
+    const note = "a".repeat(MAX_NOTE_LENGTH);
+    expect(validateNote(note)).toBe(note);
+  });
+
+  it("allows non-ASCII characters", () => {
+    expect(validateNote("ассоциация")).toBe("ассоциация");
   });
 });

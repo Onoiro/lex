@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useLocale } from "@/i18n";
 import { getLanguageName, LANGUAGE_NAMES_EN, LANGUAGE_NAMES_RU } from "@/i18n/languages";
-import { validateWord, validateTranslation } from "@/domain/validators";
+import { validateWord, validateTranslation, validateNote } from "@/domain/validators";
 import { translateWord, getLanguages } from "@/services/translateApi";
 import { synthesizeSpeech } from "@/services/ttsApi";
 import { addWord } from "@/data/wordRepository";
@@ -28,6 +28,7 @@ export function Add() {
   const [t] = useLocale();
   const [word, setWord] = useState("");
   const [translation, setTranslation] = useState("");
+  const [note, setNote] = useState("");
   const [translating, setTranslating] = useState(false);
   const [message, setMessage] = useState<{ type: MessageType; text: string } | null>(null);
   const [settings, setSettings] = useState<LanguageSettings | null>(null);
@@ -178,17 +179,19 @@ export function Add() {
 
     const validWord = validateWord(word);
     const validTranslation = validateTranslation(translation);
+    const validNote = validateNote(note);
 
-    if (!validWord || !validTranslation) {
+    if (!validWord || !validTranslation || validNote === null) {
       return;
     }
 
     try {
       const lang = settings!.source_lang === "auto" ? (detectedLang || "en") : settings!.source_lang;
-      await addWord(validWord, validTranslation, lang);
+      await addWord(validWord, validTranslation, lang, validNote || undefined);
       showMessage("success", t("add.success"));
       setWord("");
       setTranslation("");
+      setNote("");
       setDetectedLang("");
       setUserEditingTranslation(false);
     } catch (err) {
@@ -459,6 +462,28 @@ export function Add() {
               {(settings?.source_lang === "auto" ? detectedLang : settings?.source_lang) ?? "auto"} → {settings?.target_lang}
             </small>
           )}
+
+          {/* Note input */}
+          <label htmlFor="note" style={{ fontSize: "0.85rem", color: "var(--pico-muted-color)", marginBottom: "0.25rem" }}>
+            {t("add.note_label")}
+          </label>
+          <textarea
+            id="note"
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            placeholder={t("add.note_placeholder")}
+            rows={2}
+            style={{
+              width: "100%",
+              fontSize: "0.95rem",
+              marginBottom: "1rem",
+              boxSizing: "border-box",
+              whiteSpace: "pre-wrap",
+              wordBreak: "break-word",
+              overflowY: "hidden",
+              resize: "vertical",
+            }}
+          />
 
           {/* Save button - sticky bottom */}
           <footer

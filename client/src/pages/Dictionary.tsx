@@ -135,13 +135,14 @@ export function Dictionary() {
         <table role="grid" style={{ margin: 0 }}>
           <thead>
             <tr>
-              <th style={{ width: "25%", padding: "0.75rem" }}>{t("dictionary.col_word")}</th>
-              <th style={{ width: "25%" }}>{t("dictionary.col_translation")}</th>
-              <th style={{ width: "10%", textAlign: "center" }}>{t("dictionary.col_known_no")}</th>
-              <th style={{ width: "12%", textAlign: "center" }}>{t("dictionary.col_time")}</th>
-              <th style={{ width: "10%", textAlign: "center" }}>{t("dictionary.col_rank")}</th>
-              <th style={{ width: "8%", textAlign: "center" }}>{t("dictionary.col_pct")}</th>
-              <th style={{ width: "10%", textAlign: "center", padding: "0.75rem" }}>{t("dictionary.col_delete")}</th>
+              <th style={{ width: "20%", padding: "0.75rem" }}>{t("dictionary.col_word")}</th>
+              <th style={{ width: "20%" }}>{t("dictionary.col_translation")}</th>
+              <th style={{ width: "15%" }}>{t("dictionary.col_note")}</th>
+              <th style={{ width: "8%", textAlign: "center" }}>{t("dictionary.col_known_no")}</th>
+              <th style={{ width: "10%", textAlign: "center" }}>{t("dictionary.col_time")}</th>
+              <th style={{ width: "8%", textAlign: "center" }}>{t("dictionary.col_rank")}</th>
+              <th style={{ width: "6%", textAlign: "center" }}>{t("dictionary.col_pct")}</th>
+              <th style={{ width: "8%", textAlign: "center", padding: "0.75rem" }}>{t("dictionary.col_delete")}</th>
             </tr>
           </thead>
           <tbody>
@@ -153,6 +154,9 @@ export function Dictionary() {
                 <tr key={w.id}>
                   <td style={{ padding: "0.75rem" }}><strong>{w.word}</strong></td>
                   <td>{w.translation}</td>
+                  <td style={{ fontSize: "0.85rem", color: "var(--pico-muted-color)", maxWidth: "200px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {w.note || "—"}
+                  </td>
                   <td style={{ textAlign: "center", fontSize: "0.85rem", color: "var(--pico-muted-color)" }}>
                     {total > 0 ? (
                       <>

@@ -71,6 +71,24 @@ export function validateWord(word: string): string | null {
 }
 
 /**
+ * Validate and normalize a translation.
+ * Returns the normalized translation, or null if invalid.
+ */
+export function validateTranslation(translation: string): string | null {
+  if (!translation || !translation.trim()) {
+    return null;
+  }
+
+  const trimmed = translation.trim();
+
+  if (trimmed.length > MAX_TRANSLATION_LENGTH) {
+    return null;
+  }
+
+  return trimmed.normalize("NFC");
+}
+
+/**
  * Validate and normalize a note / association.
  * Notes are optional, so empty or whitespace-only returns empty string.
  * Returns the normalized note, or null if too long.

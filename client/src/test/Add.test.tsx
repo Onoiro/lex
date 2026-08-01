@@ -349,6 +349,91 @@ describe("Add", () => {
     });
   });
 
+  it("renders note input field", () => {
+    render(
+      <MemoryRouter>
+        <Add />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByPlaceholderText("Association, hint, or mnemonic to help you remember")).toBeInTheDocument();
+  });
+
+  it("saves word with note and clears note after save", async () => {
+    vi.mocked(translateWord).mockResolvedValue({
+      translation: "привет",
+      detectedLanguage: "en",
+    });
+
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <Add />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText("Enter a word or phrase")).toBeInTheDocument();
+    });
+
+    await user.type(screen.getByPlaceholderText("Enter a word or phrase"), "hello");
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText("Translation")).toHaveValue("привет");
+    });
+
+    await user.type(
+      screen.getByPlaceholderText("Association, hint, or mnemonic to help you remember"),
+      "my hint",
+    );
+
+    await user.click(screen.getByRole("button", { name: "Save to dictionary" }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/successfully added/)).toBeInTheDocument();
+    });
+
+    const words = await db.words.toArray();
+    expect(words).toHaveLength(1);
+    expect(words[0].note).toBe("my hint");
+
+    expect(screen.getByPlaceholderText("Association, hint, or mnemonic to help you remember")).toHaveValue("");
+  });
+
+  it("saves word without note when note is empty", async () => {
+    vi.mocked(translateWord).mockResolvedValue({
+      translation: "привет",
+      detectedLanguage: "en",
+    });
+
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <Add />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText("Enter a word or phrase")).toBeInTheDocument();
+    });
+
+    await user.type(screen.getByPlaceholderText("Enter a word or phrase"), "hello");
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText("Translation")).toHaveValue("привет");
+    });
+
+    await user.click(screen.getByRole("button", { name: "Save to dictionary" }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/successfully added/)).toBeInTheDocument();
+    });
+
+    const words = await db.words.toArray();
+    expect(words).toHaveLength(1);
+    expect(words[0].note).toBeUndefined();
+  });
+
   it("renders language select dropdowns", async () => {
     render(
       <MemoryRouter>

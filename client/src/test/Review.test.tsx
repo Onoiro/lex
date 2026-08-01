@@ -227,6 +227,106 @@ describe("Review", () => {
     });
   });
 
+  it("shows hint button when word has note", async () => {
+    await addWord("hello", "привет", "en", "my hint");
+
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <Review />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Start training" })).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole("button", { name: "Start training" }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("hint-btn")).toBeInTheDocument();
+    });
+  });
+
+  it("does not show hint button when word has no note", async () => {
+    await addWord("hello", "привет");
+
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <Review />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Start training" })).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole("button", { name: "Start training" }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("word-text")).toBeInTheDocument();
+    });
+
+    expect(screen.queryByTestId("hint-btn")).not.toBeInTheDocument();
+  });
+
+  it("reveals note text when hint button is clicked", async () => {
+    await addWord("hello", "привет", "en", "my hint");
+
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <Review />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Start training" })).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole("button", { name: "Start training" }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("hint-btn")).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByTestId("hint-btn"));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("hint-text")).toBeInTheDocument();
+    });
+
+    expect(screen.getByTestId("hint-text")).toHaveTextContent("my hint");
+  });
+
+  it("hides hint button after answering", async () => {
+    await addWord("hello", "привет", "en", "my hint");
+
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <Review />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Start training" })).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole("button", { name: "Start training" }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("hint-btn")).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole("button", { name: /I know/ }));
+
+    await waitFor(() => {
+      expect(screen.queryByTestId("hint-btn")).not.toBeInTheDocument();
+    });
+  });
+
   // --- Click "Show translation" button after answering "Know" ---
 
   it("reveals translation when clicking Show translation after Know", async () => {
