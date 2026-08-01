@@ -583,3 +583,42 @@ nav strong {
   text-overflow: ellipsis;
   max-width: 5rem;
 }
+
+/* ── Flip card (Review) ─────────────────────────────── */
+.flip-card {
+  perspective: 1000px;
+  width: 100%;
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.flip-card-inner {
+  display: grid;
+  transition: transform 0.6s ease;
+  transform-style: preserve-3d;
+}
+
+.flip-card-inner.flipped {
+  transform: rotateY(180deg);
+}
+
+.flip-card-front,
+.flip-card-back {
+  grid-area: 1 / 1;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+  min-height: 220px;
+  border-radius: var(--pico-border-radius);
+  background-color: var(--pico-card-background-color);
+  border: 1px solid var(--pico-card-border-color);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.flip-card-back {
+  transform: rotateY(180deg);
+}

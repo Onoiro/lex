@@ -442,33 +442,53 @@ export function Review() {
 
   return (
     <article style={{ display: "flex", flexDirection: "column" }}>
-      {/* Word area with timer */}
-      <div style={{ textAlign: "center", padding: "2rem 1rem 1rem" }}>
-        <div style={{ display: "inline-flex", alignItems: "flex-start", gap: "1rem" }}>
-          <div style={{ textAlign: "center" }}>
-            <small style={{ display: "block", color: "var(--pico-muted-color)" }}>
+      {/* Timer — always visible above the card */}
+      <div style={{ textAlign: "center", padding: "1rem 1rem 0.5rem" }}>
+        <span
+          style={{
+            color: timerColor,
+            fontSize: "0.95rem",
+            fontWeight: "bold",
+            fontVariantNumeric: "tabular-nums",
+          }}
+        >
+          {formatTime(elapsed)}
+        </span>
+      </div>
+
+      {/* Flip card */}
+      <div className="flip-card">
+        <div className={`flip-card-inner${showTranslation ? " flipped" : ""}`}>
+          {/* Front: word */}
+          <div className="flip-card-front">
+            <small style={{ display: "block", color: "var(--pico-muted-color)", marginBottom: "0.5rem" }}>
               {t("review.remember")}
             </small>
-            <h2 data-testid="word-text" style={{ fontSize: "2.5rem", margin: "0.5rem 0" }}>
+            <h2 data-testid="word-text" style={{ fontSize: "2.5rem", margin: 0 }}>
               {displayWord}
             </h2>
+            {total > 0 && (
+              <div style={{ marginTop: "1rem", color: "var(--pico-muted-color)", fontSize: "0.85rem" }}>
+                {t("review.stats_known", { count: word.know_count })}{" "}
+                {t("review.stats_forgotten", { count: word.forgot_count })}
+                {pct !== null && " " + t("review.stats_pct", { pct })}
+              </div>
+            )}
           </div>
-          <span
-            style={{
-              color: timerColor,
-              fontSize: "0.95rem",
-              fontWeight: "bold",
-              fontVariantNumeric: "tabular-nums",
-              paddingTop: "0.25rem",
-            }}
-          >
-            {formatTime(elapsed)}
-          </span>
+
+          {/* Back: translation (rendered only when flipped) */}
+          <div className="flip-card-back">
+            {showTranslation && (
+              <p data-testid="translation-text" style={{ fontSize: "2rem", fontWeight: "bold", margin: 0, color: "var(--pico-color)" }}>
+                {displayTranslation}
+              </p>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Buttons + translation + word stats */}
-      <div style={{ textAlign: "center", padding: "0 1rem" }}>
+      {/* Buttons — below the card, always visible */}
+      <div style={{ textAlign: "center", padding: "1.5rem 1rem 0" }}>
         {!answered ? (
           <div className="grid" style={{ width: "100%", maxWidth: "400px", margin: "0 auto" }}>
             <button
@@ -484,6 +504,21 @@ export function Review() {
           </div>
         ) : (
           <div style={{ width: "100%", maxWidth: "400px", margin: "0 auto" }}>
+            {!showTranslation && (
+              <button
+                type="button"
+                className="outline"
+                style={{ width: "100%", marginBottom: "0.75rem" }}
+                onClick={() => {
+                  setShowTranslation(true);
+                  const s = settingsRef.current;
+                  const transLang = direction === "en_ru" ? (s?.target_lang ?? "ru") : (word.word_lang || "en");
+                  playTts(displayTranslation, transLang === "auto" ? "en" : transLang);
+                }}
+              >
+                {t("review.show_translation")}
+              </button>
+            )}
             <button
               type="button"
               className="outline"
@@ -492,38 +527,6 @@ export function Review() {
             >
               {t("review.next_word")}
             </button>
-          </div>
-        )}
-
-        {/* Translation */}
-        <div style={{ marginTop: "1.5rem" }}>
-          {showTranslation ? (
-            <p data-testid="translation-text" style={{ fontSize: "2rem", fontWeight: "bold", margin: 0, color: "var(--pico-color)" }}>
-              {displayTranslation}
-            </p>
-          ) : answered ? (
-            <button
-              type="button"
-              className="outline"
-              style={{ width: "100%", maxWidth: "400px" }}
-              onClick={() => {
-                setShowTranslation(true);
-                const s = settingsRef.current;
-                const transLang = direction === "en_ru" ? (s?.target_lang ?? "ru") : (word.word_lang || "en");
-                playTts(displayTranslation, transLang === "auto" ? "en" : transLang);
-              }}
-            >
-              {t("review.show_translation")}
-            </button>
-          ) : null}
-        </div>
-
-        {/* Word-level stats */}
-        {total > 0 && (
-          <div style={{ marginTop: "1rem", color: "var(--pico-muted-color)", fontSize: "0.85rem" }}>
-            {t("review.stats_known", { count: word.know_count })}{" "}
-            {t("review.stats_forgotten", { count: word.forgot_count })}
-            {pct !== null && " " + t("review.stats_pct", { pct })}
           </div>
         )}
       </div>
