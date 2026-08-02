@@ -19,6 +19,7 @@ Lex is a translator and vocabulary trainer. Your dictionary, spaced repetition, 
 - **Response time tracking** - Best/average times, live timer with color thresholds
 - **Auto-answer & pause** - Auto-records "Forgot" after 10s, pauses after 3 consecutive auto-answers or 30s inactivity
 - **TTS** - Text-to-speech for words and translations via Yandex SpeechKit
+- **Example sentences** - Load corpus examples from Yandex Dictionary into the note field on the Translate page
 - **PWA** - Installable, offline-capable via service worker
 - **Android** - Native app via Capacitor (RuStore, AppGallery)
 - **Desktop** - Native installers via Tauri (Windows MSI/NSIS, macOS DMG, Linux deb/AppImage)
@@ -38,24 +39,26 @@ Lex is a translator and vocabulary trainer. Your dictionary, spaced repetition, 
 │     │   └──────────────┐                              │
 │     ▼                  ▼                              │
 │  ┌────────────┐   ┌──────────┐                       │
-│  │translateApi│   │  ttsApi  │                       │
-│  └─────┬──────┘   └────┬─────┘                       │
-│        │               │                              │
-└────────┼───────────────┼──────────────────────────────┘
-         │               │
-         ▼               ▼
-┌─────────────────────────────────────┐
-│        Proxy (FastAPI, port 8004)    │
-│  POST /translate   POST /tts        │
-│  GET  /languages   GET  /cache/stats│
-│  GET  /            GET  /tts/cache  │
-│                                     │
-│  Yandex Translate API + SpeechKit   │
-└─────────────────────────────────────┘
+│  │translateApi│   │dictionaryApi│
+│  │  ttsApi    │   │              │
+│  └─────┬──────┘   └──────┬───────┘
+│        │                 │
+└────────┼─────────────────┼──────────────────────────────┘
+         │                 │
+         ▼                 ▼
+┌─────────────────────────────────────────────┐
+│        Proxy (FastAPI, port 8004)            │
+│  POST /translate   POST /tts                │
+│  GET  /languages   POST /dictionary          │
+│  GET  /            GET  /cache/stats         │
+│  GET  /tts/cache   GET  /dictionary/cache    │
+│                                               │
+│  Yandex Translate API + SpeechKit + Corpus   │
+└─────────────────────────────────────────────┘
 ```
 
 - **Client:** React 19 + TypeScript, Vite 7, Dexie.js (IndexedDB), Pico CSS, vite-plugin-pwa
-- **Proxy:** FastAPI, port 8004. Hides Yandex API key. Endpoints: POST `/translate`, GET `/languages`, POST `/tts`, GET `/`, GET `/cache/stats`, GET `/tts/cache/stats`
+- **Proxy:** FastAPI, port 8004. Hides Yandex API key. Endpoints: POST `/translate`, GET `/languages`, POST `/tts`, GET `/`, GET `/cache/stats`, GET `/tts/cache`, POST `/dictionary`, GET `/dictionary/cache`
 
 ## Tech Stack
 
@@ -70,8 +73,8 @@ Lex is a translator and vocabulary trainer. Your dictionary, spaced repetition, 
 
 ### Proxy (`proxy/`)
 - Python 3.13, FastAPI
-- Hides Yandex API key, rate limiting, translation cache, TTS (text-to-speech)
-- Endpoints: POST `/translate`, GET `/languages`, POST `/tts`, GET `/`, GET `/cache/stats`, GET `/tts/cache/stats`
+- Hides Yandex API key, rate limiting, translation cache, TTS (text-to-speech), dictionary examples (Yandex Corpus)
+- Endpoints: POST `/translate`, GET `/languages`, POST `/tts`, GET `/`, GET `/cache/stats`, GET `/tts/cache/stats`, POST `/dictionary`, GET `/dictionary/cache/stats`
 
 ## Quick Start
 
@@ -142,6 +145,7 @@ Requires Rust + system libraries (see [Tauri prerequisites](https://tauri.app/st
 2. Enter a word (language auto-detected, configurable in Settings)
 3. Click **Translate** to get auto-translation, or enter manually
 4. Click **Save to dictionary**
+5. (Optional) Click **Load example** to fetch an example sentence from Yandex Dictionary corpus into the note field
 
 ### Reviewing Words
 
@@ -188,7 +192,7 @@ All commands are run via `make`. Run `make help` to see the full list.
 | `make proxy` | Start translate proxy (port 8004) |
 | `make client-dev` | Start client dev server (port 5173) |
 | `make client-build` | Build client for production |
-| `make client-test` | Run client tests (vitest, 172 tests) |
+| `make client-test` | Run client tests (vitest, 199 tests) |
 | `make client-lint` | Lint client code (eslint) |
 | `make client-typecheck` | Type-check client (tsc) |
 | `make proxy-lint` | Lint proxy code (ruff) |
@@ -214,7 +218,7 @@ All commands are run via `make`. Run `make help` to see the full list.
 │   │   ├── domain/            # srs.ts, stats.ts, validators.ts
 │   │   ├── i18n/              # index.ts, languages.ts, en/ru.json
 │   │   ├── pages/             # Home, Add, Review, Dictionary, Settings
-│   │   ├── services/          # translateApi.ts, ttsApi.ts, theme.ts
+│   │   ├── services/          # translateApi.ts, ttsApi.ts, dictionaryApi.ts, theme.ts
 │   │   ├── test/              # Component and service tests (Vitest)
 │   │   └── types/             # Word, LanguageSettings
 │   ├── capacitor.config.ts    # Android config
@@ -222,12 +226,13 @@ All commands are run via `make`. Run `make help` to see the full list.
 │   ├── android/               # Capacitor Android project
 │   └── vite.config.ts         # Vite + PWA plugin + dev proxy
 ├── proxy/                     # Translate proxy (FastAPI, port 8004)
-│   ├── main.py                # /translate, /languages, /tts, /, /cache/stats, /tts/cache/stats
+│   ├── main.py                # /translate, /languages, /tts, /dictionary, /cache/stats, /tts/cache/stats, /dictionary/cache/stats
 │   ├── languages.py           # Language metadata
 │   ├── services/
 │   │   ├── translator.py      # Yandex Translate API client
 │   │   ├── cache.py           # Translation cache (TTL)
-│   │   └── tts.py             # Yandex SpeechKit TTS client
+│   │   ├── tts.py             # Yandex SpeechKit TTS client
+│   │   └── dictionary.py      # Yandex Dictionary corpus client
 │   ├── security/
 │   │   └── rate_limiter.py    # Rate limiting
 │   ├── Dockerfile

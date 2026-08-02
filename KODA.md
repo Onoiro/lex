@@ -5,7 +5,7 @@ Lex — local-first приложение-переводчик и помощни�
 
 **Демо:** [lex.2-way.ru](https://lex.2-way.ru)
 
-**Текущая версия:** 1.7.0
+**Текущая версия:** 1.9.0
 
 ## Архитектура
 
@@ -19,24 +19,26 @@ Lex — local-first приложение-переводчик и помощни�
 │     │   └──────────────┐                              │
 │     ▼                  ▼                              │
 │  ┌────────────┐   ┌──────────┐                       │
-│  │translateApi│   │  ttsApi  │                       │
-│  └─────┬──────┘   └────┬─────┘                       │
-│        │               │                              │
-└────────┼───────────────┼──────────────────────────────┘
-         │               │
-         ▼               ▼
-┌─────────────────────────────────────┐
-│        Proxy (FastAPI, port 8004)    │
-│  POST /translate   POST /tts        │
-│  GET  /languages   GET  /cache/stats│
-│  GET  /            GET  /tts/cache  │
-│                                     │
-│  Yandex Translate API + SpeechKit   │
-└─────────────────────────────────────┘
+│  │translateApi│   │dictionaryApi│
+│  │  ttsApi    │   │              │
+│  └─────┬──────┘   └──────┬───────┘
+│        │                 │
+└────────┼─────────────────┼──────────────────────────────┘
+         │                 │
+         ▼                 ▼
+┌─────────────────────────────────────────────┐
+│        Proxy (FastAPI, port 8004)            │
+│  POST /translate   POST /tts                │
+│  GET  /languages   POST /dictionary          │
+│  GET  /            GET  /cache/stats         │
+│  GET  /tts/cache   GET  /dictionary/cache    │
+│                                               │
+│  Yandex Translate API + SpeechKit + Corpus   │
+└─────────────────────────────────────────────┘
 ```
 
 - **Client:** React 19 + TypeScript, Vite 7, Dexie.js (IndexedDB), Pico CSS, vite-plugin-pwa
-- **Proxy:** FastAPI, порт 8004. Скрывает Yandex API key. Эндпоинты: POST `/translate`, GET `/languages`, POST `/tts`, GET `/`, GET `/cache/stats`, GET `/tts/cache/stats`
+- **Proxy:** FastAPI, порт 8004. Скрывает Yandex API key. Эндпоинты: POST `/translate`, GET `/languages`, POST `/tts`, GET `/`, GET `/cache/stats`, GET `/tts/cache/stats`, POST `/dictionary`, GET `/dictionary/cache/stats`
 
 ## Используемые технологии
 
@@ -109,7 +111,7 @@ make d-run    # docker compose up -d
 │   │   ├── domain/            # srs.ts (SM-2), stats.ts, validators.ts
 │   │   ├── i18n/              # index.ts, languages.ts, en.json, ru.json
 │   │   ├── pages/             # Home, Add, Review, Dictionary, Settings
-│   │   ├── services/          # translateApi.ts (proxy client), ttsApi.ts, theme.ts
+│   │   ├── services/          # translateApi.ts (proxy client), ttsApi.ts, dictionaryApi.ts, theme.ts
 │   │   ├── test/              # Component and service tests (Vitest)
 │   │   ├── types/             # Word, LanguageSettings
 │   │   └── main.tsx           # App entry, SW registration, native plugins
@@ -122,13 +124,14 @@ make d-run    # docker compose up -d
 │   └── package.json
 ├── proxy/                     # Translate proxy (FastAPI, порт 8004)
 │   ├── __init__.py
-│   ├── main.py                # /translate, /languages, /tts, /, /cache/stats, /tts/cache/stats
+│   ├── main.py                # /translate, /languages, /tts, /dictionary, /, /cache/stats, /tts/cache/stats, /dictionary/cache/stats
 │   ├── languages.py           # Language metadata (names, native names)
 │   ├── services/
 │   │   ├── __init__.py
 │   │   ├── translator.py      # Yandex Translate API client
 │   │   ├── cache.py           # Translation cache (TTL)
-│   │   └── tts.py             # Speechkin TTS client
+│   │   ├── tts.py             # Speechkin TTS client
+│   │   └── dictionary.py      # Yandex Dictionary corpus client
 │   ├── security/
 │   │   ├── __init__.py
 │   │   └── rate_limiter.py    # Rate limiting
@@ -140,7 +143,8 @@ make d-run    # docker compose up -d
 │   ├── test_translator.py
 │   ├── test_cache.py
 │   ├── test_rate_limiter.py
-│   └── test_tts.py
+│   ├── test_tts.py
+│   └── test_dictionary.py
 ├── pyproject.toml             # Python project config (uv, ruff)
 ├── Makefile                   # Build/run scripts
 ├── docker-compose.yml         # Docker (proxy)
@@ -156,12 +160,12 @@ make d-run    # docker compose up -d
 - **Комментарии:** на простом английском, понятном non-native speakers.
 - **Стиль:** Pico CSS (без классов), Material Design принципы.
 - **i18n:** все UI-строки через `t()` из `@/i18n`. Переводы в `en.json` и `ru.json`.
-- **PWA:** vite-plugin-pwa генерирует SW. Runtime cache для `/translate` и `/languages` (NetworkFirst).
+- **PWA:** vite-plugin-pwa генерирует SW. Runtime cache для `/translate`, `/languages` и `/dictionary` (NetworkFirst).
 - **VITE_PROXY_URL:** env var для proxy base URL (пустая строка = relative path).
 
 ### Proxy
 - Скрывает Yandex API key. Rate limiting. Кэш переводов. TTS (text-to-speech).
-- Эндпоинты: POST `/translate` (body: word, source_lang, target_lang), GET `/languages`, POST `/tts`, GET `/`, GET `/cache/stats`, GET `/tts/cache/stats`.
+- Эндпоинты: POST `/translate` (body: word, source_lang, target_lang), GET `/languages`, POST `/tts`, POST `/dictionary` (body: word, lang_pair), GET `/`, GET `/cache/stats`, GET `/tts/cache/stats`, GET `/dictionary/cache/stats`.
 - Самодостаточный модуль: все зависимости внутри `proxy/` (services/, security/, languages.py).
 - **Линтинг:** `uv run ruff check proxy/` — без ошибок.
 - **Тестирование:** `uv run pytest tests/ -v`.
@@ -184,4 +188,4 @@ make d-run    # docker compose up -d
 - CI для кросс-компиляции Tauri (Windows MSI/NSIS, macOS DMG)
 
 ---
-**Последнее обновление:** 1 августа 2026
+**Последнее обновление:** 2 августа 2026
