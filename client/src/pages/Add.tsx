@@ -3,6 +3,7 @@ import { useLocale } from "@/i18n";
 import { getLanguageName, LANGUAGE_NAMES_EN, LANGUAGE_NAMES_RU } from "@/i18n/languages";
 import { validateWord, validateTranslation, validateNote } from "@/domain/validators";
 import { translateWord, getLanguages } from "@/services/translateApi";
+import { getExamples } from "@/services/dictionaryApi";
 import { synthesizeSpeech } from "@/services/ttsApi";
 import { addWord } from "@/data/wordRepository";
 import { getSettings, saveSettings } from "@/data/settingsRepository";
@@ -36,6 +37,9 @@ export function Add() {
   const [langOptions, setLangOptions] = useState<LanguageInfo[]>([]);
   const [ttsLoading, setTtsLoading] = useState<string | null>(null);
   const [detectedLang, setDetectedLang] = useState<string>("");
+  const [examplesLoading, setExamplesLoading] = useState(false);
+  const [examplesError, setExamplesError] = useState(false);
+  const prevWordRef = useRef("");
 
   const wordRef = useRef<HTMLTextAreaElement>(null);
   const translationRef = useRef<HTMLTextAreaElement>(null);
@@ -157,6 +161,18 @@ export function Add() {
     setUserEditingTranslation(true);
   };
 
+  // Clear note and examples state when user starts a new word
+  useEffect(() => {
+    const trimmed = word.trim();
+    if (trimmed !== prevWordRef.current) {
+      if (trimmed === "") {
+        setNote("");
+        setExamplesError(false);
+      }
+      prevWordRef.current = trimmed;
+    }
+  }, [word]);
+
   const handlePlayWord = async () => {
     const trimmed = word.trim();
     if (!trimmed || !settings) return;
@@ -172,6 +188,33 @@ export function Add() {
     setTtsLoading("translation");
     await synthesizeSpeech(trimmed, settings.target_lang);
     setTtsLoading(null);
+  };
+
+  const handleLoadExamples = async () => {
+    const trimmedWord = word.trim();
+    if (!trimmedWord || !settings) return;
+
+    const sourceLang = settings.source_lang === "auto" ? (detectedLang || "en") : settings.source_lang;
+    const langPair = `${sourceLang}-${settings.target_lang}`;
+
+    setExamplesLoading(true);
+    setExamplesError(false);
+
+    try {
+      const examples = await getExamples(trimmedWord, langPair);
+      if (examples.length > 0) {
+        const first = examples[0];
+        const exampleText = first.translation
+          ? `${first.text} — ${first.translation}`
+          : first.text;
+        setNote(exampleText);
+      } else {
+        setExamplesError(true);
+      }
+    } catch {
+      setExamplesError(true);
+    }
+    setExamplesLoading(false);
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -464,9 +507,28 @@ export function Add() {
           )}
 
           {/* Note input */}
-          <label htmlFor="note" style={{ fontSize: "0.85rem", color: "var(--pico-muted-color)", marginBottom: "0.25rem" }}>
-            {t("add.note_label")}
-          </label>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.25rem" }}>
+            <label htmlFor="note" style={{ fontSize: "0.85rem", color: "var(--pico-muted-color)" }}>
+              {t("add.note_label")}
+            </label>
+            {word.trim() && translation.trim() && (
+              <button
+                type="button"
+                className="outline"
+                data-testid="load-examples-btn"
+                onClick={handleLoadExamples}
+                disabled={examplesLoading}
+                style={{ fontSize: "0.75rem", padding: "0.15rem 0.5rem", lineHeight: 1 }}
+              >
+                {examplesLoading ? t("add.loading_examples") : t("add.load_examples")}
+              </button>
+            )}
+          </div>
+          {examplesError && (
+            <small style={{ display: "block", marginBottom: "0.25rem", color: "var(--pico-muted-color)", fontSize: "0.8rem" }}>
+              {t("add.no_examples")}
+            </small>
+          )}
           <textarea
             id="note"
             value={note}

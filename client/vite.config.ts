@@ -86,6 +86,20 @@ export default defineConfig({
               },
             },
           },
+          {
+            urlPattern: /\/dictionary$/,
+            handler: "NetworkFirst",
+            options: {
+              cacheName: "lex-dictionary-api",
+              expiration: {
+                maxEntries: 50,
+                maxAgeSeconds: 2592000,
+              },
+              cacheableResponse: {
+                statuses: [0, 200],
+              },
+            },
+          },
         ],
       },
       devOptions: {
@@ -104,6 +118,7 @@ export default defineConfig({
       "/translate": "http://localhost:8004",
       "/languages": "http://localhost:8004",
       "/tts": "http://localhost:8004",
+      "/dictionary": "http://localhost:8004",
     },
   },
 });

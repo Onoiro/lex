@@ -13,6 +13,8 @@ export interface Word {
   word_lang: string;
   /** Optional user note / association / mnemonic hint. */
   note?: string;
+  /** Example sentences fetched from Yandex Dictionary API. */
+  examples?: { text: string; translation?: string }[];
   /** Repetition interval in days (0 = new word). */
   interval: number;
   /** Number of successful reviews. */

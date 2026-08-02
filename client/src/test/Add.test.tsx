@@ -48,6 +48,10 @@ vi.mock("@/services/translateApi", () => ({
   ]),
 }));
 
+vi.mock("@/services/dictionaryApi", () => ({
+  getExamples: vi.fn(),
+}));
+
 vi.mock("@/data/settingsRepository", () => ({
   getSettings: vi.fn().mockResolvedValue({
     source_lang: "auto",
@@ -60,6 +64,7 @@ vi.mock("@/data/settingsRepository", () => ({
 }));
 
 import { translateWord } from "@/services/translateApi";
+import { getExamples } from "@/services/dictionaryApi";
 import { saveSettings } from "@/data/settingsRepository";
 
 describe("Add", () => {
@@ -524,5 +529,145 @@ describe("Add", () => {
     expect(saveSettings).not.toHaveBeenCalledWith(
       expect.objectContaining({ target_lang: "en" }),
     );
+  });
+
+  // --- Load examples into note field ---
+
+  it("shows load examples button when word and translation are filled", async () => {
+    vi.mocked(translateWord).mockResolvedValue({
+      translation: "привет",
+      detectedLanguage: "en",
+    });
+
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <Add />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText("Enter a word or phrase")).toBeInTheDocument();
+    });
+
+    await user.type(screen.getByPlaceholderText("Enter a word or phrase"), "hello");
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText("Translation")).toHaveValue("привет");
+    });
+
+    expect(screen.getByTestId("load-examples-btn")).toBeInTheDocument();
+  });
+
+  it("does not show load examples button when word is empty", () => {
+    render(
+      <MemoryRouter>
+        <Add />
+      </MemoryRouter>,
+    );
+
+    expect(screen.queryByTestId("load-examples-btn")).not.toBeInTheDocument();
+  });
+
+  it("loads example into note field on button click", async () => {
+    vi.mocked(translateWord).mockResolvedValue({
+      translation: "привет",
+      detectedLanguage: "en",
+    });
+    vi.mocked(getExamples).mockResolvedValue([
+      { text: "Hello there.", translation: "Привет тебе." },
+    ]);
+
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <Add />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText("Enter a word or phrase")).toBeInTheDocument();
+    });
+
+    await user.type(screen.getByPlaceholderText("Enter a word or phrase"), "hello");
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText("Translation")).toHaveValue("привет");
+    });
+
+    await user.click(screen.getByTestId("load-examples-btn"));
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText("Association, hint, or mnemonic to help you remember")).toHaveValue(
+        "Hello there. — Привет тебе.",
+      );
+    });
+  });
+
+  it("shows no examples message when API returns empty", async () => {
+    vi.mocked(translateWord).mockResolvedValue({
+      translation: "привет",
+      detectedLanguage: "en",
+    });
+    vi.mocked(getExamples).mockResolvedValue([]);
+
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <Add />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText("Enter a word or phrase")).toBeInTheDocument();
+    });
+
+    await user.type(screen.getByPlaceholderText("Enter a word or phrase"), "hello");
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText("Translation")).toHaveValue("привет");
+    });
+
+    await user.click(screen.getByTestId("load-examples-btn"));
+
+    await waitFor(() => {
+      expect(screen.getByText("No examples found")).toBeInTheDocument();
+    });
+  });
+
+  it("replaces existing note text with example", async () => {
+    vi.mocked(translateWord).mockResolvedValue({
+      translation: "привет",
+      detectedLanguage: "en",
+    });
+    vi.mocked(getExamples).mockResolvedValue([
+      { text: "Hello there.", translation: "Привет тебе." },
+    ]);
+
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <Add />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText("Enter a word or phrase")).toBeInTheDocument();
+    });
+
+    await user.type(screen.getByPlaceholderText("Enter a word or phrase"), "hello");
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText("Translation")).toHaveValue("привет");
+    });
+
+    const noteField = screen.getByPlaceholderText("Association, hint, or mnemonic to help you remember");
+    await user.type(noteField, "existing note");
+
+    await user.click(screen.getByTestId("load-examples-btn"));
+
+    await waitFor(() => {
+      expect(noteField).toHaveValue("Hello there. — Привет тебе.");
+    });
   });
 });
