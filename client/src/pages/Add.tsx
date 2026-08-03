@@ -1,11 +1,12 @@
 import { useState, useRef, useEffect, useCallback } from "react";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { useLocale } from "@/i18n";
 import { getLanguageName, LANGUAGE_NAMES_EN, LANGUAGE_NAMES_RU } from "@/i18n/languages";
 import { validateWord, validateTranslation, validateNote } from "@/domain/validators";
 import { translateWord, getLanguages } from "@/services/translateApi";
 import { getExamples } from "@/services/dictionaryApi";
 import { synthesizeSpeech } from "@/services/ttsApi";
-import { addWord } from "@/data/wordRepository";
+import { addWord, getWord, updateWordEntry } from "@/data/wordRepository";
 import { getSettings, saveSettings } from "@/data/settingsRepository";
 import { LANG_LIST_TTL_MS } from "@/types";
 import type { LanguageInfo } from "@/services/translateApi";
@@ -27,6 +28,10 @@ function autoResize(el: HTMLTextAreaElement) {
 
 export function Add() {
   const [t] = useLocale();
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const editId = searchParams.get("id") ? Number(searchParams.get("id")) : null;
+  const [editing, setEditing] = useState(false);
   const [word, setWord] = useState("");
   const [translation, setTranslation] = useState("");
   const [note, setNote] = useState("");
@@ -71,6 +76,28 @@ export function Add() {
   useEffect(() => {
     void getSettings().then(setSettings);
   }, []);
+
+  // Load word for editing when ?id= is present
+  useEffect(() => {
+    if (editId === null) return;
+    let cancelled = false;
+    void (async () => {
+      const w = await getWord(editId);
+      if (cancelled || !w) return;
+      setEditing(true);
+      setWord(w.word);
+      setTranslation(w.translation);
+      setNote(w.note ?? "");
+      setDetectedLang(w.word_lang);
+      setUserEditingTranslation(true);
+      // Auto-resize textareas after loading values
+      requestAnimationFrame(() => {
+        if (wordRef.current) autoResize(wordRef.current);
+        if (translationRef.current) autoResize(translationRef.current);
+      });
+    })();
+    return () => { cancelled = true; };
+  }, [editId]);
 
   // Load language list
   useEffect(() => {
@@ -230,13 +257,21 @@ export function Add() {
 
     try {
       const lang = settings!.source_lang === "auto" ? (detectedLang || "en") : settings!.source_lang;
-      await addWord(validWord, validTranslation, lang, validNote || undefined);
-      showMessage("success", t("add.success"));
-      setWord("");
-      setTranslation("");
-      setNote("");
-      setDetectedLang("");
-      setUserEditingTranslation(false);
+
+      if (editing && editId !== null) {
+        await updateWordEntry(editId, validWord, validTranslation, lang, validNote || undefined);
+        showMessage("success", t("add.edit_success"));
+        // Navigate back to dictionary after a short delay
+        setTimeout(() => navigate("/dictionary"), 1200);
+      } else {
+        await addWord(validWord, validTranslation, lang, validNote || undefined);
+        showMessage("success", t("add.success"));
+        setWord("");
+        setTranslation("");
+        setNote("");
+        setDetectedLang("");
+        setUserEditingTranslation(false);
+      }
     } catch (err) {
       if ((err as Error).message.includes("already exists")) {
         showMessage("error_duplicate", t("add.error_duplicate", { error_word: validWord }));
@@ -305,7 +340,7 @@ export function Add() {
     <>
       <OfflineIndicator />
       <hgroup style={{ textAlign: "center", marginBottom: "1.5rem", marginTop: "1rem" }}>
-        <h1>{t("add.heading")}</h1>
+        <h1>{editing ? t("add.edit_heading") : t("add.heading")}</h1>
       </hgroup>
 
       {message && (
@@ -559,7 +594,7 @@ export function Add() {
             }}
           >
             <button type="submit" style={{ width: "100%" }}>
-              {t("add.save_btn")}
+              {editing ? t("add.save_edit_btn") : t("add.save_btn")}
             </button>
           </footer>
         </form>

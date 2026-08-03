@@ -158,15 +158,24 @@ export function Dictionary() {
                       </small>
                     )}
                   </div>
-                  <button
-                    type="button"
-                    className="outline contrast"
-                    onClick={() => handleDelete(w.id!, w.word)}
-                    style={{ border: "none", padding: "0.25rem 0.5rem", fontSize: "1.2rem", lineHeight: 1, flexShrink: 0 }}
-                    title={t("dictionary.col_delete")}
-                  >
-                    🗑️
-                  </button>
+                  <div style={{ display: "flex", gap: "0.25rem", flexShrink: 0 }}>
+                    <Link
+                      to={`/add?id=${w.id}`}
+                      style={{ border: "none", padding: "0.25rem 0.5rem", fontSize: "1.2rem", lineHeight: 1, textDecoration: "none" }}
+                      title={t("dictionary.col_edit")}
+                    >
+                      ✏️
+                    </Link>
+                    <button
+                      type="button"
+                      className="outline contrast"
+                      onClick={() => handleDelete(w.id!, w.word)}
+                      style={{ border: "none", padding: "0.25rem 0.5rem", fontSize: "1.2rem", lineHeight: 1, flexShrink: 0 }}
+                      title={t("dictionary.col_delete")}
+                    >
+                      🗑️
+                    </button>
+                  </div>
                 </div>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem 1rem", marginTop: "0.5rem", fontSize: "0.8rem", color: "var(--pico-muted-color)" }}>
                   {total > 0 && (
@@ -198,7 +207,8 @@ export function Dictionary() {
                 <th style={{ width: "10%", textAlign: "center" }}>{t("dictionary.col_time")}</th>
                 <th style={{ width: "8%", textAlign: "center" }}>{t("dictionary.col_rank")}</th>
                 <th style={{ width: "6%", textAlign: "center" }}>{t("dictionary.col_pct")}</th>
-                <th style={{ width: "8%", textAlign: "center", padding: "0.75rem" }}>{t("dictionary.col_delete")}</th>
+                <th style={{ width: "6%", textAlign: "center", padding: "0.75rem" }}>{t("dictionary.col_delete")}</th>
+                <th style={{ width: "6%", textAlign: "center", padding: "0.75rem" }}>{t("dictionary.col_edit")}</th>
               </tr>
             </thead>
             <tbody>
@@ -238,16 +248,26 @@ export function Dictionary() {
                       {pct !== null ? `${pct}%` : "—"}
                     </td>
                     <td style={{ textAlign: "center", padding: "0.75rem" }}>
-                      <button
-                        type="button"
-                        className="outline contrast"
-                        onClick={() => handleDelete(w.id!, w.word)}
-                        style={{ border: "none", padding: "0.25rem 0.5rem", fontSize: "1.2rem" }}
-                        title={t("dictionary.col_delete")}
-                      >
-                        🗑️
-                      </button>
-                    </td>
+                    <button
+                      type="button"
+                      className="outline contrast"
+                      onClick={() => handleDelete(w.id!, w.word)}
+                      style={{ border: "none", padding: "0.25rem 0.5rem", fontSize: "1.2rem" }}
+                      title={t("dictionary.col_delete")}
+                    >
+                      🗑️
+                    </button>
+                  </td>
+                  <td style={{ textAlign: "center", padding: "0.75rem" }}>
+                    <Link
+                      to={`/add?id=${w.id}`}
+                      className="outline contrast"
+                      style={{ border: "none", padding: "0.25rem 0.5rem", fontSize: "1.2rem", textDecoration: "none" }}
+                      title={t("dictionary.col_edit")}
+                    >
+                      ✏️
+                    </Link>
+                  </td>
                   </tr>
                 );
               })}

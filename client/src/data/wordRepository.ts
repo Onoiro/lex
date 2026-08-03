@@ -54,6 +54,36 @@ export async function updateWord(
   await db.words.update(id, changes);
 }
 
+/** Update word text, translation, and note with duplicate check.
+ *  Throws if the new word text already exists in a different entry.
+ *  Pass `note` as empty string to clear the stored note, or omit to leave unchanged. */
+export async function updateWordEntry(
+  id: number,
+  word: string,
+  translation: string,
+  wordLang: string,
+  note?: string,
+): Promise<void> {
+  // Check for duplicate (exclude current id)
+  const existing = await db.words.where("word").equals(word).first();
+  if (existing && existing.id !== id) {
+    throw new Error(`Word "${word}" already exists`);
+  }
+
+  await db.words.update(id, { word, translation, word_lang: wordLang });
+
+  if (note !== undefined) {
+    if (note) {
+      await db.words.update(id, { note });
+    } else {
+      // Clear the note field
+      await db.words.where(":id").equals(id).modify((w: Word) => {
+        delete w.note;
+      });
+    }
+  }
+}
+
 /** Get total word count. */
 export async function getWordCount(): Promise<number> {
   return db.words.count();
