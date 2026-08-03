@@ -756,4 +756,82 @@ describe("Review", () => {
     const totalKnow = words.reduce((sum, w) => sum + w.know_count, 0);
     expect(totalKnow).toBe(3);
   });
+
+  // --- TTS toggle on Review page ---
+
+  it("does not show TTS toggle when TTS is disabled in settings", async () => {
+    await addWord("hello", "привет");
+
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <Review />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Start training" })).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole("button", { name: "Start training" }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("word-text")).toBeInTheDocument();
+    });
+
+    expect(screen.queryByTestId("tts-toggle")).not.toBeInTheDocument();
+  });
+
+  it("shows TTS toggle when TTS is enabled in settings", async () => {
+    await addWord("hello", "привет");
+    await db.settings.put({ id: "app", tts_enabled: true, source_lang: "auto", target_lang: "ru", locale: "en", theme: "auto", skin: "default" });
+
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <Review />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Start training" })).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole("button", { name: "Start training" }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("tts-toggle")).toBeInTheDocument();
+    });
+  });
+
+  it("toggles TTS off and on", async () => {
+    await addWord("hello", "привет");
+    await db.settings.put({ id: "app", tts_enabled: true, source_lang: "auto", target_lang: "ru", locale: "en", theme: "auto", skin: "default" });
+
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <Review />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Start training" })).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole("button", { name: "Start training" }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("tts-toggle")).toBeInTheDocument();
+    });
+
+    const toggle = screen.getByTestId("tts-toggle");
+    expect(toggle.textContent).toBe("🔊");
+
+    await user.click(toggle);
+    expect(toggle.textContent).toBe("🔇");
+
+    await user.click(toggle);
+    expect(toggle.textContent).toBe("🔊");
+  });
 });

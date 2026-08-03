@@ -45,6 +45,7 @@ export function Review() {
     times: [],
   });
   const [settings, setSettings] = useState<LanguageSettings | null>(null);
+  const [ttsOverride, setTtsOverride] = useState(true);
 
   // Refs for timers and state that shouldn't trigger re-renders
   const startTimeRef = useRef<number>(0);
@@ -59,11 +60,16 @@ export function Review() {
   const currentViewRef = useRef<WordView | null>(null);
   const answeredRef = useRef(false);
   const settingsRef = useRef<LanguageSettings | null>(null);
+  const ttsOverrideRef = useRef(true);
 
   // Keep refs in sync with state
   useEffect(() => {
     settingsRef.current = settings;
   }, [settings]);
+
+  useEffect(() => {
+    ttsOverrideRef.current = ttsOverride;
+  }, [ttsOverride]);
 
   // Keep ref in sync with state
   useEffect(() => {
@@ -90,6 +96,7 @@ export function Review() {
   const loadWords = useCallback(async () => {
     const s = await getSettings();
     setSettings(s);
+    setTtsOverride(s.tts_enabled);
 
     const words = await getAllWords();
     allWordsRef.current = words;
@@ -141,6 +148,7 @@ export function Review() {
   const playTts = useCallback((text: string, lang: string) => {
     const s = settingsRef.current;
     if (!s?.tts_enabled) return;
+    if (!ttsOverrideRef.current) return;
     stopTts();
     void synthesizeSpeech(text, lang);
   }, []);
@@ -445,8 +453,8 @@ export function Review() {
 
   return (
     <article style={{ display: "flex", flexDirection: "column" }}>
-      {/* Timer — always visible above the card */}
-      <div style={{ textAlign: "center", padding: "1rem 1rem 0.5rem" }}>
+      {/* Timer + TTS toggle — always visible above the card */}
+      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "0.75rem", padding: "1rem 1rem 0.5rem" }}>
         <span
           style={{
             color: timerColor,
@@ -457,6 +465,22 @@ export function Review() {
         >
           {formatTime(elapsed)}
         </span>
+        {settings?.tts_enabled && (
+          <button
+            type="button"
+            className="outline"
+            data-testid="tts-toggle"
+            aria-label={ttsOverride ? t("review.tts_on") : t("review.tts_off")}
+            onClick={() => {
+              const next = !ttsOverride;
+              setTtsOverride(next);
+              if (!next) stopTts();
+            }}
+            style={{ fontSize: "1rem", padding: "0.15rem 0.5rem", lineHeight: 1, minWidth: "2rem" }}
+          >
+            {ttsOverride ? "🔊" : "🔇"}
+          </button>
+        )}
       </div>
 
       {/* Flip card */}
