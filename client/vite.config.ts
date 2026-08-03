@@ -118,7 +118,13 @@ export default defineConfig({
       "/translate": "http://localhost:8004",
       "/languages": "http://localhost:8004",
       "/tts": "http://localhost:8004",
-      "/dictionary": "http://localhost:8004",
+      "/dictionary": {
+        target: "http://localhost:8004",
+        bypass: (req) => {
+          // GET /dictionary is an SPA route, not a proxy endpoint
+          if (req.method !== "POST") return req.url;
+        },
+      },
     },
   },
 });
