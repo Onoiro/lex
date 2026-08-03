@@ -48,6 +48,7 @@ export function Add() {
 
   const wordRef = useRef<HTMLTextAreaElement>(null);
   const translationRef = useRef<HTMLTextAreaElement>(null);
+  const noteRef = useRef<HTMLTextAreaElement>(null);
   const messageTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const debounceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -74,6 +75,10 @@ export function Add() {
   }, [translation]);
 
   useEffect(() => {
+    if (noteRef.current) autoResize(noteRef.current);
+  }, [note]);
+
+  useEffect(() => {
     void getSettings().then(setSettings);
   }, []);
 
@@ -94,6 +99,7 @@ export function Add() {
       requestAnimationFrame(() => {
         if (wordRef.current) autoResize(wordRef.current);
         if (translationRef.current) autoResize(translationRef.current);
+        if (noteRef.current) autoResize(noteRef.current);
       });
     })();
     return () => { cancelled = true; };
@@ -566,8 +572,12 @@ export function Add() {
           )}
           <textarea
             id="note"
+            ref={noteRef}
             value={note}
-            onChange={(e) => setNote(e.target.value)}
+            onChange={(e) => {
+              setNote(e.target.value);
+              autoResize(e.target);
+            }}
             placeholder={t("add.note_placeholder")}
             rows={2}
             style={{
