@@ -6,12 +6,21 @@ import { formatTime } from "@/domain/stats";
 import { computeRank } from "@/domain/srs";
 import type { Word } from "@/types";
 
+const MOBILE_BREAKPOINT = 768;
+
 export function Dictionary() {
   const [t] = useLocale();
   const [words, setWords] = useState<Word[]>([]);
   const [search, setSearch] = useState("");
   const [importMsg, setImportMsg] = useState("");
+  const [isMobile, setIsMobile] = useState(window.innerWidth < MOBILE_BREAKPOINT);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < MOBILE_BREAKPOINT);
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
 
   const loadWords = useCallback(async () => {
     const all = await getAllWords();
@@ -131,73 +140,121 @@ export function Dictionary() {
         style={{ marginBottom: "1rem" }}
       />
 
-      <article style={{ padding: 0, overflowX: "auto" }}>
-        <table role="grid" style={{ margin: 0 }}>
-          <thead>
-            <tr>
-              <th style={{ width: "20%", padding: "0.75rem" }}>{t("dictionary.col_word")}</th>
-              <th style={{ width: "20%" }}>{t("dictionary.col_translation")}</th>
-              <th style={{ width: "15%" }}>{t("dictionary.col_note")}</th>
-              <th style={{ width: "8%", textAlign: "center" }}>{t("dictionary.col_known_no")}</th>
-              <th style={{ width: "10%", textAlign: "center" }}>{t("dictionary.col_time")}</th>
-              <th style={{ width: "8%", textAlign: "center" }}>{t("dictionary.col_rank")}</th>
-              <th style={{ width: "6%", textAlign: "center" }}>{t("dictionary.col_pct")}</th>
-              <th style={{ width: "8%", textAlign: "center", padding: "0.75rem" }}>{t("dictionary.col_delete")}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.map((w) => {
-              const total = w.know_count + w.forgot_count;
-              const pct = total > 0 ? Math.round((w.know_count / total) * 100) : null;
+      {isMobile ? (
+        <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+          {filtered.map((w) => {
+            const total = w.know_count + w.forgot_count;
+            const pct = total > 0 ? Math.round((w.know_count / total) * 100) : null;
 
-              return (
-                <tr key={w.id}>
-                  <td style={{ padding: "0.75rem" }}><strong>{w.word}</strong></td>
-                  <td>{w.translation}</td>
-                  <td style={{ fontSize: "0.85rem", color: "var(--pico-muted-color)", maxWidth: "200px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {w.note || "—"}
-                  </td>
-                  <td style={{ textAlign: "center", fontSize: "0.85rem", color: "var(--pico-muted-color)" }}>
-                    {total > 0 ? (
-                      <>
-                        <span style={{ color: "green" }}>{w.know_count}</span>
-                        {" / "}
-                        <span style={{ color: "red" }}>{w.forgot_count}</span>
-                      </>
-                    ) : "—"}
-                  </td>
-                  <td style={{ textAlign: "center", fontSize: "0.85rem", color: "var(--pico-muted-color)" }}>
-                    {w.best_time !== null && w.avg_time !== null ? (
-                      <>
-                        <span>⚡ {formatTime(w.best_time)}</span>
-                        {" / "}
-                        <span>{formatTime(w.avg_time)}</span>
-                      </>
-                    ) : "—"}
-                  </td>
-                  <td style={{ textAlign: "center", fontSize: "0.85rem", color: "var(--pico-muted-color)" }}>
-                    {computeRank(w)}
-                  </td>
-                  <td style={{ textAlign: "center", fontSize: "0.85rem", color: "var(--pico-muted-color)" }}>
-                    {pct !== null ? `${pct}%` : "—"}
-                  </td>
-                  <td style={{ textAlign: "center", padding: "0.75rem" }}>
-                    <button
-                      type="button"
-                      className="outline contrast"
-                      onClick={() => handleDelete(w.id!, w.word)}
-                      style={{ border: "none", padding: "0.25rem 0.5rem", fontSize: "1.2rem" }}
-                      title={t("dictionary.col_delete")}
-                    >
-                      🗑️
-                    </button>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </article>
+            return (
+              <article key={w.id} style={{ padding: "0.75rem 1rem", margin: 0 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "0.5rem" }}>
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <strong style={{ fontSize: "1.05rem", wordBreak: "break-word" }}>{w.word}</strong>
+                    <div style={{ wordBreak: "break-word" }}>{w.translation}</div>
+                    {w.note && (
+                      <small style={{ display: "block", marginTop: "0.25rem", color: "var(--pico-muted-color)", fontSize: "0.8rem", wordBreak: "break-word" }}>
+                        {w.note}
+                      </small>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    className="outline contrast"
+                    onClick={() => handleDelete(w.id!, w.word)}
+                    style={{ border: "none", padding: "0.25rem 0.5rem", fontSize: "1.2rem", lineHeight: 1, flexShrink: 0 }}
+                    title={t("dictionary.col_delete")}
+                  >
+                    🗑️
+                  </button>
+                </div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem 1rem", marginTop: "0.5rem", fontSize: "0.8rem", color: "var(--pico-muted-color)" }}>
+                  {total > 0 && (
+                    <span>
+                      <span style={{ color: "green" }}>{w.know_count}</span>
+                      {" / "}
+                      <span style={{ color: "red" }}>{w.forgot_count}</span>
+                    </span>
+                  )}
+                  {w.best_time !== null && w.avg_time !== null && (
+                    <span>⚡ {formatTime(w.best_time)} / {formatTime(w.avg_time)}</span>
+                  )}
+                  <span>{t("dictionary.col_rank")}: {computeRank(w)}</span>
+                  {pct !== null && <span>{pct}%</span>}
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      ) : (
+        <article style={{ padding: 0, overflowX: "auto" }}>
+          <table role="grid" style={{ margin: 0 }}>
+            <thead>
+              <tr>
+                <th style={{ width: "20%", padding: "0.75rem" }}>{t("dictionary.col_word")}</th>
+                <th style={{ width: "20%" }}>{t("dictionary.col_translation")}</th>
+                <th style={{ width: "15%" }}>{t("dictionary.col_note")}</th>
+                <th style={{ width: "8%", textAlign: "center" }}>{t("dictionary.col_known_no")}</th>
+                <th style={{ width: "10%", textAlign: "center" }}>{t("dictionary.col_time")}</th>
+                <th style={{ width: "8%", textAlign: "center" }}>{t("dictionary.col_rank")}</th>
+                <th style={{ width: "6%", textAlign: "center" }}>{t("dictionary.col_pct")}</th>
+                <th style={{ width: "8%", textAlign: "center", padding: "0.75rem" }}>{t("dictionary.col_delete")}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((w) => {
+                const total = w.know_count + w.forgot_count;
+                const pct = total > 0 ? Math.round((w.know_count / total) * 100) : null;
+
+                return (
+                  <tr key={w.id}>
+                    <td style={{ padding: "0.75rem" }}><strong>{w.word}</strong></td>
+                    <td>{w.translation}</td>
+                    <td style={{ fontSize: "0.85rem", color: "var(--pico-muted-color)", maxWidth: "200px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {w.note || "—"}
+                    </td>
+                    <td style={{ textAlign: "center", fontSize: "0.85rem", color: "var(--pico-muted-color)" }}>
+                      {total > 0 ? (
+                        <>
+                          <span style={{ color: "green" }}>{w.know_count}</span>
+                          {" / "}
+                          <span style={{ color: "red" }}>{w.forgot_count}</span>
+                        </>
+                      ) : "—"}
+                    </td>
+                    <td style={{ textAlign: "center", fontSize: "0.85rem", color: "var(--pico-muted-color)" }}>
+                      {w.best_time !== null && w.avg_time !== null ? (
+                        <>
+                          <span>⚡ {formatTime(w.best_time)}</span>
+                          {" / "}
+                          <span>{formatTime(w.avg_time)}</span>
+                        </>
+                      ) : "—"}
+                    </td>
+                    <td style={{ textAlign: "center", fontSize: "0.85rem", color: "var(--pico-muted-color)" }}>
+                      {computeRank(w)}
+                    </td>
+                    <td style={{ textAlign: "center", fontSize: "0.85rem", color: "var(--pico-muted-color)" }}>
+                      {pct !== null ? `${pct}%` : "—"}
+                    </td>
+                    <td style={{ textAlign: "center", padding: "0.75rem" }}>
+                      <button
+                        type="button"
+                        className="outline contrast"
+                        onClick={() => handleDelete(w.id!, w.word)}
+                        style={{ border: "none", padding: "0.25rem 0.5rem", fontSize: "1.2rem" }}
+                        title={t("dictionary.col_delete")}
+                      >
+                        🗑️
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </article>
+      )}
     </>
   );
 }
