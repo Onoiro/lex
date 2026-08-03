@@ -86,20 +86,6 @@ export default defineConfig({
               },
             },
           },
-          {
-            urlPattern: /\/dictionary$/,
-            handler: "NetworkFirst",
-            options: {
-              cacheName: "lex-dictionary-api",
-              expiration: {
-                maxEntries: 50,
-                maxAgeSeconds: 2592000,
-              },
-              cacheableResponse: {
-                statuses: [0, 200],
-              },
-            },
-          },
         ],
       },
       devOptions: {
