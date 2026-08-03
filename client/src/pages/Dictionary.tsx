@@ -1,12 +1,16 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { useLocale } from "@/i18n";
 import { getAllWords, deleteWord, exportWords, importWords } from "@/data/wordRepository";
 import { formatTime } from "@/domain/stats";
 import { computeRank } from "@/domain/srs";
+import { sortWords, loadSortState, saveSortState, nextSortDir } from "@/domain/dictionarySort";
+import type { SortBy, SortDir } from "@/domain/dictionarySort";
 import type { Word } from "@/types";
 
 const MOBILE_BREAKPOINT = 768;
+
+const SORT_OPTIONS: SortBy[] = ["none", "word", "known_no", "best_time", "avg_time", "rank", "pct"];
 
 export function Dictionary() {
   const [t] = useLocale();
@@ -14,7 +18,15 @@ export function Dictionary() {
   const [search, setSearch] = useState("");
   const [importMsg, setImportMsg] = useState("");
   const [isMobile, setIsMobile] = useState(window.innerWidth < MOBILE_BREAKPOINT);
+  const [showStatsHelp, setShowStatsHelp] = useState(false);
+  const initialSort = useMemo(() => loadSortState(), []);
+  const [sortBy, setSortBy] = useState<SortBy>(initialSort.sortBy);
+  const [sortDir, setSortDir] = useState<SortDir>(initialSort.sortDir);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    saveSortState({ sortBy, sortDir });
+  }, [sortBy, sortDir]);
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < MOBILE_BREAKPOINT);
@@ -38,6 +50,19 @@ export function Dictionary() {
           w.translation.toLowerCase().includes(search.toLowerCase()),
       )
     : words;
+
+  const sorted = sortWords(filtered, sortBy, sortDir);
+
+  const handleSortClick = (column: SortBy) => {
+    const dir = nextSortDir(column, { sortBy, sortDir });
+    setSortBy(column);
+    setSortDir(dir);
+  };
+
+  const sortIndicator = (column: SortBy) => {
+    if (sortBy !== column) return "";
+    return sortDir === "asc" ? " ▲" : " ▼";
+  };
 
   const handleDelete = async (id: number, word: string) => {
     if (!confirm(t("dictionary.confirm_delete", { word }))) return;
@@ -132,6 +157,25 @@ export function Dictionary() {
         <p style={{ marginBottom: "1rem", color: "var(--pico-muted-color)" }}>{importMsg}</p>
       )}
 
+      <div style={{ marginBottom: "1rem" }}>
+        <button
+          type="button"
+          className="outline"
+          onClick={() => setShowStatsHelp((v) => !v)}
+          style={{ fontSize: "0.85rem" }}
+        >
+          {showStatsHelp ? "− " : "+ "}{t("dictionary.stats_help_toggle")}
+        </button>
+        {showStatsHelp && (
+          <ul style={{ marginTop: "0.5rem", fontSize: "0.85rem", color: "var(--pico-muted-color)", paddingLeft: "1.5rem" }}>
+            <li>{t("dictionary.stats_help_known_no")}</li>
+            <li>{t("dictionary.stats_help_time")}</li>
+            <li>{t("dictionary.stats_help_rank")}</li>
+            <li>{t("dictionary.stats_help_pct")}</li>
+          </ul>
+        )}
+      </div>
+
       <input
         type="search"
         placeholder="🔍"
@@ -140,9 +184,41 @@ export function Dictionary() {
         style={{ marginBottom: "1rem" }}
       />
 
+      {isMobile && (
+        <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1rem", alignItems: "center" }}>
+          <select
+            value={sortBy}
+            onChange={(e) => {
+              const value = e.target.value as SortBy;
+              setSortBy(value);
+              if (value !== "none") {
+                setSortDir(nextSortDir(value, { sortBy: "none", sortDir }));
+              }
+            }}
+            style={{ flex: 1, fontSize: "0.9rem" }}
+          >
+            {SORT_OPTIONS.map((opt) => (
+              <option key={opt} value={opt}>
+                {t(`dictionary.sort_${opt}`)}
+              </option>
+            ))}
+          </select>
+          {sortBy !== "none" && (
+            <button
+              type="button"
+              className="outline"
+              onClick={() => setSortDir((d) => (d === "asc" ? "desc" : "asc"))}
+              style={{ fontSize: "0.9rem", padding: "0.4rem 0.75rem", flexShrink: 0 }}
+            >
+              {sortDir === "asc" ? "↑" : "↓"}
+            </button>
+          )}
+        </div>
+      )}
+
       {isMobile ? (
         <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-          {filtered.map((w) => {
+          {sorted.map((w) => {
             const total = w.know_count + w.forgot_count;
             const pct = total > 0 ? Math.round((w.know_count / total) * 100) : null;
 
@@ -200,19 +276,29 @@ export function Dictionary() {
           <table role="grid" style={{ margin: 0 }}>
             <thead>
               <tr>
-                <th style={{ width: "20%", padding: "0.75rem" }}>{t("dictionary.col_word")}</th>
+                <th style={{ width: "20%", padding: "0.75rem", cursor: "pointer", userSelect: "none" }} onClick={() => handleSortClick("word")}>
+                  {t("dictionary.col_word")}{sortIndicator("word")}
+                </th>
                 <th style={{ width: "20%" }}>{t("dictionary.col_translation")}</th>
                 <th style={{ width: "15%" }}>{t("dictionary.col_note")}</th>
-                <th style={{ width: "8%", textAlign: "center" }}>{t("dictionary.col_known_no")}</th>
-                <th style={{ width: "10%", textAlign: "center" }}>{t("dictionary.col_time")}</th>
-                <th style={{ width: "8%", textAlign: "center" }}>{t("dictionary.col_rank")}</th>
-                <th style={{ width: "6%", textAlign: "center" }}>{t("dictionary.col_pct")}</th>
+                <th style={{ width: "8%", textAlign: "center", cursor: "pointer", userSelect: "none" }} onClick={() => handleSortClick("known_no")}>
+                  {t("dictionary.col_known_no")}{sortIndicator("known_no")}
+                </th>
+                <th style={{ width: "10%", textAlign: "center", cursor: "pointer", userSelect: "none" }} onClick={() => handleSortClick("best_time")}>
+                  {t("dictionary.col_time")}{sortIndicator("best_time")}
+                </th>
+                <th style={{ width: "8%", textAlign: "center", cursor: "pointer", userSelect: "none" }} onClick={() => handleSortClick("rank")}>
+                  {t("dictionary.col_rank")}{sortIndicator("rank")}
+                </th>
+                <th style={{ width: "6%", textAlign: "center", cursor: "pointer", userSelect: "none" }} onClick={() => handleSortClick("pct")}>
+                  {t("dictionary.col_pct")}{sortIndicator("pct")}
+                </th>
                 <th style={{ width: "6%", textAlign: "center", padding: "0.75rem" }}>{t("dictionary.col_delete")}</th>
                 <th style={{ width: "6%", textAlign: "center", padding: "0.75rem" }}>{t("dictionary.col_edit")}</th>
               </tr>
             </thead>
             <tbody>
-              {filtered.map((w) => {
+              {sorted.map((w) => {
                 const total = w.know_count + w.forgot_count;
                 const pct = total > 0 ? Math.round((w.know_count / total) * 100) : null;
 

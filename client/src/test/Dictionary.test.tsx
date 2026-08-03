@@ -159,4 +159,73 @@ describe("Dictionary", () => {
       expect(screen.getByText(/Import/)).toBeInTheDocument();
     });
   });
+
+  it("toggles stats help block", async () => {
+    await addWord("hello", "привет");
+
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <Dictionary />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText("hello")).toBeInTheDocument();
+    });
+
+    const toggleBtn = screen.getByText(/\+ .*What do these numbers mean\?/);
+    await user.click(toggleBtn);
+
+    expect(screen.getByText("Known/No — how many times you remembered and forgot this word.")).toBeInTheDocument();
+
+    await user.click(screen.getByText(/− .*What do these numbers mean\?/));
+    expect(screen.queryByText("Known/No — how many times you remembered and forgot this word.")).not.toBeInTheDocument();
+  });
+
+  it("sorts by clicking table header (desktop)", async () => {
+    await addWord("banana", "банан");
+    await addWord("apple", "яблоко");
+
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <Dictionary />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText("banana")).toBeInTheDocument();
+    });
+
+    // Click "Word" header to sort ascending
+    await user.click(screen.getByRole("columnheader", { name: /Word/ }));
+
+    const rows = screen.getAllByRole("row");
+    // First data row (index 1, after header) should contain "apple"
+    expect(rows[1].textContent).toContain("apple");
+    expect(rows[2].textContent).toContain("banana");
+  });
+
+  it("persists sort state to localStorage", async () => {
+    await addWord("hello", "привет");
+
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <Dictionary />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText("hello")).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole("columnheader", { name: /Rank/ }));
+
+    const stored = localStorage.getItem("lex-dict-sort");
+    expect(stored).not.toBeNull();
+    const parsed = JSON.parse(stored!);
+    expect(parsed.sortBy).toBe("rank");
+  });
 });
