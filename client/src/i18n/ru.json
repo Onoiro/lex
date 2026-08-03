@@ -65,6 +65,8 @@
   "review.session_avg_time": "Ср. время: {time}",
   "review.session_best_time": "Лучшее время: {time}",
   "review.session_progress": "Прогресс дня: —",
+  "review.tts_on": "Звук включён",
+  "review.tts_off": "Звук выключен",
   "review.dictionary.title": "Мой Словарь — Lex",
   "dictionary.heading": "Мой словарь",
   "dictionary.total": "Всего сохранено слов: {total}",

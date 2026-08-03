@@ -65,6 +65,8 @@
   "review.session_avg_time": "Avg time: {time}",
   "review.session_best_time": "Best time: {time}",
   "review.session_progress": "Daily progress: —",
+  "review.tts_on": "Sound on",
+  "review.tts_off": "Sound off",
   "review.dictionary.title": "My Dictionary — Lex",
   "dictionary.heading": "My dictionary",
   "dictionary.total": "Total words saved: {total}",
