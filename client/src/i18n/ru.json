@@ -30,6 +30,7 @@
   "add.error_network": "Ошибка сети",
   "add.save_btn": "Сохранить в словарь",
   "add.save_edit_btn": "Сохранить изменения",
+  "add.cancel_btn": "Отмена",
   "add.note_label": "Заметка (необязательно)",
   "add.note_placeholder": "Ассоциация, подсказка или мнемоника для запоминания",
   "add.load_examples": "Загрузить пример",

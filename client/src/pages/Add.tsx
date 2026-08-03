@@ -591,9 +591,21 @@ export function Add() {
               paddingTop: "1rem",
               background: "var(--pico-background-color)",
               borderTop: "1px solid var(--pico-muted-border-color)",
+              display: "flex",
+              gap: "0.5rem",
             }}
           >
-            <button type="submit" style={{ width: "100%" }}>
+            {editing && (
+              <button
+                type="button"
+                className="secondary"
+                onClick={() => navigate("/dictionary")}
+                style={{ flex: 1 }}
+              >
+                {t("add.cancel_btn")}
+              </button>
+            )}
+            <button type="submit" style={{ flex: 2 }}>
               {editing ? t("add.save_edit_btn") : t("add.save_btn")}
             </button>
           </footer>

@@ -30,6 +30,7 @@
   "add.error_network": "Network error",
   "add.save_btn": "Save to dictionary",
   "add.save_edit_btn": "Save changes",
+  "add.cancel_btn": "Cancel",
   "add.note_label": "Note (optional)",
   "add.note_placeholder": "Association, hint, or mnemonic to help you remember",
   "add.load_examples": "Load example",
