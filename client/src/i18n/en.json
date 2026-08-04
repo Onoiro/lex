@@ -38,6 +38,8 @@
   "add.loading_examples": "Loading...",
   "add.source_lang": "Source language",
   "add.target_lang": "Target language",
+  "add.lang_changed_hint": "Translation languages changed for this session.",
+  "add.lang_changed_settings_link": "Save as default in Settings",
   "review.title": "Training — Lex",
   "review.heading": "Training",
   "review.queue": "Words in queue: {total_due}",

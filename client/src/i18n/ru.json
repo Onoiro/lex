@@ -38,6 +38,8 @@
   "add.loading_examples": "Загрузка...",
   "add.source_lang": "Исходный язык",
   "add.target_lang": "Целевой язык",
+  "add.lang_changed_hint": "Языки перевода изменены для этого сеанса.",
+  "add.lang_changed_settings_link": "Сохранить как основные в Настройках",
   "review.title": "Тренировка — Lex",
   "review.heading": "Тренировка",
   "review.queue": "Слов в очереди: {total_due}",

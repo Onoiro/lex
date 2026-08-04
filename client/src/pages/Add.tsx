@@ -8,6 +8,7 @@ import { getExamples } from "@/services/dictionaryApi";
 import { synthesizeSpeech } from "@/services/ttsApi";
 import { addWord, getWord, updateWordEntry } from "@/data/wordRepository";
 import { getSettings, saveSettings } from "@/data/settingsRepository";
+import { Link } from "react-router-dom";
 import { LANG_LIST_TTL_MS } from "@/types";
 import type { LanguageInfo } from "@/services/translateApi";
 import { OfflineIndicator } from "@/components/OfflineIndicator";
@@ -46,6 +47,7 @@ export function Add() {
   const [examplesError, setExamplesError] = useState(false);
   const prevWordRef = useRef("");
 
+  const initialSettingsRef = useRef<LanguageSettings | null>(null);
   const wordRef = useRef<HTMLTextAreaElement>(null);
   const translationRef = useRef<HTMLTextAreaElement>(null);
   const noteRef = useRef<HTMLTextAreaElement>(null);
@@ -79,7 +81,10 @@ export function Add() {
   }, [note]);
 
   useEffect(() => {
-    void getSettings().then(setSettings);
+    void getSettings().then((s) => {
+      setSettings(s);
+      initialSettingsRef.current = s;
+    });
   }, []);
 
   // Load word for editing when ?id= is present
@@ -297,7 +302,6 @@ export function Add() {
       source_lang: settings.target_lang,
       target_lang: settings.source_lang,
     };
-    await saveSettings(swapped);
     setSettings({ ...settings, ...swapped });
     // Clear translation when swapping languages
     setTranslation("");
@@ -311,7 +315,6 @@ export function Add() {
       showMessage("error_translation", t("settings.same_lang_warning"));
       return;
     }
-    await saveSettings({ ...settings, source_lang: lang });
     setSettings({ ...settings, source_lang: lang });
     setTranslation("");
     setDetectedLang("");
@@ -324,7 +327,6 @@ export function Add() {
       showMessage("error_translation", t("settings.same_lang_warning"));
       return;
     }
-    await saveSettings({ ...settings, target_lang: lang });
     setSettings({ ...settings, target_lang: lang });
     setTranslation("");
     setDetectedLang("");
@@ -342,12 +344,34 @@ export function Add() {
         (names[a] ?? a).localeCompare(names[b] ?? b),
       );
 
+  const langsChanged = settings != null && initialSettingsRef.current != null &&
+    (settings.source_lang !== initialSettingsRef.current.source_lang ||
+     settings.target_lang !== initialSettingsRef.current.target_lang);
+
   return (
     <>
       <OfflineIndicator />
       <hgroup style={{ textAlign: "center", marginBottom: "1.5rem", marginTop: "1rem" }}>
         <h1>{editing ? t("add.edit_heading") : t("add.heading")}</h1>
       </hgroup>
+
+      {langsChanged && (
+        <article
+          style={{
+            background: "var(--pico-ins-color)",
+            color: "var(--pico-primary-inverse)",
+            padding: "0.5rem 1rem",
+            marginBottom: "1rem",
+            fontSize: "0.85rem",
+            textAlign: "center",
+          }}
+        >
+          {t("add.lang_changed_hint")}{" "}
+          <Link to="/settings" style={{ color: "var(--pico-primary-inverse)", fontWeight: 700, textDecoration: "underline" }}>
+            {t("add.lang_changed_settings_link")}
+          </Link>
+        </article>
+      )}
 
       {message && (
         <article

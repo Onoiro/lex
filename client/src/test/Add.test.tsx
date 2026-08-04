@@ -453,7 +453,7 @@ describe("Add", () => {
     });
   });
 
-  it("saves settings when source language is changed", async () => {
+  it("does not save settings when source language is changed", async () => {
     const user = userEvent.setup();
 
     render(
@@ -472,13 +472,16 @@ describe("Add", () => {
     await user.selectOptions(sourceSelect, "en");
 
     await waitFor(() => {
-      expect(saveSettings).toHaveBeenCalledWith(
-        expect.objectContaining({ source_lang: "en" }),
-      );
+      expect(sourceSelect.value).toBe("en");
     });
+
+    // saveSettings should NOT be called for language changes on Add page
+    expect(saveSettings).not.toHaveBeenCalledWith(
+      expect.objectContaining({ source_lang: "en" }),
+    );
   });
 
-  it("saves settings when target language is changed", async () => {
+  it("does not save settings when target language is changed", async () => {
     const user = userEvent.setup();
 
     render(
@@ -497,10 +500,48 @@ describe("Add", () => {
     await user.selectOptions(targetSelect, "en");
 
     await waitFor(() => {
-      expect(saveSettings).toHaveBeenCalledWith(
-        expect.objectContaining({ target_lang: "en" }),
-      );
+      expect(targetSelect.value).toBe("en");
     });
+
+    // saveSettings should NOT be called for language changes on Add page
+    expect(saveSettings).not.toHaveBeenCalledWith(
+      expect.objectContaining({ target_lang: "en" }),
+    );
+  });
+
+  it("shows lang-changed banner when languages differ from global settings", async () => {
+    const user = userEvent.setup();
+
+    render(
+      <MemoryRouter>
+        <Add />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTitle("Source language")).toBeInTheDocument();
+    });
+
+    const sourceSelect = screen.getByTitle("Source language") as HTMLSelectElement;
+    await user.selectOptions(sourceSelect, "en");
+
+    await waitFor(() => {
+      expect(screen.getByText(/Translation languages changed for this session/)).toBeInTheDocument();
+    });
+  });
+
+  it("does not show lang-changed banner when languages match global settings", async () => {
+    render(
+      <MemoryRouter>
+        <Add />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTitle("Source language")).toBeInTheDocument();
+    });
+
+    expect(screen.queryByText(/Translation languages changed for this session/)).not.toBeInTheDocument();
   });
 
   it("shows warning when source and target are the same", async () => {
