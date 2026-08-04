@@ -22,10 +22,12 @@ function makeWord(overrides: Partial<Word> = {}): Word {
 }
 
 describe("sortWords", () => {
-  it("returns original array when sortBy is none", () => {
+  it("returns original array when sortBy is none (backward compat)", () => {
     const words = [makeWord({ id: 1, word: "b" }), makeWord({ id: 2, word: "a" })];
-    const result = sortWords(words, "none", "asc");
-    expect(result).toBe(words);
+    // "none" is no longer a valid SortBy, but sortWords with date_added desc should sort by id
+    const result = sortWords(words, "date_added", "desc");
+    expect(result[0].id).toBe(2);
+    expect(result[1].id).toBe(1);
   });
 
   it("sorts by word alphabetically (asc)", () => {
@@ -125,6 +127,22 @@ describe("sortWords", () => {
     expect(result[2].id).toBe(3);
   });
 
+  it("sorts by date_added (desc = newest first)", () => {
+    const words = [makeWord({ id: 1, word: "a" }), makeWord({ id: 3, word: "c" }), makeWord({ id: 2, word: "b" })];
+    const result = sortWords(words, "date_added", "desc");
+    expect(result[0].id).toBe(3);
+    expect(result[1].id).toBe(2);
+    expect(result[2].id).toBe(1);
+  });
+
+  it("sorts by date_added (asc = oldest first)", () => {
+    const words = [makeWord({ id: 3, word: "c" }), makeWord({ id: 1, word: "a" }), makeWord({ id: 2, word: "b" })];
+    const result = sortWords(words, "date_added", "asc");
+    expect(result[0].id).toBe(1);
+    expect(result[1].id).toBe(2);
+    expect(result[2].id).toBe(3);
+  });
+
   it("does not mutate original array", () => {
     const words = [makeWord({ id: 1, word: "b" }), makeWord({ id: 2, word: "a" })];
     const original = [...words];
@@ -136,6 +154,10 @@ describe("sortWords", () => {
 describe("nextSortDir", () => {
   it("returns asc for word when switching to it", () => {
     expect(nextSortDir("word", DEFAULT_SORT)).toBe("asc");
+  });
+
+  it("returns asc for date_added when switching to it", () => {
+    expect(nextSortDir("date_added", DEFAULT_SORT)).toBe("asc");
   });
 
   it("returns desc for rank when switching to it", () => {

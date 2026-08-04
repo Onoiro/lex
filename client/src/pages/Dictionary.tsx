@@ -10,7 +10,7 @@ import type { Word } from "@/types";
 
 const MOBILE_BREAKPOINT = 768;
 
-const SORT_OPTIONS: SortBy[] = ["none", "word", "known_no", "best_time", "avg_time", "rank", "pct"];
+const SORT_OPTIONS: SortBy[] = ["date_added", "word", "known_no", "best_time", "avg_time", "rank", "pct"];
 
 export function Dictionary() {
   const [t] = useLocale();
@@ -18,7 +18,6 @@ export function Dictionary() {
   const [search, setSearch] = useState("");
   const [importMsg, setImportMsg] = useState("");
   const [isMobile, setIsMobile] = useState(window.innerWidth < MOBILE_BREAKPOINT);
-  const [showStatsHelp, setShowStatsHelp] = useState(false);
   const initialSort = useMemo(() => loadSortState(), []);
   const [sortBy, setSortBy] = useState<SortBy>(initialSort.sortBy);
   const [sortDir, setSortDir] = useState<SortDir>(initialSort.sortDir);
@@ -157,25 +156,6 @@ export function Dictionary() {
         <p style={{ marginBottom: "1rem", color: "var(--pico-muted-color)" }}>{importMsg}</p>
       )}
 
-      <div style={{ marginBottom: "1rem" }}>
-        <button
-          type="button"
-          className="outline"
-          onClick={() => setShowStatsHelp((v) => !v)}
-          style={{ fontSize: "0.85rem" }}
-        >
-          {showStatsHelp ? "− " : "+ "}{t("dictionary.stats_help_toggle")}
-        </button>
-        {showStatsHelp && (
-          <ul style={{ marginTop: "0.5rem", fontSize: "0.85rem", color: "var(--pico-muted-color)", paddingLeft: "1.5rem" }}>
-            <li>{t("dictionary.stats_help_known_no")}</li>
-            <li>{t("dictionary.stats_help_time")}</li>
-            <li>{t("dictionary.stats_help_rank")}</li>
-            <li>{t("dictionary.stats_help_pct")}</li>
-          </ul>
-        )}
-      </div>
-
       <input
         type="search"
         placeholder="🔍"
@@ -184,37 +164,35 @@ export function Dictionary() {
         style={{ marginBottom: "1rem" }}
       />
 
-      {isMobile && (
-        <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1rem", alignItems: "center" }}>
-          <select
-            value={sortBy}
-            onChange={(e) => {
-              const value = e.target.value as SortBy;
-              setSortBy(value);
-              if (value !== "none") {
-                setSortDir(nextSortDir(value, { sortBy: "none", sortDir }));
-              }
-            }}
-            style={{ flex: 1, fontSize: "0.9rem" }}
-          >
-            {SORT_OPTIONS.map((opt) => (
-              <option key={opt} value={opt}>
-                {t(`dictionary.sort_${opt}`)}
-              </option>
-            ))}
-          </select>
-          {sortBy !== "none" && (
-            <button
-              type="button"
-              className="outline"
-              onClick={() => setSortDir((d) => (d === "asc" ? "desc" : "asc"))}
-              style={{ fontSize: "0.9rem", padding: "0.4rem 0.75rem", flexShrink: 0 }}
-            >
-              {sortDir === "asc" ? "↑" : "↓"}
-            </button>
-          )}
-        </div>
-      )}
+      <div style={{ display: "flex", gap: "0.5rem", marginBottom: "0.5rem", alignItems: "center" }}>
+        <select
+          value={sortBy}
+          onChange={(e) => {
+            const value = e.target.value as SortBy;
+            setSortBy(value);
+            setSortDir(nextSortDir(value, { sortBy: "date_added", sortDir: "desc" }));
+          }}
+          style={{ flex: 1, fontSize: "0.9rem" }}
+        >
+          {SORT_OPTIONS.map((opt) => (
+            <option key={opt} value={opt}>
+              {t(`dictionary.sort_${opt}`)}
+            </option>
+          ))}
+        </select>
+        <button
+          type="button"
+          className="outline"
+          onClick={() => setSortDir((d) => (d === "asc" ? "desc" : "asc"))}
+          style={{ fontSize: "0.9rem", padding: "0.4rem 0.75rem", flexShrink: 0 }}
+        >
+          {sortDir === "asc" ? "↑" : "↓"}
+        </button>
+      </div>
+
+      <p style={{ marginBottom: "1rem", fontSize: "0.8rem", color: "var(--pico-muted-color)" }}>
+        {t(`dictionary.sort_${sortDir}_${sortBy}`)}
+      </p>
 
       {isMobile ? (
         <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>

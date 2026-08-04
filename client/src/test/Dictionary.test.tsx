@@ -10,6 +10,7 @@ import { addWord } from "@/data/wordRepository";
 describe("Dictionary", () => {
   beforeEach(async () => {
     setLocale("en");
+    localStorage.removeItem("lex-dict-sort");
     await db.words.clear();
   });
 
@@ -160,7 +161,7 @@ describe("Dictionary", () => {
     });
   });
 
-  it("toggles stats help block", async () => {
+  it("shows context description for current sort option", async () => {
     await addWord("hello", "привет");
 
     const user = userEvent.setup();
@@ -174,13 +175,18 @@ describe("Dictionary", () => {
       expect(screen.getByText("hello")).toBeInTheDocument();
     });
 
-    const toggleBtn = screen.getByText(/\+ .*What do these numbers mean\?/);
-    await user.click(toggleBtn);
+    // Default sort is date_added desc — should show description
+    expect(
+      screen.getByText("Words in the order they were added to the dictionary (newest first)."),
+    ).toBeInTheDocument();
 
-    expect(screen.getByText("Known/No — how many times you remembered and forgot this word.")).toBeInTheDocument();
+    // Change to "Word" sort
+    const select = screen.getByDisplayValue("Date added");
+    await user.selectOptions(select, "word");
 
-    await user.click(screen.getByText(/− .*What do these numbers mean\?/));
-    expect(screen.queryByText("Known/No — how many times you remembered and forgot this word.")).not.toBeInTheDocument();
+    expect(
+      screen.getByText("Alphabetical order (A to Z)."),
+    ).toBeInTheDocument();
   });
 
   it("sorts by clicking table header (desktop)", async () => {

@@ -1,7 +1,7 @@
 import type { Word } from "@/types";
 import { computeRank } from "./srs";
 
-export type SortBy = "word" | "known_no" | "best_time" | "avg_time" | "rank" | "pct" | "none";
+export type SortBy = "word" | "known_no" | "best_time" | "avg_time" | "rank" | "pct" | "date_added";
 export type SortDir = "asc" | "desc";
 
 export interface SortState {
@@ -9,7 +9,7 @@ export interface SortState {
   sortDir: SortDir;
 }
 
-export const DEFAULT_SORT: SortState = { sortBy: "none", sortDir: "asc" };
+export const DEFAULT_SORT: SortState = { sortBy: "date_added", sortDir: "desc" };
 
 const STORAGE_KEY = "lex-dict-sort";
 
@@ -18,13 +18,16 @@ export function loadSortState(): SortState {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return DEFAULT_SORT;
     const parsed = JSON.parse(raw) as Partial<SortState>;
+    // Backward compat: old "none" → "date_added"
+    const rawSortBy = parsed.sortBy as string | undefined;
+    const sortBy = rawSortBy === "none" ? "date_added" : rawSortBy;
     if (
-      parsed.sortBy &&
-      ["word", "known_no", "best_time", "avg_time", "rank", "pct", "none"].includes(parsed.sortBy) &&
+      sortBy &&
+      ["word", "known_no", "best_time", "avg_time", "rank", "pct", "date_added"].includes(sortBy) &&
       parsed.sortDir &&
       ["asc", "desc"].includes(parsed.sortDir)
     ) {
-      return { sortBy: parsed.sortBy as SortBy, sortDir: parsed.sortDir as SortDir };
+      return { sortBy: sortBy as SortBy, sortDir: parsed.sortDir as SortDir };
     }
   } catch {
     // ignore
@@ -60,13 +63,18 @@ function getSortValue(word: Word, sortBy: SortBy): number | string | null {
       return computeRank(word);
     case "pct":
       return computePct(word);
+    case "date_added":
+      return word.id ?? 0;
     default:
       return null;
   }
 }
 
 export function sortWords(words: Word[], sortBy: SortBy, sortDir: SortDir): Word[] {
-  if (sortBy === "none") return words;
+  if (sortBy === "date_added" && sortDir === "desc") {
+    // Default order: newest first
+    return [...words].sort((a, b) => (b.id ?? 0) - (a.id ?? 0));
+  }
 
   const sorted = [...words].sort((a, b) => {
     const va = getSortValue(a, sortBy);
@@ -96,7 +104,7 @@ export function sortWords(words: Word[], sortBy: SortBy, sortDir: SortDir): Word
 export function nextSortDir(sortBy: SortBy, current: SortState): SortDir {
   if (current.sortBy !== sortBy) {
     // Default direction per column
-    if (sortBy === "word" || sortBy === "best_time" || sortBy === "avg_time") return "asc";
+    if (sortBy === "word" || sortBy === "best_time" || sortBy === "avg_time" || sortBy === "date_added") return "asc";
     return "desc";
   }
   return current.sortDir === "asc" ? "desc" : "asc";
