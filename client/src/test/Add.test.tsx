@@ -184,6 +184,7 @@ describe("Add", () => {
       word: "hello",
       translation: "привет",
       word_lang: "en",
+      translation_lang: "ru",
       interval: 0,
       repetitions: 0,
       next_review: 0,

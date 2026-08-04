@@ -115,7 +115,7 @@ describe("Dictionary", () => {
   });
 
   it("shows note text in table when word has note", async () => {
-    await addWord("hello", "привет", "en", "my association");
+    await addWord("hello", "привет", "en", "ru", "my association");
 
     render(
       <MemoryRouter>

@@ -6,6 +6,7 @@ export async function addWord(
   word: string,
   translation: string,
   wordLang: string = "en",
+  translationLang: string = "ru",
   note?: string,
 ): Promise<number> {
   const existing = await db.words.where("word").equals(word).first();
@@ -17,6 +18,7 @@ export async function addWord(
     word,
     translation,
     word_lang: wordLang,
+    translation_lang: translationLang,
     ...(note ? { note } : {}),
     interval: 0,
     repetitions: 0,
@@ -62,6 +64,7 @@ export async function updateWordEntry(
   word: string,
   translation: string,
   wordLang: string,
+  translationLang: string,
   note?: string,
 ): Promise<void> {
   // Check for duplicate (exclude current id)
@@ -70,7 +73,7 @@ export async function updateWordEntry(
     throw new Error(`Word "${word}" already exists`);
   }
 
-  await db.words.update(id, { word, translation, word_lang: wordLang });
+  await db.words.update(id, { word, translation, word_lang: wordLang, translation_lang: translationLang });
 
   if (note !== undefined) {
     if (note) {
@@ -116,6 +119,7 @@ export async function importWords(data: Word[]): Promise<{
       word: entry.word,
       translation: entry.translation,
       word_lang: entry.word_lang ?? "en",
+      translation_lang: entry.translation_lang ?? "ru",
       ...(entry.note ? { note: entry.note } : {}),
       interval: entry.interval ?? 0,
       repetitions: entry.repetitions ?? 0,

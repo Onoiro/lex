@@ -265,12 +265,12 @@ export function Add() {
       const lang = settings!.source_lang === "auto" ? (detectedLang || "en") : settings!.source_lang;
 
       if (editing && editId !== null) {
-        await updateWordEntry(editId, validWord, validTranslation, lang, validNote || undefined);
+        await updateWordEntry(editId, validWord, validTranslation, lang, settings!.target_lang, validNote || undefined);
         showMessage("success", t("add.edit_success"));
         // Navigate back to dictionary after a short delay
         setTimeout(() => navigate("/dictionary"), 1200);
       } else {
-        await addWord(validWord, validTranslation, lang, validNote || undefined);
+        await addWord(validWord, validTranslation, lang, settings!.target_lang, validNote || undefined);
         showMessage("success", t("add.success"));
         setWord("");
         setTranslation("");

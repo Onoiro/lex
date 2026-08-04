@@ -228,7 +228,7 @@ describe("Review", () => {
   });
 
   it("shows hint button when word has note", async () => {
-    await addWord("hello", "привет", "en", "my hint");
+    await addWord("hello", "привет", "en", "ru", "my hint");
 
     const user = userEvent.setup();
     render(
@@ -272,7 +272,7 @@ describe("Review", () => {
   });
 
   it("reveals note text when hint button is clicked", async () => {
-    await addWord("hello", "привет", "en", "my hint");
+    await addWord("hello", "привет", "en", "ru", "my hint");
 
     const user = userEvent.setup();
     render(
@@ -301,7 +301,7 @@ describe("Review", () => {
   });
 
   it("hides hint button after answering", async () => {
-    await addWord("hello", "привет", "en", "my hint");
+    await addWord("hello", "привет", "en", "ru", "my hint");
 
     const user = userEvent.setup();
     render(
@@ -685,6 +685,7 @@ describe("Review", () => {
       word: "hello",
       translation: "привет",
       word_lang: "en",
+      translation_lang: "ru",
       interval: 0,
       repetitions: 0,
       next_review: 0,

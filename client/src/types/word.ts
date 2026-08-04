@@ -11,6 +11,8 @@ export interface Word {
   translation: string;
   /** Detected language of the word (e.g. "en", "ru"). Used for TTS. */
   word_lang: string;
+  /** Language of the translation (e.g. "ru", "en"). Used for TTS in review. */
+  translation_lang: string;
   /** Optional user note / association / mnemonic hint. */
   note?: string;
   /** Example sentences fetched from Yandex Dictionary API. */
