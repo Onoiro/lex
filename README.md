@@ -143,9 +143,10 @@ Requires Rust + system libraries (see [Tauri prerequisites](https://tauri.app/st
 
 1. Go to **Translate** page
 2. Enter a word (language auto-detected, configurable in Settings)
-3. Click **Translate** to get auto-translation, or enter manually
-4. Click **Save to dictionary**
-5. (Optional) Click **Load example** to fetch an example sentence from Yandex Dictionary corpus into the note field
+3. Change source/target languages for this session if needed - changes are temporary and do not affect global Settings. A banner appears when languages differ from the default, with a link to save them in Settings
+4. Click **Translate** to get auto-translation, or enter manually
+5. Click **Save to dictionary**
+6. (Optional) Click **Load example** to fetch an example sentence from Yandex Dictionary corpus into the note field
 
 ### Reviewing Words
 
@@ -192,7 +193,7 @@ All commands are run via `make`. Run `make help` to see the full list.
 | `make proxy` | Start translate proxy (port 8004) |
 | `make client-dev` | Start client dev server (port 5173) |
 | `make client-build` | Build client for production |
-| `make client-test` | Run client tests (vitest, 222 tests) |
+| `make client-test` | Run client tests (vitest, 224 tests) |
 | `make client-lint` | Lint client code (eslint) |
 | `make client-typecheck` | Type-check client (tsc) |
 | `make proxy-lint` | Lint proxy code (ruff) |
