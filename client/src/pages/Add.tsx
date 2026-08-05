@@ -447,7 +447,11 @@ export function Add() {
               id="word"
               value={word}
               onChange={(e) => {
-                setWord(e.target.value);
+                const newVal = e.target.value;
+                if (userEditingTranslation && newVal.trim() !== word.trim()) {
+                  setUserEditingTranslation(false);
+                }
+                setWord(newVal);
                 autoResize(e.target);
               }}
               required

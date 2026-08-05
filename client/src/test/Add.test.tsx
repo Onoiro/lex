@@ -83,7 +83,7 @@ describe("Add", () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getByText("New word")).toBeInTheDocument();
+    expect(screen.getByText("Translate")).toBeInTheDocument();
   });
 
   it("renders language bar with swap button", () => {
@@ -306,6 +306,46 @@ describe("Add", () => {
     await waitFor(() => {
       expect(input).toHaveValue("");
       expect(screen.getByPlaceholderText("Translation")).toHaveValue("");
+    });
+  });
+
+  it("re-triggers auto-translate when word changes after manual translation edit", async () => {
+    vi.mocked(translateWord).mockResolvedValue({
+      translation: "привет",
+      detectedLanguage: "en",
+    });
+
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <Add />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText("Enter a word or phrase")).toBeInTheDocument();
+    });
+
+    const wordInput = screen.getByPlaceholderText("Enter a word or phrase");
+    const translationInput = screen.getByPlaceholderText("Translation");
+
+    // First word auto-translates
+    await user.type(wordInput, "hello");
+    await waitFor(() => {
+      expect(translationInput).toHaveValue("привет");
+    });
+
+    // User manually edits the translation
+    await user.clear(translationInput);
+    await user.type(translationInput, "custom translation");
+
+    // User clears word and types a new one
+    await user.clear(wordInput);
+    await user.type(wordInput, "world");
+
+    // Auto-translate should run again for the new word
+    await waitFor(() => {
+      expect(translationInput).toHaveValue("привет");
     });
   });
 

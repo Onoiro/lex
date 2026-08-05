@@ -16,7 +16,7 @@
   "index.review_card.description": "Review saved words. The algorithm will pick the ones you are starting to forget.",
   "index.review_card.button": "Start review",
   "add.title": "New word — Lex",
-  "add.heading": "New word",
+  "add.heading": "Translate",
   "add.edit_heading": "Edit word",
   "add.auto_detect": "Auto detect",
   "add.swap_languages": "Swap languages",
