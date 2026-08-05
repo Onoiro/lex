@@ -151,5 +151,21 @@
   "settings.reset_btn": "Reset everything",
   "settings.reset_confirm1": "This will permanently delete {count} word(s) and all settings. Are you sure?",
   "settings.reset_confirm2": "Last chance! All data will be lost forever. Continue?",
-  "settings.reset_done": "All data has been reset."
+  "settings.reset_done": "All data has been reset.",
+  "settings.feedback": "Feedback",
+  "settings.feedback_description": "Found a bug, have an idea, or want to say something? Send a message directly to the developer.",
+  "settings.feedback_category": "Category",
+  "settings.feedback_bug": "Bug",
+  "settings.feedback_idea": "Idea",
+  "settings.feedback_other": "Other",
+  "settings.feedback_message": "Message",
+  "settings.feedback_message_placeholder": "Describe the bug, share your idea, or leave a comment...",
+  "settings.feedback_contact": "Contact (optional)",
+  "settings.feedback_contact_placeholder": "Email or Telegram for a reply",
+  "settings.feedback_send": "Send",
+  "settings.feedback_sending": "Sending...",
+  "settings.feedback_success": "✅ Thank you! Your message has been sent.",
+  "settings.feedback_error": "❌ Failed to send. Please try again later.",
+  "settings.feedback_too_short": "Message must be at least 10 characters.",
+  "settings.feedback_offline": "Internet connection required to send feedback."
 }

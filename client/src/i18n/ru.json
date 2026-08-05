@@ -151,5 +151,21 @@
   "settings.reset_btn": "Сбросить всё",
   "settings.reset_confirm1": "Будет безвозвратно удалено {count} слово(а) и все настройки. Вы уверены?",
   "settings.reset_confirm2": "Последний шанс! Все данные будут потеряны навсегда. Продолжить?",
-  "settings.reset_done": "Все данные сброшены."
+  "settings.reset_done": "Все данные сброшены.",
+  "settings.feedback": "Обратная связь",
+  "settings.feedback_description": "Нашли баг, есть идея или хотите что-то сказать? Отправьте сообщение напрямую разработчику.",
+  "settings.feedback_category": "Категория",
+  "settings.feedback_bug": "Баг",
+  "settings.feedback_idea": "Идея",
+  "settings.feedback_other": "Другое",
+  "settings.feedback_message": "Сообщение",
+  "settings.feedback_message_placeholder": "Опишите баг, поделитесь идеей или оставьте комментарий...",
+  "settings.feedback_contact": "Контакт (необязательно)",
+  "settings.feedback_contact_placeholder": "Email или Telegram для ответа",
+  "settings.feedback_send": "Отправить",
+  "settings.feedback_sending": "Отправка...",
+  "settings.feedback_success": "✅ Спасибо! Ваше сообщение отправлено.",
+  "settings.feedback_error": "❌ Не удалось отправить. Попробуйте позже.",
+  "settings.feedback_too_short": "Минимум 10 символов.",
+  "settings.feedback_offline": "Для отправки нужен интернет."
 }

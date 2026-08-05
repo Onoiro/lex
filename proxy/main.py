@@ -18,6 +18,7 @@ from proxy.services.translator import translate_word, get_supported_languages, g
 from proxy.services.cache import translation_cache
 from proxy.services.tts import synthesize_speech, speech_cache
 from proxy.services.dictionary import lookup_word, dictionary_cache
+from proxy.services.feedback import send_feedback, is_configured as feedback_configured
 from proxy.security.rate_limiter import RateLimiter, get_client_ip
 
 load_dotenv()
@@ -36,6 +37,8 @@ app.add_middleware(
 translate_limiter = RateLimiter(max_requests=30, window_seconds=60)
 tts_limiter = RateLimiter(max_requests=30, window_seconds=60)
 dictionary_limiter = RateLimiter(max_requests=30, window_seconds=60)
+# Feedback: stricter limit — 3 per hour per IP
+feedback_limiter = RateLimiter(max_requests=3, window_seconds=3600)
 
 
 class TranslateRequest(BaseModel):
@@ -52,6 +55,12 @@ class TtsRequest(BaseModel):
 class DictionaryRequest(BaseModel):
     word: str
     lang_pair: str
+
+
+class FeedbackRequest(BaseModel):
+    category: str
+    message: str
+    contact: str = ""
 
 
 @app.get("/")
@@ -188,3 +197,47 @@ async def dictionary(request: Request, body: DictionaryRequest):
 @app.get("/dictionary/cache/stats")
 async def dictionary_cache_stats():
     return {"size": dictionary_cache.size()}
+
+
+@app.post("/feedback")
+async def feedback(request: Request, body: FeedbackRequest):
+    # Rate limit
+    ip = get_client_ip(request)
+    if not feedback_limiter.is_allowed(ip):
+        return JSONResponse(
+            status_code=429,
+            content={"error": "Rate limit exceeded. Try again later."},
+            headers={"Retry-After": "3600"},
+        )
+
+    category = body.category.strip()
+    if category not in ("bug", "idea", "other"):
+        return JSONResponse(
+            status_code=400,
+            content={"error": "Invalid category. Use: bug, idea, or other."},
+        )
+
+    message = body.message.strip()
+    if len(message) < 10:
+        return JSONResponse(
+            status_code=400,
+            content={"error": "Message must be at least 10 characters."},
+        )
+
+    contact = body.contact.strip()
+
+    if not feedback_configured():
+        return JSONResponse(
+            status_code=503,
+            content={"error": "Feedback service is not configured."},
+        )
+
+    success = await send_feedback(category, message, contact)
+
+    if not success:
+        return JSONResponse(
+            status_code=502,
+            content={"error": "Failed to send feedback. Try again later."},
+        )
+
+    return {"status": "sent"}

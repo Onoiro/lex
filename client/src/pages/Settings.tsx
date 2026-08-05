@@ -10,6 +10,7 @@ import { DEFAULT_LANGUAGE_SETTINGS, LANG_LIST_TTL_MS } from "@/types";
 import type { Theme, Skin } from "@/types";
 import type { LanguageInfo } from "@/services/translateApi";
 import { version } from "../../package.json";
+import { sendFeedback } from "@/services/feedbackApi";
 
 export function Settings() {
   const [t] = useLocale();
@@ -22,6 +23,11 @@ export function Settings() {
   const [saved, setSaved] = useState(false);
   const [langOptions, setLangOptions] = useState<LanguageInfo[]>([]);
   const [resetDone, setResetDone] = useState(false);
+  const [feedbackCategory, setFeedbackCategory] = useState("bug");
+  const [feedbackMessage, setFeedbackMessage] = useState("");
+  const [feedbackContact, setFeedbackContact] = useState("");
+  const [feedbackStatus, setFeedbackStatus] = useState<"idle" | "sending" | "success" | "error">("idle");
+  const [feedbackError, setFeedbackError] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -93,6 +99,22 @@ export function Settings() {
     setLocale(locale);
     setSaved(true);
     setTimeout(() => setSaved(false), 3000);
+  };
+
+  const handleFeedback = async () => {
+    setFeedbackStatus("sending");
+    setFeedbackError("");
+    const result = await sendFeedback(feedbackCategory, feedbackMessage, feedbackContact);
+    if (result.success) {
+      setFeedbackStatus("success");
+      setFeedbackMessage("");
+      setFeedbackContact("");
+      setTimeout(() => setFeedbackStatus("idle"), 5000);
+    } else {
+      setFeedbackStatus("error");
+      setFeedbackError(result.error ?? "");
+      setTimeout(() => setFeedbackStatus("idle"), 5000);
+    }
   };
 
   const handleReset = async () => {
@@ -308,6 +330,103 @@ export function Settings() {
           {t("settings.reset_done")}
         </article>
       )}
+
+      <details
+        style={{
+          marginTop: "2rem",
+        }}
+      >
+        <summary
+          style={{
+            fontWeight: 600,
+          }}
+        >
+          💬 {t("settings.feedback")}
+        </summary>
+        <article style={{ marginTop: "1rem" }}>
+          <p style={{ color: "var(--pico-muted-color)", marginBottom: "1rem" }}>
+            {t("settings.feedback_description")}
+          </p>
+
+          {feedbackStatus === "success" && (
+            <article
+              style={{
+                background: "var(--pico-ins-color)",
+                color: "var(--pico-primary-inverse)",
+                padding: "1rem",
+                marginBottom: "1rem",
+              }}
+            >
+              {t("settings.feedback_success")}
+            </article>
+          )}
+
+          {feedbackStatus === "error" && (
+            <article
+              style={{
+                background: "var(--pico-del-color)",
+                color: "var(--pico-primary-inverse)",
+                padding: "1rem",
+                marginBottom: "1rem",
+              }}
+            >
+              {t("settings.feedback_error")}
+              {feedbackError && ` (${feedbackError})`}
+            </article>
+          )}
+
+          <label htmlFor="feedback_category">{t("settings.feedback_category")}</label>
+          <select
+            id="feedback_category"
+            value={feedbackCategory}
+            onChange={(e) => setFeedbackCategory(e.target.value)}
+            disabled={feedbackStatus === "sending"}
+          >
+            <option value="bug">{t("settings.feedback_bug")}</option>
+            <option value="idea">{t("settings.feedback_idea")}</option>
+            <option value="other">{t("settings.feedback_other")}</option>
+          </select>
+
+          <label htmlFor="feedback_message" style={{ marginTop: "1rem" }}>
+            {t("settings.feedback_message")}
+          </label>
+          <textarea
+            id="feedback_message"
+            value={feedbackMessage}
+            onChange={(e) => setFeedbackMessage(e.target.value)}
+            placeholder={t("settings.feedback_message_placeholder")}
+            rows={4}
+            disabled={feedbackStatus === "sending"}
+            style={{ resize: "vertical" }}
+          />
+          {feedbackMessage.length > 0 && feedbackMessage.length < 10 && (
+            <small style={{ color: "var(--pico-del-color)", display: "block", marginTop: "0.25rem" }}>
+              {t("settings.feedback_too_short")}
+            </small>
+          )}
+
+          <label htmlFor="feedback_contact" style={{ marginTop: "1rem" }}>
+            {t("settings.feedback_contact")}
+          </label>
+          <input
+            type="text"
+            id="feedback_contact"
+            value={feedbackContact}
+            onChange={(e) => setFeedbackContact(e.target.value)}
+            placeholder={t("settings.feedback_contact_placeholder")}
+            disabled={feedbackStatus === "sending"}
+          />
+
+          <button
+            type="button"
+            onClick={() => void handleFeedback()}
+            disabled={feedbackStatus === "sending" || feedbackMessage.trim().length < 10}
+            style={{ marginTop: "1rem" }}
+          >
+            {feedbackStatus === "sending" ? t("settings.feedback_sending") : t("settings.feedback_send")}
+          </button>
+        </article>
+      </details>
 
       <details
         style={{

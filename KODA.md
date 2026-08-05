@@ -5,7 +5,7 @@ Lex — local-first приложение-переводчик и помощни�
 
 **Демо:** [lex.2-way.ru](https://lex.2-way.ru)
 
-**Текущая версия:** 1.12.3
+**Текущая версия:** 1.13.0
 
 ## Архитектура
 
@@ -30,15 +30,17 @@ Lex — local-first приложение-переводчик и помощни�
 │        Proxy (FastAPI, port 8004)            │
 │  POST /translate   POST /tts                │
 │  GET  /languages   POST /dictionary          │
-│  GET  /            GET  /cache/stats         │
-│  GET  /tts/cache   GET  /dictionary/cache    │
+│  POST /feedback    GET  /cache/stats         │
+│  GET  /            GET  /tts/cache           │
+│  GET  /dictionary/cache                      │
 │                                               │
 │  Yandex Translate API + SpeechKit + Corpus   │
+│  + Telegram Bot (feedback)                   │
 └─────────────────────────────────────────────┘
 ```
 
 - **Client:** React 19 + TypeScript, Vite 7, Dexie.js (IndexedDB), Pico CSS, vite-plugin-pwa
-- **Proxy:** FastAPI, порт 8004. Скрывает Yandex API key. Эндпоинты: POST `/translate`, GET `/languages`, POST `/tts`, GET `/`, GET `/cache/stats`, GET `/tts/cache/stats`, POST `/dictionary`, GET `/dictionary/cache/stats`
+- **Proxy:** FastAPI, порт 8004. Скрывает Yandex API key. Эндпоинты: POST `/translate`, GET `/languages`, POST `/tts`, GET `/`, GET `/cache/stats`, GET `/tts/cache/stats`, POST `/dictionary`, GET `/dictionary/cache/stats`, POST `/feedback`
 
 ## Используемые технологии
 
@@ -111,7 +113,7 @@ make d-run    # docker compose up -d
 │   │   ├── domain/            # srs.ts (SM-2), stats.ts, validators.ts, dictionarySort.ts
 │   │   ├── i18n/              # index.ts, languages.ts, en.json, ru.json
 │   │   ├── pages/             # Home, Add, Review, Dictionary, Settings
-│   │   ├── services/          # translateApi.ts (proxy client), ttsApi.ts, dictionaryApi.ts, theme.ts
+│   │   ├── services/          # translateApi.ts (proxy client), ttsApi.ts, dictionaryApi.ts, feedbackApi.ts, theme.ts
 │   │   ├── test/              # Component and service tests (Vitest)
 │   │   ├── types/             # Word, LanguageSettings
 │   │   └── main.tsx           # App entry, SW registration, native plugins
@@ -124,14 +126,15 @@ make d-run    # docker compose up -d
 │   └── package.json
 ├── proxy/                     # Translate proxy (FastAPI, порт 8004)
 │   ├── __init__.py
-│   ├── main.py                # /translate, /languages, /tts, /dictionary, /, /cache/stats, /tts/cache/stats, /dictionary/cache/stats
+│   ├── main.py                # /translate, /languages, /tts, /dictionary, /feedback, /, /cache/stats, /tts/cache/stats, /dictionary/cache/stats
 │   ├── languages.py           # Language metadata (names, native names)
 │   ├── services/
 │   │   ├── __init__.py
 │   │   ├── translator.py      # Yandex Translate API client
 │   │   ├── cache.py           # Translation cache (TTL)
 │   │   ├── tts.py             # Speechkin TTS client
-│   │   └── dictionary.py      # Yandex Dictionary corpus client
+│   │   ├── dictionary.py      # Yandex Dictionary corpus client
+│   │   └── feedback.py        # Telegram Bot feedback service
 │   ├── security/
 │   │   ├── __init__.py
 │   │   └── rate_limiter.py    # Rate limiting
@@ -144,11 +147,12 @@ make d-run    # docker compose up -d
 │   ├── test_cache.py
 │   ├── test_rate_limiter.py
 │   ├── test_tts.py
-│   └── test_dictionary.py
+│   ├── test_dictionary.py
+│   └── test_feedback.py
 ├── pyproject.toml             # Python project config (uv, ruff)
 ├── Makefile                   # Build/run scripts
 ├── docker-compose.yml         # Docker (proxy)
-└── .env                       # YANDEX_API_KEY
+└── .env                       # YANDEX_API_KEY, TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID
 ```
 
 ## Правила разработки
@@ -164,8 +168,8 @@ make d-run    # docker compose up -d
 - **VITE_PROXY_URL:** env var для proxy base URL (пустая строка = relative path).
 
 ### Proxy
-- Скрывает Yandex API key. Rate limiting. Кэш переводов. TTS (text-to-speech).
-- Эндпоинты: POST `/translate` (body: word, source_lang, target_lang), GET `/languages`, POST `/tts`, POST `/dictionary` (body: word, lang_pair), GET `/`, GET `/cache/stats`, GET `/tts/cache/stats`, GET `/dictionary/cache/stats`.
+- Скрывает Yandex API key. Rate limiting. Кэш переводов. TTS (text-to-speech). Feedback (Telegram Bot).
+- Эндпоинты: POST `/translate` (body: word, source_lang, target_lang), GET `/languages`, POST `/tts`, POST `/dictionary` (body: word, lang_pair), POST `/feedback` (body: category, message, contact), GET `/`, GET `/cache/stats`, GET `/tts/cache/stats`, GET `/dictionary/cache/stats`.
 - Самодостаточный модуль: все зависимости внутри `proxy/` (services/, security/, languages.py).
 - **Линтинг:** `uv run ruff check proxy/` — без ошибок.
 - **Тестирование:** `uv run pytest tests/ -v`.
@@ -188,4 +192,4 @@ make d-run    # docker compose up -d
 - CI для кросс-компиляции Tauri (Windows MSI/NSIS, macOS DMG)
 
 ---
-**Последнее обновление:** 5 августа 2026
+**Последнее обновление:** 6 августа 2026

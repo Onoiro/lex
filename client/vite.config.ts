@@ -111,6 +111,7 @@ export default defineConfig({
           if (req.method !== "POST") return req.url;
         },
       },
+      "/feedback": "http://localhost:8004",
     },
   },
 });

@@ -27,6 +27,7 @@ Lex is a translator and vocabulary trainer. Your dictionary, spaced repetition, 
 - **Import/Export** - Backup and transfer dictionary between devices as JSON
 - **Dictionary sorting** - Sort by date added, word, review count, response time, rank, or success rate (ascending/descending), with contextual descriptions
 - **Reset all data** - Permanently delete all words and settings from the device (with double confirmation)
+- **Feedback** - Send bug reports, ideas, or messages to the developer directly from Settings (via Telegram Bot)
 
 ## Architecture
 
@@ -51,15 +52,17 @@ Lex is a translator and vocabulary trainer. Your dictionary, spaced repetition, 
 │        Proxy (FastAPI, port 8004)            │
 │  POST /translate   POST /tts                │
 │  GET  /languages   POST /dictionary          │
-│  GET  /            GET  /cache/stats         │
-│  GET  /tts/cache   GET  /dictionary/cache    │
+│  POST /feedback    GET  /cache/stats         │
+│  GET  /            GET  /tts/cache           │
+│  GET  /dictionary/cache                      │
 │                                               │
 │  Yandex Translate API + SpeechKit + Corpus   │
+│  + Telegram Bot (feedback)                   │
 └─────────────────────────────────────────────┘
 ```
 
 - **Client:** React 19 + TypeScript, Vite 7, Dexie.js (IndexedDB), Pico CSS, vite-plugin-pwa
-- **Proxy:** FastAPI, port 8004. Hides Yandex API key. Endpoints: POST `/translate`, GET `/languages`, POST `/tts`, GET `/`, GET `/cache/stats`, GET `/tts/cache`, POST `/dictionary`, GET `/dictionary/cache`
+- **Proxy:** FastAPI, port 8004. Hides Yandex API key. Endpoints: POST `/translate`, GET `/languages`, POST `/tts`, GET `/`, GET `/cache/stats`, GET `/tts/cache`, POST `/dictionary`, GET `/dictionary/cache`, POST `/feedback`
 
 ## Tech Stack
 
@@ -74,8 +77,8 @@ Lex is a translator and vocabulary trainer. Your dictionary, spaced repetition, 
 
 ### Proxy (`proxy/`)
 - Python 3.13, FastAPI
-- Hides Yandex API key, rate limiting, translation cache, TTS (text-to-speech), dictionary examples (Yandex Corpus)
-- Endpoints: POST `/translate`, GET `/languages`, POST `/tts`, GET `/`, GET `/cache/stats`, GET `/tts/cache/stats`, POST `/dictionary`, GET `/dictionary/cache/stats`
+- Hides Yandex API key, rate limiting, translation cache, TTS (text-to-speech), dictionary examples (Yandex Corpus), feedback (Telegram Bot)
+- Endpoints: POST `/translate`, GET `/languages`, POST `/tts`, GET `/`, GET `/cache/stats`, GET `/tts/cache/stats`, POST `/dictionary`, GET `/dictionary/cache/stats`, POST `/feedback`
 
 ## Quick Start
 
@@ -194,7 +197,7 @@ All commands are run via `make`. Run `make help` to see the full list.
 | `make proxy` | Start translate proxy (port 8004) |
 | `make client-dev` | Start client dev server (port 5173) |
 | `make client-build` | Build client for production |
-| `make client-test` | Run client tests (vitest, 227 tests) |
+| `make client-test` | Run client tests (vitest, 236 tests) |
 | `make client-lint` | Lint client code (eslint) |
 | `make client-typecheck` | Type-check client (tsc) |
 | `make proxy-lint` | Lint proxy code (ruff) |
@@ -220,7 +223,7 @@ All commands are run via `make`. Run `make help` to see the full list.
 │   │   ├── domain/            # srs.ts, stats.ts, validators.ts, dictionarySort.ts
 │   │   ├── i18n/              # index.ts, languages.ts, en/ru.json
 │   │   ├── pages/             # Home, Add, Review, Dictionary, Settings
-│   │   ├── services/          # translateApi.ts, ttsApi.ts, dictionaryApi.ts, theme.ts
+│   │   ├── services/          # translateApi.ts, ttsApi.ts, dictionaryApi.ts, feedbackApi.ts, theme.ts
 │   │   ├── test/              # Component and service tests (Vitest)
 │   │   └── types/             # Word, LanguageSettings
 │   ├── capacitor.config.ts    # Android config
@@ -228,13 +231,14 @@ All commands are run via `make`. Run `make help` to see the full list.
 │   ├── android/               # Capacitor Android project
 │   └── vite.config.ts         # Vite + PWA plugin + dev proxy
 ├── proxy/                     # Translate proxy (FastAPI, port 8004)
-│   ├── main.py                # /translate, /languages, /tts, /dictionary, /cache/stats, /tts/cache/stats, /dictionary/cache/stats
+│   ├── main.py                # /translate, /languages, /tts, /dictionary, /feedback, /cache/stats, /tts/cache/stats, /dictionary/cache/stats
 │   ├── languages.py           # Language metadata
 │   ├── services/
 │   │   ├── translator.py      # Yandex Translate API client
 │   │   ├── cache.py           # Translation cache (TTL)
 │   │   ├── tts.py             # Yandex SpeechKit TTS client
-│   │   └── dictionary.py      # Yandex Dictionary corpus client
+│   │   ├── dictionary.py      # Yandex Dictionary corpus client
+│   │   └── feedback.py        # Telegram Bot feedback service
 │   ├── security/
 │   │   └── rate_limiter.py    # Rate limiting
 │   ├── Dockerfile
