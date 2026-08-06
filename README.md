@@ -222,7 +222,7 @@ All commands are run via `make`. Run `make help` to see the full list.
 │   │   ├── data/              # db.ts, wordRepository, settingsRepository
 │   │   ├── domain/            # srs.ts, stats.ts, validators.ts, dictionarySort.ts
 │   │   ├── i18n/              # index.ts, languages.ts, en/ru.json
-│   │   ├── pages/             # Home, Add, Review, Dictionary, Settings
+│   │   ├── pages/             # Home, Add, Review, Dictionary, Settings, Privacy, Terms
 │   │   ├── services/          # translateApi.ts, ttsApi.ts, dictionaryApi.ts, feedbackApi.ts, theme.ts
 │   │   ├── test/              # Component and service tests (Vitest)
 │   │   └── types/             # Word, LanguageSettings

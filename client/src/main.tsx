@@ -12,6 +12,8 @@ import { Add } from "@/pages/Add";
 import { Review } from "@/pages/Review";
 import { Dictionary } from "@/pages/Dictionary";
 import { Settings } from "@/pages/Settings";
+import { Privacy } from "@/pages/Privacy";
+import { Terms } from "@/pages/Terms";
 import { useInitLocale } from "@/i18n";
 import { applyTheme } from "@/services/theme";
 import { getSettings } from "@/data/settingsRepository";
@@ -28,6 +30,8 @@ function App() {
         <Route path="/review" element={<Review />} />
         <Route path="/dictionary" element={<Dictionary />} />
         <Route path="/settings" element={<Settings />} />
+        <Route path="/privacy" element={<Privacy />} />
+        <Route path="/terms" element={<Terms />} />
       </Routes>
     </Layout>
   );

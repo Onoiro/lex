@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { useLocale, setLocale, SUPPORTED_LOCALES } from "@/i18n";
 import { getLanguageName, LANGUAGE_NAMES_EN, LANGUAGE_NAMES_RU } from "@/i18n/languages";
 import { getSettings, saveSettings } from "@/data/settingsRepository";
@@ -466,6 +467,15 @@ export function Settings() {
       <p style={{ marginTop: "2rem", fontSize: "0.85rem", color: "var(--pico-muted-color)", textAlign: "center" }}>
         {t("settings.app_version", { version })}
       </p>
+      <nav style={{ marginTop: "0.5rem", textAlign: "center", fontSize: "0.85rem" }}>
+        <Link to="/privacy" style={{ color: "var(--pico-muted-color)" }}>
+          {t("settings.privacy_policy")}
+        </Link>
+        {" · "}
+        <Link to="/terms" style={{ color: "var(--pico-muted-color)" }}>
+          {t("settings.terms_of_use")}
+        </Link>
+      </nav>
     </>
   );
 }

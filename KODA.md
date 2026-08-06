@@ -192,4 +192,4 @@ make d-run    # docker compose up -d
 - CI для кросс-компиляции Tauri (Windows MSI/NSIS, macOS DMG)
 
 ---
-**Последнее обновление:** 6 августа 2026
+**Последнее обновление:** 7 августа 2026
