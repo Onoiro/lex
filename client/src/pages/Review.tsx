@@ -46,6 +46,7 @@ export function Review() {
   });
   const [settings, setSettings] = useState<LanguageSettings | null>(null);
   const [ttsOverride, setTtsOverride] = useState(true);
+  const [isOffline, setIsOffline] = useState(!navigator.onLine);
 
   // Refs for timers and state that shouldn't trigger re-renders
   const startTimeRef = useRef<number>(0);
@@ -70,6 +71,17 @@ export function Review() {
   useEffect(() => {
     ttsOverrideRef.current = ttsOverride;
   }, [ttsOverride]);
+
+  useEffect(() => {
+    const handleOnline = () => setIsOffline(false);
+    const handleOffline = () => setIsOffline(true);
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, []);
 
   // Keep ref in sync with state
   useEffect(() => {
@@ -452,6 +464,14 @@ export function Review() {
     <article style={{ display: "flex", flexDirection: "column" }}>
       {/* Timer + TTS toggle — always visible above the card */}
       <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "0.75rem", padding: "1rem 1rem 0.5rem" }}>
+        {settings?.tts_enabled && isOffline && (
+          <span
+            data-testid="tts-offline-warning"
+            style={{ color: "var(--pico-muted-color)", fontSize: "0.85rem" }}
+          >
+            🔇 {t("review.tts_offline")}
+          </span>
+        )}
         <span
           style={{
             color: timerColor,

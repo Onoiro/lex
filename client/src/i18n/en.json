@@ -70,6 +70,7 @@
   "review.session_progress": "Daily progress: —",
   "review.tts_on": "Sound on",
   "review.tts_off": "Sound off",
+  "review.tts_offline": "Offline — audio unavailable",
   "review.dictionary.title": "My Dictionary — Lex",
   "dictionary.heading": "My dictionary",
   "dictionary.total": "Total words saved: {total}",

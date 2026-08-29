@@ -70,6 +70,7 @@
   "review.session_progress": "Прогресс дня: —",
   "review.tts_on": "Звук включён",
   "review.tts_off": "Звук выключен",
+  "review.tts_offline": "Offline — озвучка недоступна",
   "review.dictionary.title": "Мой Словарь — Lex",
   "dictionary.heading": "Мой словарь",
   "dictionary.total": "Всего сохранено слов: {total}",
