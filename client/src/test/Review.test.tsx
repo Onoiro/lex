@@ -11,6 +11,7 @@ describe("Review", () => {
   beforeEach(async () => {
     setLocale("en");
     await db.words.clear();
+    await db.settings.clear();
   });
 
   afterEach(() => {
@@ -762,6 +763,7 @@ describe("Review", () => {
 
   it("does not show TTS toggle when TTS is disabled in settings", async () => {
     await addWord("hello", "привет");
+    await db.settings.put({ id: "app", tts_enabled: false, source_lang: "auto", target_lang: "ru", locale: "en", theme: "auto", skin: "default" });
 
     const user = userEvent.setup();
     render(

@@ -79,7 +79,7 @@ export const DEFAULT_LANGUAGE_SETTINGS: LanguageSettings = {
   source_lang: "auto",
   target_lang: "ru",
   locale: "en",
-  tts_enabled: false,
+  tts_enabled: true,
   theme: "auto",
   skin: "default",
 };
