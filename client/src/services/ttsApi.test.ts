@@ -32,10 +32,53 @@ class MockAudio {
 
 vi.stubGlobal("Audio", MockAudio);
 
-// Mock URL.createObjectURL / revokeObjectURL
+// jsdom's URL lacks blob URL methods. Patch them as statics instead of
+// replacing the whole URL global — Request/Response parsing relies on it.
 const mockCreateObjectURL = vi.fn(() => "blob:mock-url");
 const mockRevokeObjectURL = vi.fn();
-vi.stubGlobal("URL", { createObjectURL: mockCreateObjectURL, revokeObjectURL: mockRevokeObjectURL });
+(URL as unknown as Record<string, unknown>).createObjectURL = mockCreateObjectURL;
+(URL as unknown as Record<string, unknown>).revokeObjectURL = mockRevokeObjectURL;
+
+// ── Fake CacheStorage ──────────────────────────────────────────
+// jsdom has no Cache API, so we provide a Map-based fake.
+
+const TTS_CACHE_NAME = "lex-tts-audio";
+
+class FakeCache {
+  store = new Map<string, Response>();
+
+  async match(req: Request | string): Promise<Response | undefined> {
+    const url = typeof req === "string" ? req : req.url;
+    const res = this.store.get(url);
+    return res ? res.clone() : undefined;
+  }
+
+  async put(req: Request | string, res: Response): Promise<void> {
+    const url = typeof req === "string" ? req : req.url;
+    this.store.set(url, res.clone());
+  }
+
+  async delete(req: Request | string): Promise<boolean> {
+    const url = typeof req === "string" ? req : req.url;
+    return this.store.delete(url);
+  }
+}
+
+const fakeCache = new FakeCache();
+
+const fakeCaches = {
+  open: vi.fn(async (name: string) => {
+    if (name !== TTS_CACHE_NAME) throw new Error("unknown cache");
+    return fakeCache as unknown as Cache;
+  }),
+  delete: vi.fn(async (name: string) => {
+    if (name !== TTS_CACHE_NAME) return false;
+    fakeCache.store.clear();
+    return true;
+  }),
+};
+
+vi.stubGlobal("caches", fakeCaches);
 
 // ── Helpers ────────────────────────────────────────────────────
 
@@ -47,11 +90,19 @@ function mockResponse() {
   };
 }
 
-beforeEach(() => {
+/** Control navigator.onLine via a spy (auto-restored in afterEach). */
+function setOnline(online: boolean) {
+  vi.spyOn(navigator, "onLine", "get").mockReturnValue(online);
+}
+
+beforeEach(async () => {
   mockFetch.mockReset();
   resetAudioMocks();
-  clearTtsCache();
+  fakeCaches.open.mockClear();
+  fakeCaches.delete.mockClear();
+  fakeCache.store.clear();
   stopTts();
+  await clearTtsCache();
 });
 
 afterEach(() => {
@@ -129,6 +180,49 @@ describe("synthesizeSpeech", () => {
 
     const [, opts] = mockFetch.mock.calls[0];
     expect(JSON.parse(opts.body)).toEqual({ text: "hello", lang: "en" });
+  });
+
+  it("does not fetch when offline and cache is empty", async () => {
+    setOnline(false);
+
+    await synthesizeSpeech("hello", "en");
+
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it("plays cached audio when offline without fetching", async () => {
+    // Populate cache while online
+    mockFetch.mockResolvedValueOnce(mockResponse());
+    await synthesizeSpeech("hello", "en");
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+
+    // Go offline and request the same word
+    setOnline(false);
+    await synthesizeSpeech("hello", "en");
+
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+    expect(mockAudioPlay).toHaveBeenCalledTimes(2);
+  });
+
+  it("still fetches when offline for a word not in cache after cache clear", async () => {
+    mockFetch.mockResolvedValueOnce(mockResponse());
+    await synthesizeSpeech("hello", "en");
+
+    await clearTtsCache();
+    setOnline(false);
+    await synthesizeSpeech("hello", "en");
+
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+    expect(mockAudioPlay).toHaveBeenCalledTimes(1);
+  });
+
+  it("stores audio entries and meta in the persistent cache", async () => {
+    mockFetch.mockResolvedValue(mockResponse());
+    await synthesizeSpeech("hello", "en");
+    await synthesizeSpeech("world", "en");
+
+    // 2 audio entries + 1 meta entry
+    expect(fakeCache.store.size).toBe(3);
   });
 });
 

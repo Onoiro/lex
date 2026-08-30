@@ -165,6 +165,7 @@ make d-run    # docker compose up -d
 - **Стиль:** Pico CSS (без классов), Material Design принципы.
 - **i18n:** все UI-строки через `t()` из `@/i18n`. Переводы в `en.json` и `ru.json`.
 - **PWA:** vite-plugin-pwa генерирует SW. Runtime cache для `/translate`, `/languages` и `/dictionary` (NetworkFirst).
+- **TTS:** `ttsApi.ts` — персистентный кеш аудио через Cache API (`lex-tts-audio`, ключи `tts:{lang}:{text}`, LRU-лимит ~50 МБ). Офлайн: пропускает запрос при `navigator.onLine === false`, ранее прослушанные слова озвучиваются из кеша.
 - **VITE_PROXY_URL:** env var для proxy base URL (пустая строка = relative path).
 
 ### Proxy
@@ -192,4 +193,4 @@ make d-run    # docker compose up -d
 - CI для кросс-компиляции Tauri (Windows MSI/NSIS, macOS DMG)
 
 ---
-**Последнее обновление:** 7 августа 2026
+**Последнее обновление:** 30 августа 2026
