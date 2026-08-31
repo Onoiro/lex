@@ -393,6 +393,14 @@ export function Review() {
     setPhase("paused");
   }, [clearAllTimers]);
 
+  const handleFinish = useCallback(() => {
+    clearAllTimers();
+    stopTts();
+    setSession({ total: 0, known: 0, forgotten: 0, times: [] });
+    void loadDailyStats();
+    setPhase("start");
+  }, [clearAllTimers, loadDailyStats]);
+
   const handleNext = useCallback(() => {
     if (autoNextTimeoutRef.current) clearTimeout(autoNextTimeoutRef.current);
     if (inactivityTimeoutRef.current) clearTimeout(inactivityTimeoutRef.current);
@@ -596,14 +604,11 @@ export function Review() {
             {bestTime !== null && (
               <div>{t("review.session_best_time", { time: formatTime(bestTime) })}</div>
             )}
-            {todayStats && todayStats.reviewed > session.total && (
+            {todayStats && todayStats.reviewed > 0 && (
               <div style={{ marginTop: "0.5rem" }}>
                 {t("review.today_total", { count: todayStats.reviewed })}
               </div>
             )}
-            <div style={{ marginTop: "0.5rem", opacity: 0.6 }}>
-              {t("review.session_progress")}
-            </div>
           </div>
         )}
 
@@ -613,6 +618,15 @@ export function Review() {
           style={{ fontSize: "1.5rem", padding: "1rem 3rem", marginTop: "2rem" }}
         >
           {t("review.resume")}
+        </button>
+        <button
+          type="button"
+          className="outline"
+          data-testid="finish-btn"
+          onClick={handleFinish}
+          style={{ width: "100%", maxWidth: "400px", marginTop: "0.75rem" }}
+        >
+          {t("review.finish")}
         </button>
       </div>
     );

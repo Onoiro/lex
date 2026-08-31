@@ -547,6 +547,40 @@ describe("Review", () => {
     });
   });
 
+  it("returns to start screen after finish", async () => {
+    await addWord("hello", "привет");
+
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <Review />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Start training" })).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole("button", { name: "Start training" }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Stop training" })).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole("button", { name: "Stop training" }));
+
+    await waitFor(() => {
+      expect(screen.getByText("Training paused")).toBeInTheDocument();
+      expect(screen.getByTestId("finish-btn")).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByTestId("finish-btn"));
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Start training" })).toBeInTheDocument();
+    });
+  });
+
   // --- Timer-based tests using fake timers from the start ---
 
   it("auto-answers as Forgot after timeout", async () => {

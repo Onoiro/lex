@@ -1,0 +1,9 @@
+feat(review): add Finish button on paused screen to return to start
+
+Paused screen was a dead end: users had to leave the Review tab and
+come back to see daily stats, history and help. Now a Finish button
+returns to the start screen with fresh daily stats. Also removed the
+meaningless "Daily progress" placeholder line and show "Today total"
+whenever there are reviews today (not only when > session total).
+
+Bump version: 1.17.0 → 1.17.1 (patch)
