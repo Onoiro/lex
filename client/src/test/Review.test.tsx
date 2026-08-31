@@ -6,12 +6,14 @@ import { Review } from "@/pages/Review";
 import { setLocale } from "@/i18n";
 import { db } from "@/data/db";
 import { addWord, getAllWords } from "@/data/wordRepository";
+import { emptyDailyStats } from "@/types/dailyStats";
 
 describe("Review", () => {
   beforeEach(async () => {
     setLocale("en");
     await db.words.clear();
     await db.settings.clear();
+    await db.dailyStats.clear();
   });
 
   afterEach(() => {
@@ -836,5 +838,129 @@ describe("Review", () => {
 
     await user.click(toggle);
     expect(toggle.textContent).toBe("🔊");
+  });
+
+  // --- Daily stats ---
+
+  it("shows today block on start screen when there is activity today", async () => {
+    await addWord("hello", "привет");
+    const today = new Date();
+    const key = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+    await db.dailyStats.put({ ...emptyDailyStats(key), reviewed: 10, known: 8, total_time: 25 });
+
+    render(
+      <MemoryRouter>
+        <Review />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("today-block")).toBeInTheDocument();
+    });
+
+    expect(screen.getByTestId("today-block")).toHaveTextContent("Reviewed: 10");
+    expect(screen.getByTestId("today-block")).toHaveTextContent("80% known");
+  });
+
+  it("does not show today block when no activity today", async () => {
+    await addWord("hello", "привет");
+
+    render(
+      <MemoryRouter>
+        <Review />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Start training" })).toBeInTheDocument();
+    });
+
+    expect(screen.queryByTestId("today-block")).not.toBeInTheDocument();
+  });
+
+  it("shows streak badge when streak is 2+ days", async () => {
+    await addWord("hello", "привет");
+    const now = new Date();
+    const y = new Date(now);
+    y.setDate(y.getDate() - 1);
+    const keyOf = (d: Date) =>
+      `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    await db.dailyStats.bulkPut([
+      { ...emptyDailyStats(keyOf(y)), reviewed: 3 },
+      { ...emptyDailyStats(keyOf(now)), reviewed: 1 },
+    ]);
+
+    render(
+      <MemoryRouter>
+        <Review />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("streak-badge")).toBeInTheDocument();
+    });
+    expect(screen.getByTestId("streak-badge")).toHaveTextContent("2-day streak");
+  });
+
+  it("shows and fills history table", async () => {
+    await addWord("hello", "привет");
+    await db.dailyStats.bulkPut([
+      { ...emptyDailyStats("2026-08-28"), reviewed: 12, known: 9, new_words: 2 },
+      { ...emptyDailyStats("2026-08-29"), reviewed: 5, known: 5 },
+    ]);
+
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <Review />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("history-toggle")).toBeInTheDocument();
+    });
+
+    expect(screen.queryByTestId("history-table")).not.toBeInTheDocument();
+
+    await user.click(screen.getByTestId("history-toggle"));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("history-table")).toBeInTheDocument();
+    });
+
+    const table = screen.getByTestId("history-table");
+    expect(table).toHaveTextContent("2026-08-29");
+    expect(table).toHaveTextContent("2026-08-28");
+    expect(table).toHaveTextContent("75%");
+  });
+
+  it("records answer into daily stats during training", async () => {
+    await addWord("hello", "привет");
+
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <Review />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Start training" })).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole("button", { name: "Start training" }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /I know/ })).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole("button", { name: /I know/ }));
+
+    await waitFor(async () => {
+      const today = await db.dailyStats.toArray();
+      expect(today).toHaveLength(1);
+      expect(today[0].reviewed).toBe(1);
+      expect(today[0].known).toBe(1);
+    });
   });
 });

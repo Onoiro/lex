@@ -73,6 +73,7 @@ describe("Add", () => {
     setLocale("en");
     await db.words.clear();
     await db.settings.clear();
+    await db.dailyStats.clear();
     vi.clearAllMocks();
   });
 
@@ -172,6 +173,38 @@ describe("Add", () => {
 
     const count = await db.words.count();
     expect(count).toBe(1);
+  });
+
+  it("increments daily new_words counter after saving", async () => {
+    vi.mocked(translateWord).mockResolvedValue({
+      translation: "привет",
+      detectedLanguage: "en",
+    });
+
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <Add />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText("Enter a word or phrase")).toBeInTheDocument();
+    });
+
+    await user.type(screen.getByPlaceholderText("Enter a word or phrase"), "hello");
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText("Translation")).toHaveValue("привет");
+    });
+
+    await user.click(screen.getByRole("button", { name: "Save to dictionary" }));
+
+    await waitFor(async () => {
+      const rows = await db.dailyStats.toArray();
+      expect(rows).toHaveLength(1);
+      expect(rows[0].new_words).toBe(1);
+    });
   });
 
   it("shows error on duplicate word", async () => {

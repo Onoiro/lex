@@ -1,5 +1,6 @@
 import Dexie, { type Table } from "dexie";
 import type { Word, LanguageSettings } from "@/types";
+import type { DailyStats } from "@/types/dailyStats";
 
 /** Settings row: single-row table keyed by "app". */
 export interface SettingsRow extends LanguageSettings {
@@ -9,6 +10,7 @@ export interface SettingsRow extends LanguageSettings {
 export class LexDatabase extends Dexie {
   words!: Table<Word, number>;
   settings!: Table<SettingsRow, string>;
+  dailyStats!: Table<DailyStats, string>;
 
   constructor() {
     super("lex-db");
@@ -31,6 +33,11 @@ export class LexDatabase extends Dexie {
     this.version(5).stores({
       words: "++id, &word, next_review",
       settings: "id",
+    });
+    this.version(6).stores({
+      words: "++id, &word, next_review",
+      settings: "id",
+      dailyStats: "date",
     });
   }
 }

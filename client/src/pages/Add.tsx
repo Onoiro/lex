@@ -7,6 +7,7 @@ import { translateWord, getLanguages } from "@/services/translateApi";
 import { getExamples } from "@/services/dictionaryApi";
 import { synthesizeSpeech } from "@/services/ttsApi";
 import { addWord, getWord, updateWordEntry } from "@/data/wordRepository";
+import { incrementNewWords } from "@/data/dailyStatsRepository";
 import { getSettings, saveSettings } from "@/data/settingsRepository";
 import { Link } from "react-router-dom";
 import { LANG_LIST_TTL_MS } from "@/types";
@@ -276,6 +277,7 @@ export function Add() {
         setTimeout(() => navigate("/dictionary"), 1200);
       } else {
         await addWord(validWord, validTranslation, lang, settings!.target_lang, validNote || undefined);
+        void incrementNewWords().catch((e) => console.error("daily stats:", e));
         showMessage("success", t("add.success"));
         setWord("");
         setTranslation("");

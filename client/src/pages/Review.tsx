@@ -3,9 +3,12 @@ import { Link } from "react-router-dom";
 import { useLocale } from "@/i18n";
 import { getAllWords, updateWord } from "@/data/wordRepository";
 import { getSettings } from "@/data/settingsRepository";
+import { recordAnswer, getTodayStats, getRecentDays, getStreak } from "@/data/dailyStatsRepository";
 import { applyReviewResult, pickWeightedWord, pickRandomDirection } from "@/domain/srs";
-import { updateResponseTime, formatTime } from "@/domain/stats";
 import { synthesizeSpeech, stopTts } from "@/services/ttsApi";
+import { computeDayAccuracy, computeDayAvgTime } from "@/domain/dailyStats";
+import { updateResponseTime, formatTime } from "@/domain/stats";
+import type { DailyStats } from "@/types/dailyStats";
 import type { Word, ReviewDirection, LanguageSettings } from "@/types";
 
 const ANSWER_TIMEOUT = 10;
@@ -47,6 +50,10 @@ export function Review() {
   const [settings, setSettings] = useState<LanguageSettings | null>(null);
   const [ttsOverride, setTtsOverride] = useState(true);
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
+  const [todayStats, setTodayStats] = useState<DailyStats | null>(null);
+  const [streak, setStreak] = useState(0);
+  const [history, setHistory] = useState<DailyStats[]>([]);
+  const [showHistory, setShowHistory] = useState(false);
 
   // Refs for timers and state that shouldn't trigger re-renders
   const startTimeRef = useRef<number>(0);
@@ -105,6 +112,21 @@ export function Review() {
     autoNextTimeoutRef.current = null;
   }, []);
 
+  const loadDailyStats = useCallback(async () => {
+    try {
+      const [today, s, h] = await Promise.all([
+        getTodayStats(),
+        getStreak(),
+        getRecentDays(14),
+      ]);
+      setTodayStats(today);
+      setStreak(s);
+      setHistory(h);
+    } catch (e) {
+      console.error("daily stats:", e);
+    }
+  }, []);
+
   const loadWords = useCallback(async () => {
     const s = await getSettings();
     setSettings(s);
@@ -114,12 +136,14 @@ export function Review() {
     allWordsRef.current = words;
     setQueueSize(words.length);
 
+    void loadDailyStats();
+
     if (words.length === 0) {
       setPhase("empty");
       return;
     }
     setPhase("start");
-  }, []);
+  }, [loadDailyStats]);
 
   useEffect(() => {
     void loadWords();
@@ -282,8 +306,14 @@ export function Review() {
         times: [...prev.times, elapsedSec],
       }));
 
+      // Persist into daily stats (fire-and-forget)
+      void recordAnswer(correct, elapsedSec).catch((e) =>
+        console.error("daily stats:", e),
+      );
+
       // Submit result and prefetch next word
       void submitResult(correct, elapsedSec).then(() => {
+        void loadDailyStats();
         const next = pickNextView();
         nextViewRef.current = next;
 
@@ -307,7 +337,7 @@ export function Review() {
         }, INACTIVITY_TIMEOUT * 1000);
       });
     },
-    [stopTimer, submitResult, pickNextView, showPauseScreen, showNextWord, playTts, t],
+    [stopTimer, submitResult, pickNextView, showPauseScreen, showNextWord, playTts, loadDailyStats, t],
   );
 
   // Keep handleAnswer ref in sync for timer callback
@@ -382,15 +412,29 @@ export function Review() {
   }
 
   if (phase === "done") {
+    const todayAccuracy = todayStats ? computeDayAccuracy(todayStats) : null;
+
     return (
       <article style={{ textAlign: "center", padding: "2rem" }}>
         <p style={{ fontSize: "1.2rem" }}>{t("review.done", { message: "" })}</p>
+        {todayStats && todayStats.reviewed > 0 && (
+          <p style={{ color: "var(--pico-muted-color)", fontSize: "0.95rem" }}>
+            {t("review.today_total", { count: todayStats.reviewed })}
+            {todayAccuracy !== null &&
+              " · " + t("review.today_accuracy", { pct: todayAccuracy })}
+          </p>
+        )}
         <Link to="/" role="button" className="outline">{t("review.home")}</Link>
       </article>
     );
   }
 
   if (phase === "start") {
+    const todayAccuracy = todayStats ? computeDayAccuracy(todayStats) : null;
+    const todayAvg = todayStats ? computeDayAvgTime(todayStats) : null;
+    const hasToday =
+      todayStats !== null && (todayStats.reviewed > 0 || todayStats.new_words > 0);
+
     return (
       <div style={{ textAlign: "center", padding: "3rem 1rem" }}>
         <h2>{t("review.heading")}</h2>
@@ -404,6 +448,79 @@ export function Review() {
         >
           {t("review.start")}
         </button>
+
+        {hasToday && (
+          <div
+            data-testid="today-block"
+            style={{
+              marginTop: "2rem",
+              color: "var(--pico-muted-color)",
+              fontSize: "0.95rem",
+              lineHeight: 1.8,
+            }}
+          >
+            <div style={{ fontWeight: "bold", color: "var(--pico-color)" }}>
+              {t("review.today_heading")}
+              {streak > 1 && (
+                <span data-testid="streak-badge" style={{ marginLeft: "0.5rem" }}>
+                  🔥 {t("review.today_streak", { count: streak })}
+                </span>
+              )}
+            </div>
+            <div>
+              {t("review.today_reviewed", { count: todayStats!.reviewed })}
+              {todayAccuracy !== null &&
+                " · " + t("review.today_accuracy", { pct: todayAccuracy })}
+            </div>
+            {todayAvg !== null && (
+              <div>{t("review.today_avg_time", { time: formatTime(todayAvg) })}</div>
+            )}
+            {todayStats!.new_words > 0 && (
+              <div>{t("review.today_new_words", { count: todayStats!.new_words })}</div>
+            )}
+          </div>
+        )}
+
+        {history.length > 0 && (
+          <div style={{ marginTop: "2rem", maxWidth: "400px", margin: "2rem auto 0" }}>
+            <button
+              type="button"
+              className="outline"
+              data-testid="history-toggle"
+              onClick={() => setShowHistory((v) => !v)}
+              style={{ width: "100%" }}
+            >
+              {showHistory
+                ? t("review.history_hide")
+                : t("review.history_show")}
+            </button>
+            {showHistory && (
+              <table data-testid="history-table" style={{ marginTop: "1rem", fontSize: "0.85rem" }}>
+                <thead>
+                  <tr>
+                    <th>{t("review.history_col_date")}</th>
+                    <th>{t("review.history_col_reviewed")}</th>
+                    <th>{t("review.history_col_accuracy")}</th>
+                    <th>{t("review.history_col_new")}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {history.map((day) => {
+                    const acc = computeDayAccuracy(day);
+                    return (
+                      <tr key={day.date}>
+                        <td>{day.date}</td>
+                        <td>{day.reviewed}</td>
+                        <td>{acc !== null ? acc + "%" : "—"}</td>
+                        <td>{day.new_words > 0 ? day.new_words : "—"}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            )}
+          </div>
+        )}
       </div>
     );
   }
@@ -432,6 +549,11 @@ export function Review() {
             )}
             {bestTime !== null && (
               <div>{t("review.session_best_time", { time: formatTime(bestTime) })}</div>
+            )}
+            {todayStats && todayStats.reviewed > session.total && (
+              <div style={{ marginTop: "0.5rem" }}>
+                {t("review.today_total", { count: todayStats.reviewed })}
+              </div>
             )}
             <div style={{ marginTop: "0.5rem", opacity: 0.6 }}>
               {t("review.session_progress")}

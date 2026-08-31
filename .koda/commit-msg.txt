@@ -1,0 +1,15 @@
+feat: daily review stats with streak and history
+
+Review session stats were lost on app exit. Now every answer and
+every added word is persisted incrementally into a dailyStats table
+(Dexie v6, keyed by local date), so progress survives restarts and
+aggregates by day.
+
+- dailyStatsRepository: recordAnswer, incrementNewWords, getRecentDays, getStreak
+- Review: "Today" block (reviews, accuracy, avg time, new words, streak badge) on start screen, "Today total" on paused/done, collapsible 14-day history
+- Add: increments new_words counter on save
+- domain/dailyStats: accuracy and avg time helpers
+- i18n: ru/en keys for all new UI strings
+- Tests: 265 total (repository incl. midnight rollover, domain, Review UI, Add counter)
+
+Bump version: 1.15.0 → 1.16.0 (minor)

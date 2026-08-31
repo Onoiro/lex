@@ -5,7 +5,7 @@ Lex — local-first приложение-переводчик и помощни�
 
 **Демо:** [lex.2-way.ru](https://lex.2-way.ru)
 
-**Текущая версия:** 1.13.0
+**Текущая версия:** 1.16.0
 
 ## Архитектура
 
@@ -109,13 +109,13 @@ make d-run    # docker compose up -d
 ├── client/                    # Local-first клиентское приложение
 │   ├── src/
 │   │   ├── components/        # Layout, OfflineIndicator
-│   │   ├── data/              # db.ts (Dexie), wordRepository, settingsRepository
-│   │   ├── domain/            # srs.ts (SM-2), stats.ts, validators.ts, dictionarySort.ts
+│   │   ├── data/              # db.ts (Dexie), wordRepository, settingsRepository, dailyStatsRepository
+│   │   ├── domain/            # srs.ts (SM-2), stats.ts, validators.ts, dictionarySort.ts, dailyStats.ts
 │   │   ├── i18n/              # index.ts, languages.ts, en.json, ru.json
 │   │   ├── pages/             # Home, Add, Review, Dictionary, Settings
 │   │   ├── services/          # translateApi.ts (proxy client), ttsApi.ts, dictionaryApi.ts, feedbackApi.ts, theme.ts
 │   │   ├── test/              # Component and service tests (Vitest)
-│   │   ├── types/             # Word, LanguageSettings
+│   │   └── types/             # Word, LanguageSettings, DailyStats
 │   │   └── main.tsx           # App entry, SW registration, native plugins
 │   ├── capacitor.config.ts    # Android config (ru.lex.app)
 │   ├── src-tauri/             # Desktop (Tauri 2, Rust)
@@ -167,6 +167,7 @@ make d-run    # docker compose up -d
 - **PWA:** vite-plugin-pwa генерирует SW. Runtime cache для `/translate`, `/languages` и `/dictionary` (NetworkFirst).
 - **TTS:** `ttsApi.ts` — персистентный кеш аудио через Cache API (`lex-tts-audio`, ключи `tts:{lang}:{text}`, LRU-лимит ~50 МБ). Офлайн: пропускает запрос при `navigator.onLine === false`, ранее прослушанные слова озвучиваются из кеша.
 - **VITE_PROXY_URL:** env var для proxy base URL (пустая строка = relative path).
+- **Ежедневная статистика:** таблица `dailyStats` (Dexie v6, ключ — локальная дата `YYYY-MM-DD`). Запись инкрементальная: `recordAnswer` после каждого ответа в Review, `incrementNewWords` после добавления слова в Add. Репозиторий: `dailyStatsRepository.ts` (`recordAnswer`, `incrementNewWords`, `getRecentDays`, `getStreak`, `todayKey`). UI на странице Повтор: блок «Сегодня» (повторения, точность, время, новые слова, streak) на стартовом экране, «Сегодня всего» на paused/done, сворачиваемая история за 14 дней. Streak — дни с `reviewed > 0` или `new_words > 0`; если сегодня пусто, серия считается от вчера.
 
 ### Proxy
 - Скрывает Yandex API key. Rate limiting. Кэш переводов. TTS (text-to-speech). Feedback (Telegram Bot).
@@ -191,6 +192,7 @@ make d-run    # docker compose up -d
 ## Дальнейшие планы
 - Пагинация по словарю при росте
 - CI для кросс-компиляции Tauri (Windows MSI/NSIS, macOS DMG)
+- График активности за 14 дней на странице Повтор (данные dailyStats уже есть)
 
 ---
 **Последнее обновление:** 30 августа 2026

@@ -16,6 +16,7 @@ Lex is a translator and vocabulary trainer. Your dictionary, spaced repetition, 
 - **Local-first** - Dictionary, SRS, and settings stored in IndexedDB (Dexie.js). Works offline.
 - **Translate words** - Auto-translate from 100+ languages via Yandex Translate API (through proxy)
 - **Spaced repetition (SM-2)** - Words you forget more often appear more frequently in reviews
+- **Daily stats** - Review results and new words are saved per day: today's progress, day streak, and 14-day history on the Review page
 - **Response time tracking** - Best/average times, live timer with color thresholds
 - **Auto-answer & pause** - Auto-records "Forgot" after 10s, pauses after 3 consecutive auto-answers or 30s inactivity
 - **TTS** - Text-to-speech for words and translations via Yandex SpeechKit
@@ -159,6 +160,7 @@ Requires Rust + system libraries (see [Tauri prerequisites](https://tauri.app/st
 3. Click **I know** or **I don't remember**
 4. Timer: green (record), orange (5s), red (10s). Auto-answer after 10s.
 5. Training pauses after 3 consecutive auto-answers or 30s inactivity.
+6. Before training: today's stats (reviews, accuracy, new words, day streak) and a collapsible 14-day history. Every answer is saved into daily stats immediately.
 
 ### Dictionary
 
@@ -197,7 +199,7 @@ All commands are run via `make`. Run `make help` to see the full list.
 | `make proxy` | Start translate proxy (port 8004) |
 | `make client-dev` | Start client dev server (port 5173) |
 | `make client-build` | Build client for production |
-| `make client-test` | Run client tests (vitest, 236 tests) |
+| `make client-test` | Run client tests (vitest, 265 tests) |
 | `make client-lint` | Lint client code (eslint) |
 | `make client-typecheck` | Type-check client (tsc) |
 | `make proxy-lint` | Lint proxy code (ruff) |
@@ -219,13 +221,13 @@ All commands are run via `make`. Run `make help` to see the full list.
 ├── client/                    # Local-first client app
 │   ├── src/
 │   │   ├── components/        # Layout, OfflineIndicator
-│   │   ├── data/              # db.ts, wordRepository, settingsRepository
-│   │   ├── domain/            # srs.ts, stats.ts, validators.ts, dictionarySort.ts
+│   │   ├── data/              # db.ts, wordRepository, settingsRepository, dailyStatsRepository
+│   │   ├── domain/            # srs.ts, stats.ts, validators.ts, dictionarySort.ts, dailyStats.ts
 │   │   ├── i18n/              # index.ts, languages.ts, en/ru.json
 │   │   ├── pages/             # Home, Add, Review, Dictionary, Settings, Privacy, Terms
 │   │   ├── services/          # translateApi.ts, ttsApi.ts, dictionaryApi.ts, feedbackApi.ts, theme.ts
 │   │   ├── test/              # Component and service tests (Vitest)
-│   │   └── types/             # Word, LanguageSettings
+│   │   └── types/             # Word, LanguageSettings, DailyStats
 │   ├── capacitor.config.ts    # Android config
 │   ├── src-tauri/             # Desktop (Tauri 2)
 │   ├── android/               # Capacitor Android project
