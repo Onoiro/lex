@@ -54,6 +54,7 @@ export function Review() {
   const [streak, setStreak] = useState(0);
   const [history, setHistory] = useState<DailyStats[]>([]);
   const [showHistory, setShowHistory] = useState(false);
+  const [showHowItWorks, setShowHowItWorks] = useState(false);
 
   // Refs for timers and state that shouldn't trigger re-renders
   const startTimeRef = useRef<number>(0);
@@ -63,6 +64,8 @@ export function Review() {
   const autoNextTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const consecutiveAutoRef = useRef(0);
   const isAutoAnswerRef = useRef(false);
+  const usedHintRef = useRef(false);
+  const hintElapsedRef = useRef<number | null>(null);
   const allWordsRef = useRef<Word[]>([]);
   const nextViewRef = useRef<WordView | null>(null);
   const currentViewRef = useRef<WordView | null>(null);
@@ -200,12 +203,12 @@ export function Review() {
   }, []);
 
   const submitResult = useCallback(
-    async (correct: boolean, elapsedSec: number) => {
+    async (correct: boolean, elapsedSec: number, usedHint: boolean) => {
       const view = currentViewRef.current;
       if (!view || !view.word.id) return;
 
-      const srsUpdate = applyReviewResult(view.word, correct, view.direction);
-      const timeUpdate = updateResponseTime(view.word, elapsedSec);
+      const srsUpdate = applyReviewResult(view.word, correct, view.direction, usedHint);
+      const timeUpdate = updateResponseTime(view.word, elapsedSec, !usedHint);
       await updateWord(view.word.id, { ...srsUpdate, ...timeUpdate });
 
       // Update the word in allWordsRef so next pick has fresh data
@@ -247,6 +250,8 @@ export function Review() {
     setAnswered(false);
     setShowTranslation(false);
     setShowHint(false);
+    usedHintRef.current = false;
+    hintElapsedRef.current = null;
     isAutoAnswerRef.current = false;
     startTimer();
 
@@ -276,6 +281,9 @@ export function Review() {
         elapsedSec = ANSWER_TIMEOUT;
         setTimerColor("red");
         stopTimer();
+      } else if (usedHintRef.current && hintElapsedRef.current !== null) {
+        // Timer was frozen when the hint was opened — use that time
+        elapsedSec = hintElapsedRef.current;
       } else {
         elapsedSec = stopTimer();
       }
@@ -312,7 +320,7 @@ export function Review() {
       );
 
       // Submit result and prefetch next word
-      void submitResult(correct, elapsedSec).then(() => {
+      void submitResult(correct, elapsedSec, usedHintRef.current).then(() => {
         void loadDailyStats();
         const next = pickNextView();
         nextViewRef.current = next;
@@ -354,6 +362,8 @@ export function Review() {
     setAnswered(false);
     setShowTranslation(false);
     setShowHint(false);
+    usedHintRef.current = false;
+    hintElapsedRef.current = null;
     consecutiveAutoRef.current = 0;
     setSession({ total: 0, known: 0, forgotten: 0, times: [] });
     startTimer();
@@ -369,6 +379,9 @@ export function Review() {
     consecutiveAutoRef.current = 0;
     if (nextViewRef.current) {
       showNextWord();
+    } else if (usedHintRef.current && hintElapsedRef.current !== null) {
+      // Timer was frozen by the hint — don't restart it
+      setElapsed(hintElapsedRef.current);
     } else {
       startTimer();
     }
@@ -521,6 +534,39 @@ export function Review() {
             )}
           </div>
         )}
+
+        <div style={{ maxWidth: "400px", margin: "2rem auto 0" }}>
+          <button
+            type="button"
+            className="outline"
+            data-testid="how-it-works-toggle"
+            onClick={() => setShowHowItWorks((v) => !v)}
+            style={{ width: "100%" }}
+          >
+            {t("review.how_it_works")}
+          </button>
+          {showHowItWorks && (
+            <div
+              data-testid="how-it-works-block"
+              style={{
+                marginTop: "1rem",
+                textAlign: "left",
+                fontSize: "0.9rem",
+                color: "var(--pico-muted-color)",
+                lineHeight: 1.7,
+              }}
+            >
+              <p style={{ fontWeight: "bold", color: "var(--pico-color)", marginBottom: "0.5rem" }}>
+                {t("review.how_it_works_title")}
+              </p>
+              <p style={{ marginBottom: "0.5rem" }}>{t("review.how_it_works_correct")}</p>
+              <p style={{ marginBottom: "0.5rem" }}>{t("review.how_it_works_wrong")}</p>
+              <p style={{ marginBottom: "0.5rem" }}>{t("review.how_it_works_slow")}</p>
+              <p style={{ marginBottom: "0.5rem" }}>{t("review.how_it_works_hint")}</p>
+              <p style={{ marginBottom: 0 }}>{t("review.how_it_works_summary")}</p>
+            </div>
+          )}
+        </div>
       </div>
     );
   }
@@ -645,7 +691,12 @@ export function Review() {
                 type="button"
                 className="outline"
                 data-testid="hint-btn"
-                onClick={() => setShowHint(true)}
+                onClick={() => {
+                  // Freeze the timer: only time spent before the hint counts
+                  hintElapsedRef.current = stopTimer();
+                  usedHintRef.current = true;
+                  setShowHint(true);
+                }}
                 style={{ marginTop: "1rem", fontSize: "0.85rem", padding: "0.25rem 0.75rem" }}
               >
                 {t("review.show_hint")}

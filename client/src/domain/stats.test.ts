@@ -17,6 +17,7 @@ function makeWord(overrides: Partial<Word> = {}): Word {
     avg_time: null,
     know_count: 0,
     forgot_count: 0,
+    hint_count: 0,
     ...overrides,
   };
 }
@@ -71,6 +72,24 @@ describe("updateResponseTime", () => {
 
     expect(word.best_time).toBe(2.0);
     expect(word.avg_time).toBe(2.0);
+  });
+
+  // --- recordBest = false (hint-assisted answers) ---
+
+  it("does not set best_time when recordBest is false", () => {
+    const word = makeWord();
+    const result = updateResponseTime(word, 2.5, false);
+
+    expect(result.best_time).toBeUndefined();
+    expect(result.avg_time).toBe(2.5);
+  });
+
+  it("does not update best_time but updates avg_time when recordBest is false", () => {
+    const word = makeWord({ best_time: 3.0, avg_time: 3.0 });
+    const result = updateResponseTime(word, 1.5, false);
+
+    expect(result.best_time).toBeUndefined();
+    expect(result.avg_time).toBe(2.25);
   });
 });
 

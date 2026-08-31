@@ -226,6 +226,7 @@ describe("Add", () => {
       avg_time: null,
       know_count: 0,
       forgot_count: 0,
+      hint_count: 0,
     });
 
     const user = userEvent.setup();

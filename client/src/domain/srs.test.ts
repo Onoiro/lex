@@ -17,6 +17,7 @@ function makeWord(overrides: Partial<Word> = {}): Word {
     avg_time: null,
     know_count: 0,
     forgot_count: 0,
+    hint_count: 0,
     ...overrides,
   };
 }
@@ -89,6 +90,63 @@ describe("applyReviewResult", () => {
 
     expect(word.repetitions).toBe(2);
     expect(word.interval).toBe(6);
+  });
+
+  // --- Hint-assisted correct answers ---
+
+  it("halves the interval on first correct answer with hint", () => {
+    const word = makeWord({ repetitions: 0 });
+    const result = applyReviewResult(word, true, "en_ru", true);
+
+    // Full interval would be 1, halved → max(1, 0) = 1
+    expect(result.interval).toBe(1);
+    expect(result.repetitions).toBe(0);
+    expect(result.know_count).toBe(1);
+    expect(result.hint_count).toBe(1);
+  });
+
+  it("halves the interval on second correct answer with hint", () => {
+    const word = makeWord({ repetitions: 1, interval: 1 });
+    const result = applyReviewResult(word, true, "ru_en", true);
+
+    // Full interval would be 6, halved → 3
+    expect(result.interval).toBe(3);
+    expect(result.repetitions).toBe(1);
+    expect(result.hint_count).toBe(1);
+  });
+
+  it("halves the multiplied interval on subsequent correct answers with hint", () => {
+    const word = makeWord({ repetitions: 2, interval: 6 });
+    const result = applyReviewResult(word, true, "en_ru", true);
+
+    // Full interval would be 15, halved → 7
+    expect(result.interval).toBe(7);
+    expect(result.repetitions).toBe(2);
+  });
+
+  it("does not increment repetitions with hint", () => {
+    const word = makeWord({ repetitions: 3, interval: 15 });
+    const result = applyReviewResult(word, true, "en_ru", true);
+
+    expect(result.repetitions).toBe(3);
+  });
+
+  it("does not count hint usage on incorrect answer", () => {
+    const word = makeWord({ repetitions: 2, interval: 6, hint_count: 1 });
+    const result = applyReviewResult(word, false, "en_ru", true);
+
+    expect(result.interval).toBe(0);
+    expect(result.repetitions).toBe(0);
+    expect(result.forgot_count).toBe(1);
+    expect(result.hint_count).toBeUndefined();
+  });
+
+  it("does not add hint_count when no hint was used", () => {
+    const word = makeWord({ repetitions: 0, hint_count: 2 });
+    const result = applyReviewResult(word, true, "en_ru", false);
+
+    expect(result.hint_count).toBeUndefined();
+    expect(result.repetitions).toBe(1);
   });
 });
 

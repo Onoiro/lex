@@ -28,6 +28,7 @@ export async function addWord(
     avg_time: null,
     know_count: 0,
     forgot_count: 0,
+    hint_count: 0,
   });
 
   return id;
@@ -129,6 +130,7 @@ export async function importWords(data: Word[]): Promise<{
       avg_time: entry.avg_time ?? null,
       know_count: entry.know_count ?? 0,
       forgot_count: entry.forgot_count ?? 0,
+      hint_count: entry.hint_count ?? 0,
     });
     imported++;
   }

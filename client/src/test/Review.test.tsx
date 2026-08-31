@@ -330,6 +330,112 @@ describe("Review", () => {
     });
   });
 
+  // --- Hint-assisted answers ---
+
+  it("counts hint answer as correct but with reduced interval growth", async () => {
+    await addWord("hello", "привет", "en", "ru", "my hint");
+
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <Review />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Start training" })).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole("button", { name: "Start training" }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("hint-btn")).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByTestId("hint-btn"));
+    await user.click(screen.getByRole("button", { name: /I know/ }));
+
+    await waitFor(async () => {
+      const words = await getAllWords();
+      expect(words[0].know_count).toBe(1);
+      expect(words[0].hint_count).toBe(1);
+      // repetitions must NOT advance on a hint-assisted answer
+      expect(words[0].repetitions).toBe(0);
+      // First correct answer would give interval 1; halved → max(1, 0) = 1
+      expect(words[0].interval).toBe(1);
+    });
+  });
+
+  it("does not set best_time on hint-assisted answer but records avg_time", async () => {
+    await addWord("hello", "привет", "en", "ru", "my hint");
+
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <Review />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Start training" })).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole("button", { name: "Start training" }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("hint-btn")).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByTestId("hint-btn"));
+    await user.click(screen.getByRole("button", { name: /I know/ }));
+
+    await waitFor(async () => {
+      const words = await getAllWords();
+      expect(words[0].best_time).toBeNull();
+      expect(words[0].avg_time).not.toBeNull();
+    });
+  });
+
+  it("does not auto-answer after hint is opened (timer frozen)", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    await addWord("hello", "привет", "en", "ru", "my hint");
+
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    render(
+      <MemoryRouter>
+        <Review />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Start training" })).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole("button", { name: "Start training" }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("hint-btn")).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByTestId("hint-btn"));
+
+    // Advance past the 10s auto-answer timeout — nothing should happen
+    await act(async () => {
+      vi.advanceTimersByTime(12000);
+    });
+
+    // Word is still unanswered, user can still answer
+    expect(screen.getByRole("button", { name: /I know/ })).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /I know/ }));
+
+    await waitFor(async () => {
+      const words = await getAllWords();
+      expect(words[0].know_count).toBe(1);
+      expect(words[0].hint_count).toBe(1);
+    });
+  });
+
   // --- Click "Show translation" button after answering "Know" ---
 
   it("reveals translation when clicking Show translation after Know", async () => {
@@ -697,6 +803,7 @@ describe("Review", () => {
       avg_time: 3.0,
       know_count: 4,
       forgot_count: 1,
+      hint_count: 0,
     });
 
     const user = userEvent.setup();
@@ -961,6 +1068,40 @@ describe("Review", () => {
       expect(today).toHaveLength(1);
       expect(today[0].reviewed).toBe(1);
       expect(today[0].known).toBe(1);
+    });
+  });
+
+  // --- "How it works?" help block ---
+
+  it("shows and hides how-it-works block on start screen", async () => {
+    await addWord("hello", "привет");
+
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <Review />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("how-it-works-toggle")).toBeInTheDocument();
+    });
+
+    expect(screen.queryByTestId("how-it-works-block")).not.toBeInTheDocument();
+
+    await user.click(screen.getByTestId("how-it-works-toggle"));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("how-it-works-block")).toBeInTheDocument();
+    });
+
+    expect(screen.getByTestId("how-it-works-block")).toHaveTextContent("How the app decides which word to show");
+    expect(screen.getByTestId("how-it-works-block")).toHaveTextContent("almost knew it");
+
+    await user.click(screen.getByTestId("how-it-works-toggle"));
+
+    await waitFor(() => {
+      expect(screen.queryByTestId("how-it-works-block")).not.toBeInTheDocument();
     });
   });
 });

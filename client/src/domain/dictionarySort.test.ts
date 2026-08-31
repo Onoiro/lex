@@ -17,6 +17,7 @@ function makeWord(overrides: Partial<Word> = {}): Word {
     avg_time: null,
     know_count: 0,
     forgot_count: 0,
+    hint_count: 0,
     ...overrides,
   };
 }

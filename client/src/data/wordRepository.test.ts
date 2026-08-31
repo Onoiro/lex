@@ -151,6 +151,7 @@ describe("importWords", () => {
         avg_time: null,
         know_count: 0,
         forgot_count: 0,
+        hint_count: 0,
       },
       {
         word: "world",
@@ -165,6 +166,7 @@ describe("importWords", () => {
         avg_time: 2.0,
         know_count: 3,
         forgot_count: 1,
+        hint_count: 0,
       },
     ];
 
@@ -193,6 +195,7 @@ describe("importWords", () => {
         avg_time: null,
         know_count: 0,
         forgot_count: 0,
+        hint_count: 0,
       },
       {
         word: "world",
@@ -207,6 +210,7 @@ describe("importWords", () => {
         avg_time: null,
         know_count: 0,
         forgot_count: 0,
+        hint_count: 0,
       },
     ];
 

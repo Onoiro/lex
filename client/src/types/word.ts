@@ -33,6 +33,8 @@ export interface Word {
   know_count: number;
   /** Number of "I forgot" clicks. */
   forgot_count: number;
+  /** Number of correct answers given after opening a hint. */
+  hint_count: number;
 }
 
 /** Result of a single review attempt. */

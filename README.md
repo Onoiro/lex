@@ -160,7 +160,7 @@ Requires Rust + system libraries (see [Tauri prerequisites](https://tauri.app/st
 3. Click **I know** or **I don't remember**
 4. Timer: green (record), orange (5s), red (10s). Auto-answer after 10s.
 5. Training pauses after 3 consecutive auto-answers or 30s inactivity.
-6. Before training: today's stats (reviews, accuracy, new words, day streak) and a collapsible 14-day history. Every answer is saved into daily stats immediately.
+6. Before training: today's stats (reviews, accuracy, new words, day streak), a collapsible 14-day history, and a "How does it work?" help block explaining the algorithm in plain language. Every answer is saved into daily stats immediately.
 
 ### Dictionary
 
@@ -181,12 +181,14 @@ Since Lex is local-first, each device has its own independent dictionary (stored
 
 Simplified SM-2:
 - **Correct:** Interval grows (1 → 6 → interval × 2.5, capped at 30 days)
+- **Correct with hint:** Answer counts, but the interval is half the usual value and repetitions do not advance (hint_count is tracked per word)
 - **Wrong:** Interval resets to 0
 - **Selection:** Weighted random - weight = 1 / (interval + 1) × (1 + RT_COEFF × normAvgTime)
   - RT_COEFF = 1.0 (Reaction Time Coefficient) - slower recall increases review frequency
   - normAvgTime = clamp(avg_time / 10, 0, 1), null → 1.0 (new words get max priority)
+- **Hint timing:** When a hint is opened, the timer freezes - only the time before the hint counts toward avg_time and daily stats; best_time is not updated
 - **Rank:** Each word has a rank (1-100) shown in the dictionary, computed from its weight. 100 = shown most often, 1 = shown least often.
-- **Stats:** know_count, forgot_count, best_time, avg_time per word
+- **Stats:** know_count, forgot_count, hint_count, best_time, avg_time per word
 
 ## Development
 

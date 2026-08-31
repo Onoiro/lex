@@ -239,6 +239,9 @@ export function Dictionary() {
                       <span style={{ color: "red" }}>{w.forgot_count}</span>
                     </span>
                   )}
+                  {w.hint_count > 0 && (
+                    <span>💡 {w.hint_count}</span>
+                  )}
                   {w.best_time !== null && w.avg_time !== null && (
                     <span>⚡ {formatTime(w.best_time)} / {formatTime(w.avg_time)}</span>
                   )}
@@ -295,6 +298,7 @@ export function Dictionary() {
                           <span style={{ color: "red" }}>{w.forgot_count}</span>
                         </>
                       ) : "—"}
+                      {w.hint_count > 0 && <> 💡 {w.hint_count}</>}
                     </td>
                     <td style={{ textAlign: "center", fontSize: "0.85rem", color: "var(--pico-muted-color)" }}>
                       {w.best_time !== null && w.avg_time !== null ? (

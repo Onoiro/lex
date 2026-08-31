@@ -6,10 +6,14 @@ import type { Word } from "@/types";
  * Returns a partial Word object with updated best_time and/or avg_time.
  * Does NOT mutate the original word.
  * Ignores elapsed <= 0.
+ *
+ * When recordBest is false (e.g. the answer used a hint), only avg_time
+ * is updated — hint-assisted time should not claim a speed record.
  */
 export function updateResponseTime(
   word: Word,
   elapsed: number,
+  recordBest = true,
 ): Partial<Word> {
   if (elapsed <= 0) {
     return {};
@@ -17,7 +21,7 @@ export function updateResponseTime(
 
   const result: Partial<Word> = {};
 
-  if (word.best_time === null || elapsed < word.best_time) {
+  if (recordBest && (word.best_time === null || elapsed < word.best_time)) {
     result.best_time = elapsed;
   }
 

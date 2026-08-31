@@ -52,15 +52,39 @@ export function computeRank(word: Word): number {
  *   - subsequent: interval = interval * 2.5 (capped at 30)
  *
  * On incorrect: interval and repetitions reset to 0.
+ *
+ * A correct answer with a hint ("almost knew it") counts, but the interval
+ * grows at half the usual rate and repetitions do not advance, so the word
+ * stays in rotation longer than a fully recalled word.
  */
 export function applyReviewResult(
   word: Word,
   correct: boolean,
   direction: ReviewDirection,
+  usedHint = false,
 ): Partial<Word> {
   let interval: number;
 
   if (correct) {
+    if (usedHint) {
+      const fullInterval =
+        word.repetitions === 0
+          ? 1
+          : word.repetitions === 1
+            ? 6
+            : Math.trunc(word.interval * 2.5);
+      interval = Math.max(1, Math.trunc(fullInterval / 2));
+
+      return {
+        interval,
+        repetitions: word.repetitions,
+        next_review: Date.now() / 1000 + interval * SECONDS_PER_DAY,
+        last_direction: direction,
+        know_count: word.know_count + 1,
+        hint_count: word.hint_count + 1,
+      };
+    }
+
     if (word.repetitions === 0) {
       interval = 1;
     } else if (word.repetitions === 1) {
