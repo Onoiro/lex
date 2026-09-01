@@ -83,7 +83,7 @@
   "review.history_col_new": "New",
   "review.tts_on": "Sound on",
   "review.tts_off": "Sound off",
-  "review.tts_offline": "Offline — audio unavailable",
+  "review.tts_offline": "Offline — cached audio works, new words can't be spoken",
   "review.how_it_works": "How does it work?",
   "review.how_it_works_title": "How the app decides which word to show",
   "review.how_it_works_correct": "✓ Answered correctly - the word rests. First a day, then 6 days, then the pause grows about 2.5× - up to a month.",

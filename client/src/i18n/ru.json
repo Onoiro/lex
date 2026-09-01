@@ -83,7 +83,7 @@
   "review.history_col_new": "Новых",
   "review.tts_on": "Звук включён",
   "review.tts_off": "Звук выключен",
-  "review.tts_offline": "Offline — озвучка недоступна",
+  "review.tts_offline": "Offline — озвучка работает из кеша, новые слова не озвучиваются",
   "review.how_it_works": "Как это работает?",
   "review.how_it_works_title": "Как приложение решает, какое слово показать",
   "review.how_it_works_correct": "✓ Ответили правильно - слово отдыхает. Сначала день, потом 6 дней, потом пауза растёт примерно в 2,5 раза - до месяца.",
