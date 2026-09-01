@@ -67,6 +67,9 @@ ENV/
 # Koda CLI
 .kodacli/
 
+# Koda temporary files
+.koda/commit-msg.txt
+
 # OS
 .DS_Store
 Thumbs.db
