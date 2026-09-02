@@ -149,6 +149,7 @@
   "settings.same_lang_warning": "Исходный и целевой языки совпадают. Перевод может не дать полезного результата.",
   "settings.app_version": "Версия {version}",
   "tts.listen_word": "Прослушать слово",
+  "add.clear_fields": "Очистить поля",
   "tts.listen_translation": "Прослушать перевод",
   "settings.tts": "Озвучивание",
   "settings.tts_review": "Авто-озвучка в повторе",

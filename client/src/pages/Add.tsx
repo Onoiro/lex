@@ -212,6 +212,16 @@ export function Add() {
     }
   }, [word]);
 
+  const handleClear = () => {
+    setWord("");
+    setTranslation("");
+    setNote("");
+    setDetectedLang("");
+    setUserEditingTranslation(false);
+    setExamplesError(false);
+    wordRef.current?.focus();
+  };
+
   const handlePlayWord = async () => {
     const trimmed = word.trim();
     if (!trimmed || !settings) return;
@@ -476,13 +486,37 @@ export function Add() {
               <button
                 type="button"
                 className="outline"
+                data-testid="clear-fields-btn"
+                onClick={handleClear}
+                title={t("add.clear_fields")}
+                aria-label={t("add.clear_fields")}
+                style={{
+                  position: "absolute",
+                  right: "0.5rem",
+                  top: "0.4rem",
+                  padding: "0.25rem 0.5rem",
+                  fontSize: "1rem",
+                  lineHeight: 1,
+                  cursor: "pointer",
+                  border: "none",
+                  background: "none",
+                  color: "var(--pico-muted-color)",
+                }}
+              >
+                ✕
+              </button>
+            )}
+            {word.trim() && (
+              <button
+                type="button"
+                className="outline"
                 data-testid="tts-word-btn"
                 onClick={handlePlayWord}
                 disabled={ttsLoading === "word"}
                 title={t("tts.listen_word")}
                 style={{
                   position: "absolute",
-                  right: "0.5rem",
+                  right: "2.2rem",
                   top: "0.4rem",
                   padding: "0.25rem 0.5rem",
                   fontSize: "1rem",

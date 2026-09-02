@@ -685,6 +685,52 @@ describe("Add", () => {
     expect(screen.queryByTestId("load-examples-btn")).not.toBeInTheDocument();
   });
 
+  // --- Clear fields button ---
+
+  it("does not show clear button when word is empty", () => {
+    render(
+      <MemoryRouter>
+        <Add />
+      </MemoryRouter>,
+    );
+
+    expect(screen.queryByTestId("clear-fields-btn")).not.toBeInTheDocument();
+  });
+
+  it("clears word, translation and note on clear button click", async () => {
+    vi.mocked(translateWord).mockResolvedValue({
+      translation: "привет",
+      detectedLanguage: "en",
+    });
+
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <Add />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText("Enter a word or phrase")).toBeInTheDocument();
+    });
+
+    await user.type(screen.getByPlaceholderText("Enter a word or phrase"), "hello");
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText("Translation")).toHaveValue("привет");
+    });
+
+    const noteField = screen.getByPlaceholderText("Association, hint, or mnemonic to help you remember");
+    await user.type(noteField, "my note");
+
+    await user.click(screen.getByTestId("clear-fields-btn"));
+
+    expect(screen.getByPlaceholderText("Enter a word or phrase")).toHaveValue("");
+    expect(screen.getByPlaceholderText("Translation")).toHaveValue("");
+    expect(noteField).toHaveValue("");
+    expect(screen.queryByTestId("clear-fields-btn")).not.toBeInTheDocument();
+  });
+
   it("loads example into note field on button click", async () => {
     vi.mocked(translateWord).mockResolvedValue({
       translation: "привет",
