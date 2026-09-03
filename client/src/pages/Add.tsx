@@ -180,8 +180,10 @@ export function Add() {
       return;
     }
 
-    // Stop auto-translate for the rest of the day once quota is exceeded
+    // Stop auto-translate for the rest of the day once quota is exceeded,
+    // but remind the user why on every new attempt
     if (quotaExceeded) {
+      showMessage("error_quota", t("add.error_quota"));
       return;
     }
 
