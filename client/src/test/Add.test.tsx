@@ -5,9 +5,20 @@ import { MemoryRouter } from "react-router-dom";
 import { Add, setDebounceMs } from "@/pages/Add";
 import { setLocale } from "@/i18n";
 import { db } from "@/data/db";
+import { LimitError, MAX_TEXT_LENGTH } from "@/services/translateApi";
 
 vi.mock("@/services/translateApi", () => ({
   translateWord: vi.fn(),
+  LimitError: class LimitError extends Error {
+    code: string;
+    maxLength?: number;
+    constructor(code: string, maxLength?: number) {
+      super(code);
+      this.code = code;
+      this.maxLength = maxLength;
+    }
+  },
+  MAX_TEXT_LENGTH: 500,
   getLanguages: vi.fn().mockResolvedValue([
     { code: "en", name: "English" },
     { code: "ru", name: "Russian" },
@@ -427,6 +438,97 @@ describe("Add", () => {
     await waitFor(() => {
       expect(screen.getByText(/Network error/)).toBeInTheDocument();
     });
+  });
+
+  // --- Usage limits ---
+
+  it("shows quota message and stops auto-translate when daily quota is exceeded", async () => {
+    vi.mocked(translateWord).mockRejectedValue(
+      new LimitError("daily_quota_exceeded"),
+    );
+
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <Add />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText("Enter a word or phrase")).toBeInTheDocument();
+    });
+
+    await user.type(screen.getByPlaceholderText("Enter a word or phrase"), "hello");
+
+    await waitFor(() => {
+      expect(screen.getByText(/Daily translation limit reached/)).toBeInTheDocument();
+    });
+
+    const callsAfterQuota = vi.mocked(translateWord).mock.calls.length;
+
+    // New word should NOT trigger another auto-translate (no 429 spam)
+    await user.clear(screen.getByPlaceholderText("Enter a word or phrase"));
+    await user.type(screen.getByPlaceholderText("Enter a word or phrase"), "world");
+
+    await new Promise((r) => setTimeout(r, 50));
+    expect(vi.mocked(translateWord).mock.calls.length).toBe(callsAfterQuota);
+  });
+
+  it("shows too-long warning and skips auto-translate for text over 500 chars", async () => {
+    vi.mocked(translateWord).mockResolvedValue({
+      translation: "привет",
+      detectedLanguage: "en",
+    });
+
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <Add />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText("Enter a word or phrase")).toBeInTheDocument();
+    });
+
+    const longText = "a".repeat(501);
+    await user.type(screen.getByPlaceholderText("Enter a word or phrase"), longText);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("too-long-warning")).toBeInTheDocument();
+    });
+
+    // Auto-translate must not fire for the over-limit text itself
+    // (intermediate keystrokes are shorter than the limit and may translate)
+    await new Promise((r) => setTimeout(r, 50));
+    const lastCall = vi.mocked(translateWord).mock.calls.at(-1);
+    expect(lastCall?.[0].length ?? 0).toBeLessThanOrEqual(MAX_TEXT_LENGTH);
+  });
+
+  it("does not show too-long warning for text within limit", async () => {
+    vi.mocked(translateWord).mockResolvedValue({
+      translation: "привет",
+      detectedLanguage: "en",
+    });
+
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <Add />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText("Enter a word or phrase")).toBeInTheDocument();
+    });
+
+    await user.type(screen.getByPlaceholderText("Enter a word or phrase"), "hello");
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText("Translation")).toHaveValue("привет");
+    });
+
+    expect(screen.queryByTestId("too-long-warning")).not.toBeInTheDocument();
   });
 
   it("renders note input field", () => {

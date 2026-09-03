@@ -20,10 +20,18 @@ from proxy.services.tts import synthesize_speech, speech_cache
 from proxy.services.dictionary import lookup_word, dictionary_cache
 from proxy.services.feedback import send_feedback, is_configured as feedback_configured
 from proxy.security.rate_limiter import RateLimiter, get_client_ip
+from proxy.security.quota import DailyQuota
 
 load_dotenv()
 
 app = FastAPI(title="Lex Translate Proxy", version="1.0.0")
+
+# Max text length per request (protects against bulk text abuse)
+MAX_TEXT_LENGTH = 500
+
+# Daily char quotas per IP (free tier, resets at midnight UTC)
+translate_quota = DailyQuota(max_chars_per_day=500)
+tts_quota = DailyQuota(max_chars_per_day=500)
 
 # CORS: allow client apps from any origin
 app.add_middleware(
@@ -86,6 +94,18 @@ async def translate(request: Request, body: TranslateRequest):
             content={"error": "Word is required."},
         )
 
+    if len(word) > MAX_TEXT_LENGTH:
+        return JSONResponse(
+            status_code=400,
+            content={"error": "text_too_long", "max_length": MAX_TEXT_LENGTH},
+        )
+
+    if not translate_quota.try_consume(ip, len(word)):
+        return JSONResponse(
+            status_code=429,
+            content={"error": "daily_quota_exceeded"},
+        )
+
     translation, detected = await translate_word(
         word, body.source_lang, body.target_lang
     )
@@ -136,6 +156,18 @@ async def tts(request: Request, body: TtsRequest):
         return JSONResponse(
             status_code=400,
             content={"error": "Text is required."},
+        )
+
+    if len(text) > MAX_TEXT_LENGTH:
+        return JSONResponse(
+            status_code=400,
+            content={"error": "text_too_long", "max_length": MAX_TEXT_LENGTH},
+        )
+
+    if not tts_quota.try_consume(ip, len(text)):
+        return JSONResponse(
+            status_code=429,
+            content={"error": "daily_quota_exceeded"},
         )
 
     audio = await synthesize_speech(text, body.lang)

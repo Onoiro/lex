@@ -3,7 +3,7 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 import { useLocale } from "@/i18n";
 import { getLanguageName, LANGUAGE_NAMES_EN, LANGUAGE_NAMES_RU } from "@/i18n/languages";
 import { validateWord, validateTranslation, validateNote } from "@/domain/validators";
-import { translateWord, getLanguages } from "@/services/translateApi";
+import { translateWord, getLanguages, LimitError, MAX_TEXT_LENGTH } from "@/services/translateApi";
 import { getExamples } from "@/services/dictionaryApi";
 import { synthesizeSpeech } from "@/services/ttsApi";
 import { addWord, getWord, updateWordEntry } from "@/data/wordRepository";
@@ -15,7 +15,7 @@ import type { LanguageInfo } from "@/services/translateApi";
 import { OfflineIndicator } from "@/components/OfflineIndicator";
 import type { LanguageSettings } from "@/types";
 
-type MessageType = "success" | "error_duplicate" | "error_translation" | "error_network" | null;
+type MessageType = "success" | "error_duplicate" | "error_translation" | "error_network" | "error_quota" | null;
 
 // Allow tests to override debounce delay
 let _debounceMs = 1000;
@@ -46,6 +46,7 @@ export function Add() {
   const [detectedLang, setDetectedLang] = useState<string>("");
   const [examplesLoading, setExamplesLoading] = useState(false);
   const [examplesError, setExamplesError] = useState(false);
+  const [quotaExceeded, setQuotaExceeded] = useState(false);
   const prevWordRef = useRef("");
 
   const initialSettingsRef = useRef<LanguageSettings | null>(null);
@@ -179,6 +180,16 @@ export function Add() {
       return;
     }
 
+    // Stop auto-translate for the rest of the day once quota is exceeded
+    if (quotaExceeded) {
+      return;
+    }
+
+    // Skip doomed requests: proxy rejects anything over 500 chars
+    if (trimmed.length > MAX_TEXT_LENGTH) {
+      return;
+    }
+
     debounceTimeoutRef.current = setTimeout(async () => {
       setTranslating(true);
       try {
@@ -190,11 +201,16 @@ export function Add() {
           showMessage("error_translation", t("add.error_translation"));
         }
       } catch (e) {
-        showMessage("error_network", t("add.error_network") + ": " + (e as Error).message);
+        if (e instanceof LimitError && e.code === "daily_quota_exceeded") {
+          setQuotaExceeded(true);
+          showMessage("error_quota", t("add.error_quota"));
+        } else {
+          showMessage("error_network", t("add.error_network") + ": " + (e as Error).message);
+        }
       }
       setTranslating(false);
     }, _debounceMs);
-  }, [word, settings, userEditingTranslation, showMessage, t]);
+  }, [word, settings, userEditingTranslation, quotaExceeded, showMessage, t]);
 
   const handleTranslationEdit = () => {
     setUserEditingTranslation(true);
@@ -227,7 +243,13 @@ export function Add() {
     if (!trimmed || !settings) return;
     const lang = settings.source_lang === "auto" ? (detectedLang || "en") : settings.source_lang;
     setTtsLoading("word");
-    await synthesizeSpeech(trimmed, lang);
+    await synthesizeSpeech(trimmed, lang, (code) => {
+      if (code === "daily_quota_exceeded") {
+        showMessage("error_quota", t("add.error_quota_tts"));
+      } else {
+        showMessage("error_quota", t("add.error_too_long"));
+      }
+    });
     setTtsLoading(null);
   };
 
@@ -235,7 +257,13 @@ export function Add() {
     const trimmed = translation.trim();
     if (!trimmed || !settings) return;
     setTtsLoading("translation");
-    await synthesizeSpeech(trimmed, settings.target_lang);
+    await synthesizeSpeech(trimmed, settings.target_lang, (code) => {
+      if (code === "daily_quota_exceeded") {
+        showMessage("error_quota", t("add.error_quota_tts"));
+      } else {
+        showMessage("error_quota", t("add.error_too_long"));
+      }
+    });
     setTtsLoading(null);
   };
 
@@ -347,6 +375,8 @@ export function Add() {
 
   const locale = settings?.locale ?? "en";
   const names = locale === "ru" ? LANGUAGE_NAMES_RU : LANGUAGE_NAMES_EN;
+
+  const wordTooLong = word.trim().length > MAX_TEXT_LENGTH;
 
   const langCodes = langOptions.length > 0
     ? langOptions.map((l) => l.code).sort((a, b) =>
@@ -608,6 +638,21 @@ export function Add() {
               }}
             >
               {(settings?.source_lang === "auto" ? detectedLang : settings?.source_lang) ?? "auto"} → {settings?.target_lang}
+            </small>
+          )}
+
+          {/* Length limit warning */}
+          {wordTooLong && (
+            <small
+              data-testid="too-long-warning"
+              style={{
+                display: "block",
+                marginBottom: "1rem",
+                color: "var(--pico-del-color)",
+                fontSize: "0.8rem",
+              }}
+            >
+              {t("add.error_too_long")}
             </small>
           )}
 

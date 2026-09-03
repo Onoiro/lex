@@ -5,7 +5,7 @@ Lex — local-first приложение-переводчик и помощни�
 
 **Демо:** [lex.2-way.ru](https://lex.2-way.ru)
 
-**Текущая версия:** 1.16.0
+**Текущая версия:** 1.18.0
 
 ## Архитектура
 
@@ -136,8 +136,8 @@ make d-run    # docker compose up -d
 │   │   ├── dictionary.py      # Yandex Dictionary corpus client
 │   │   └── feedback.py        # Telegram Bot feedback service
 │   ├── security/
-│   │   ├── __init__.py
-│   │   └── rate_limiter.py    # Rate limiting
+│   │   ├── rate_limiter.py    # Rate limiting
+│   │   └── quota.py           # Daily char quotas per IP (UTC day window)
 │   ├── Dockerfile
 │   └── requirements.txt
 ├── tests/                     # Proxy tests (pytest)
@@ -165,13 +165,15 @@ make d-run    # docker compose up -d
 - **Стиль:** Pico CSS (без классов), Material Design принципы.
 - **i18n:** все UI-строки через `t()` из `@/i18n`. Переводы в `en.json` и `ru.json`.
 - **PWA:** vite-plugin-pwa генерирует SW. Runtime cache для `/translate`, `/languages` и `/dictionary` (NetworkFirst).
-- **TTS:** `ttsApi.ts` — персистентный кеш аудио через Cache API (`lex-tts-audio`, ключи `tts:{lang}:{text}`, LRU-лимит ~50 МБ). Офлайн: пропускает запрос при `navigator.onLine === false`, ранее прослушанные слова озвучиваются из кеша.
+- **TTS:** `ttsApi.ts` — персистентный кеш аудио через Cache API (`lex-tts-audio`, ключи `tts:{lang}:{text}`, LRU-лимит ~50 МБ). Офлайн: пропускает запрос при `navigator.onLine === false`, ранее прослушанные слова озвучиваются из кеша. Ошибки лимитов (квота, длина) пробрасываются через опциональный callback `onError`.
+- **Лимиты на клиенте:** `translateApi.ts` бросает `LimitError` с кодами `text_too_long` / `daily_quota_exceeded`. Add.tsx: при исчерпании дневной квоты автоперевод останавливается до конца дня (флаг в state, без спама 429), при вводе >500 символов — предупреждение и отказ от автоперевода. В Настройках — сворачиваемый раздел «Лимиты использования» (перед Feedback).
 - **VITE_PROXY_URL:** env var для proxy base URL (пустая строка = relative path).
 - **Ежедневная статистика:** таблица `dailyStats` (Dexie v6, ключ — локальная дата `YYYY-MM-DD`). Запись инкрементальная: `recordAnswer` после каждого ответа в Review, `incrementNewWords` после добавления слова в Add. Репозиторий: `dailyStatsRepository.ts` (`recordAnswer`, `incrementNewWords`, `getRecentDays`, `getStreak`, `todayKey`). UI на странице Повтор: блок «Сегодня» (повторения, точность, время, новые слова, streak) на стартовом экране, «Сегодня всего» на paused/done, сворачиваемая история за 14 дней. Streak — дни с `reviewed > 0` или `new_words > 0`; если сегодня пусто, серия считается от вчера.
 
 ### Proxy
-- Скрывает Yandex API key. Rate limiting. Кэш переводов. TTS (text-to-speech). Feedback (Telegram Bot).
+- **Proxy:** FastAPI, порт 8004. Скрывает Yandex API key. Rate limiting. Дневные символьные квоты. Кэш переводов. TTS (text-to-speech). Feedback (Telegram Bot).
 - Эндпоинты: POST `/translate` (body: word, source_lang, target_lang), GET `/languages`, POST `/tts`, POST `/dictionary` (body: word, lang_pair), POST `/feedback` (body: category, message, contact), GET `/`, GET `/cache/stats`, GET `/tts/cache/stats`, GET `/dictionary/cache/stats`.
+- **Лимиты использования:** максимум 500 символов на запрос (`/translate`, `/tts`) — превышение → 400 `{"error": "text_too_long", "max_length": 500}`. Дневные квоты на IP: 500 символов перевода/день + 500 символов TTS/день (класс `DailyQuota` в `proxy/security/quota.py`, окно — календарный день UTC, in-memory, сброс при рестарте) — превышение → 429 `{"error": "daily_quota_exceeded"}`. Кэши (серверные и клиентский TTS Cache API) не расходуют квоту — лимитируется только фактический вызов Yandex API. `/dictionary` — бесплатный эндпоинт, без квот.
 - Самодостаточный модуль: все зависимости внутри `proxy/` (services/, security/, languages.py).
 - **Линтинг:** `uv run ruff check proxy/` — без ошибок.
 - **Тестирование:** `uv run pytest tests/ -v`.
@@ -198,4 +200,4 @@ make d-run    # docker compose up -d
 - График активности за 14 дней на странице Повтор (данные dailyStats уже есть)
 
 ---
-**Последнее обновление:** 1 сентября 2026
+**Последнее обновление:** 3 сентября 2026

@@ -20,6 +20,7 @@ Lex is a translator and vocabulary trainer. Your dictionary, spaced repetition, 
 - **Response time tracking** - Best/average times, live timer with color thresholds
 - **Auto-answer & pause** - Auto-records "Forgot" after 10s, pauses after 3 consecutive auto-answers or 30s inactivity
 - **TTS** - Text-to-speech for words and translations via Yandex SpeechKit
+- **Usage limits** - 500 chars per request, 500 chars/day translation and TTS quotas per IP (resets at midnight UTC); repeated requests are served from cache and do not count against the quota
 - **Example sentences** - Load corpus examples from Yandex Dictionary into the note field on the Translate page
 - **PWA** - Installable, offline-capable via service worker
 - **Android** - Native app via Capacitor (RuStore, AppGallery)
@@ -78,7 +79,7 @@ Lex is a translator and vocabulary trainer. Your dictionary, spaced repetition, 
 
 ### Proxy (`proxy/`)
 - Python 3.13, FastAPI
-- Hides Yandex API key, rate limiting, translation cache, TTS (text-to-speech), dictionary examples (Yandex Corpus), feedback (Telegram Bot)
+- Hides Yandex API key, rate limiting, daily usage quotas, translation cache, TTS (text-to-speech), dictionary examples (Yandex Corpus), feedback (Telegram Bot)
 - Endpoints: POST `/translate`, GET `/languages`, POST `/tts`, GET `/`, GET `/cache/stats`, GET `/tts/cache/stats`, POST `/dictionary`, GET `/dictionary/cache/stats`, POST `/feedback`
 
 ## Quick Start
@@ -201,7 +202,7 @@ All commands are run via `make`. Run `make help` to see the full list.
 | `make proxy` | Start translate proxy (port 8004) |
 | `make client-dev` | Start client dev server (port 5173) |
 | `make client-build` | Build client for production |
-| `make client-test` | Run client tests (vitest, 278 tests) |
+| `make client-test` | Run client tests (vitest, 288 tests) |
 | `make client-lint` | Lint client code (eslint) |
 | `make client-typecheck` | Type-check client (tsc) |
 | `make proxy-lint` | Lint proxy code (ruff) |
@@ -244,7 +245,8 @@ All commands are run via `make`. Run `make help` to see the full list.
 │   │   ├── dictionary.py      # Yandex Dictionary corpus client
 │   │   └── feedback.py        # Telegram Bot feedback service
 │   ├── security/
-│   │   └── rate_limiter.py    # Rate limiting
+│   │   ├── rate_limiter.py    # Rate limiting
+│   │   └── quota.py           # Daily char quotas per IP
 │   ├── Dockerfile
 │   └── requirements.txt
 ├── tests/                     # Proxy tests (pytest)

@@ -5,6 +5,34 @@ export interface TranslateResult {
   detectedLanguage: string;
 }
 
+/** Error codes returned by the proxy for limit violations. */
+export type LimitErrorCode = "text_too_long" | "daily_quota_exceeded";
+
+/** Error with a machine-readable code from the proxy (limits, etc.). */
+export class LimitError extends Error {
+  code: LimitErrorCode;
+  maxLength?: number;
+
+  constructor(code: LimitErrorCode, maxLength?: number) {
+    super(code);
+    this.code = code;
+    this.maxLength = maxLength;
+  }
+}
+
+/** Max text length accepted by the proxy per request. */
+export const MAX_TEXT_LENGTH = 500;
+
+function toLimitError(body: { error?: string; max_length?: number }, status: number): Error {
+  if (body.error === "text_too_long") {
+    return new LimitError("text_too_long", body.max_length);
+  }
+  if (body.error === "daily_quota_exceeded") {
+    return new LimitError("daily_quota_exceeded");
+  }
+  return new Error(body.error ?? `HTTP ${status}`);
+}
+
 export interface LanguageInfo {
   code: string;
   name: string;
@@ -31,7 +59,7 @@ export async function translateWord(
 
   if (!response.ok) {
     const body = await response.json().catch(() => ({}));
-    throw new Error(body.error ?? `HTTP ${response.status}`);
+    throw toLimitError(body, response.status);
   }
 
   const data = await response.json();

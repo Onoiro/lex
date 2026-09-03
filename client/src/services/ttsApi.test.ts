@@ -167,6 +167,45 @@ describe("synthesizeSpeech", () => {
     await expect(synthesizeSpeech("hello", "en")).resolves.toBeUndefined();
   });
 
+  it("reports daily_quota_exceeded via onError callback", async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 429,
+      json: async () => ({ error: "daily_quota_exceeded" }),
+    });
+    const onError = vi.fn();
+
+    await synthesizeSpeech("hello", "en", onError);
+
+    expect(onError).toHaveBeenCalledWith("daily_quota_exceeded");
+  });
+
+  it("reports text_too_long via onError callback", async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 400,
+      json: async () => ({ error: "text_too_long", max_length: 500 }),
+    });
+    const onError = vi.fn();
+
+    await synthesizeSpeech("hello", "en", onError);
+
+    expect(onError).toHaveBeenCalledWith("text_too_long");
+  });
+
+  it("does not call onError for other HTTP errors", async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 502,
+      json: async () => ({ error: "Speech synthesis failed" }),
+    });
+    const onError = vi.fn();
+
+    await synthesizeSpeech("hello", "en", onError);
+
+    expect(onError).not.toHaveBeenCalled();
+  });
+
   it("fails silently on network error", async () => {
     mockFetch.mockRejectedValueOnce(new Error("Network error"));
 

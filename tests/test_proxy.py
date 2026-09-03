@@ -4,15 +4,17 @@ import pytest
 from unittest.mock import patch
 from fastapi.testclient import TestClient
 
-from proxy.main import app, translate_limiter
+from proxy.main import app, translate_limiter, translate_quota
 
 
 @pytest.fixture(autouse=True)
 def reset_rate_limiter():
-    """Clear rate limiter state before each test."""
+    """Clear rate limiter and quota state before each test."""
     translate_limiter._requests.clear()
+    translate_quota.reset()
     yield
     translate_limiter._requests.clear()
+    translate_quota.reset()
 
 
 @pytest.fixture
@@ -91,6 +93,44 @@ class TestTranslate:
             assert resp.status_code == 429
             assert "error" in resp.json()
             assert resp.headers.get("Retry-After") == "60"
+
+    def test_text_too_long_returns_400(self, client):
+        """Word longer than 500 chars returns 400 text_too_long."""
+        resp = client.post("/translate", json={"word": "a" * 501})
+
+        assert resp.status_code == 400
+        data = resp.json()
+        assert data["error"] == "text_too_long"
+        assert data["max_length"] == 500
+
+    def test_text_at_limit_accepted(self, client):
+        """Word of exactly 500 chars passes the length check."""
+        with patch("proxy.main.translate_word", return_value=("тест", "en")):
+            resp = client.post("/translate", json={"word": "a" * 500})
+
+        assert resp.status_code == 200
+
+    def test_daily_quota_exceeded(self, client):
+        """Returns 429 daily_quota_exceeded after exhausting daily chars."""
+        with patch("proxy.main.translate_word", return_value=("тест", "en")):
+            # 500 chars/day: 5 requests x 100 chars
+            for _ in range(5):
+                resp = client.post("/translate", json={"word": "a" * 100})
+                assert resp.status_code == 200
+
+            # Quota exhausted — even a short word is rejected
+            resp = client.post("/translate", json={"word": "hi"})
+            assert resp.status_code == 429
+            assert resp.json()["error"] == "daily_quota_exceeded"
+
+    def test_daily_quota_not_consumed_on_length_error(self, client):
+        """Rejected too-long requests do not consume quota."""
+        resp = client.post("/translate", json={"word": "a" * 501})
+        assert resp.status_code == 400
+
+        with patch("proxy.main.translate_word", return_value=("тест", "en")):
+            resp = client.post("/translate", json={"word": "a" * 500})
+        assert resp.status_code == 200
 
 
 class TestLanguages:

@@ -196,10 +196,15 @@ function playBlob(blob: Blob, token: number): void {
  * and to enable offline playback of previously heard words.
  * When offline with no cached audio, returns immediately instead
  * of making a doomed request (avoids 502 noise in proxy logs).
- * Fails silently — never throws.
+ * Fails silently — never throws. Limit violations (daily quota,
+ * text too long) are reported via the optional onError callback.
  * Any previously playing audio is stopped; stale fetch results are discarded.
  */
-export async function synthesizeSpeech(text: string, lang: string): Promise<void> {
+export async function synthesizeSpeech(
+  text: string,
+  lang: string,
+  onError?: (code: "daily_quota_exceeded" | "text_too_long") => void,
+): Promise<void> {
   const trimmed = text.trim();
   if (!trimmed) return;
 
@@ -229,7 +234,15 @@ export async function synthesizeSpeech(text: string, lang: string): Promise<void
       body: JSON.stringify({ text: trimmed, lang }),
     });
 
-    if (!response.ok) return;
+    if (!response.ok) {
+      if (onError) {
+        const body = (await response.json().catch(() => ({}))) as { error?: string };
+        if (body.error === "daily_quota_exceeded" || body.error === "text_too_long") {
+          onError(body.error);
+        }
+      }
+      return;
+    }
 
     const blob = await response.blob();
 

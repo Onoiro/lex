@@ -342,6 +342,35 @@ export function Settings() {
             fontWeight: 600,
           }}
         >
+          📊 {t("settings.limits")}
+        </summary>
+        <article style={{ marginTop: "1rem" }}>
+          <p style={{ color: "var(--pico-muted-color)", marginBottom: "1rem" }}>
+            {t("settings.limits_intro")}
+          </p>
+          <ul style={{ color: "var(--pico-muted-color)", marginBottom: "1rem" }}>
+            <li>{t("settings.limits_length")}</li>
+            <li>{t("settings.limits_translate_quota")}</li>
+            <li>{t("settings.limits_tts_quota")}</li>
+            <li>{t("settings.limits_reset")}</li>
+            <li>{t("settings.limits_cache")}</li>
+          </ul>
+          <p style={{ color: "var(--pico-muted-color)", marginBottom: 0 }}>
+            {t("settings.limits_why")}
+          </p>
+        </article>
+      </details>
+
+      <details
+        style={{
+          marginTop: "2rem",
+        }}
+      >
+        <summary
+          style={{
+            fontWeight: 600,
+          }}
+        >
           💬 {t("settings.feedback")}
         </summary>
         <article style={{ marginTop: "1rem" }}>

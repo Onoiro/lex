@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { translateWord, getLanguages } from "@/services/translateApi";
+import { translateWord, getLanguages, LimitError } from "@/services/translateApi";
 
 describe("translateApi", () => {
   beforeEach(() => {
@@ -67,6 +67,37 @@ describe("translateApi", () => {
       await expect(translateWord("hello", "en", "ru")).rejects.toThrow(
         "HTTP 500",
       );
+    });
+
+    it("throws LimitError with code on text_too_long", async () => {
+      vi.stubGlobal(
+        "fetch",
+        vi.fn().mockResolvedValue({
+          ok: false,
+          status: 400,
+          json: () => Promise.resolve({ error: "text_too_long", max_length: 500 }),
+        }),
+      );
+
+      const err = await translateWord("a".repeat(501), "en", "ru").catch((e) => e);
+      expect(err).toBeInstanceOf(LimitError);
+      expect(err.code).toBe("text_too_long");
+      expect(err.maxLength).toBe(500);
+    });
+
+    it("throws LimitError with code on daily_quota_exceeded", async () => {
+      vi.stubGlobal(
+        "fetch",
+        vi.fn().mockResolvedValue({
+          ok: false,
+          status: 429,
+          json: () => Promise.resolve({ error: "daily_quota_exceeded" }),
+        }),
+      );
+
+      const err = await translateWord("hello", "en", "ru").catch((e) => e);
+      expect(err).toBeInstanceOf(LimitError);
+      expect(err.code).toBe("daily_quota_exceeded");
     });
 
     it("sends correct request body", async () => {
