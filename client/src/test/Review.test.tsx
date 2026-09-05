@@ -1138,4 +1138,73 @@ describe("Review", () => {
       expect(screen.queryByTestId("how-it-works-block")).not.toBeInTheDocument();
     });
   });
+
+  // --- Language labels on the review card ---
+
+  it("shows target language in the remember caption and word lang badge", async () => {
+    await addWord("hello", "привет", "en", "ru");
+
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <Review />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Start training" })).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole("button", { name: "Start training" }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("word-text")).toBeInTheDocument();
+    });
+
+    // Badge shows the language of the displayed word
+    const badge = screen.getByTestId("word-lang-badge");
+    expect(["EN", "RU"]).toContain(badge.textContent);
+
+    // Caption names the language to translate into
+    const caption = screen.getByText(/Remember the translation into/);
+    expect(caption.textContent).toMatch(/into (English|Russian):$/);
+  });
+
+  it("falls back to plain caption when word langs are auto", async () => {
+    await db.words.add({
+      word: "hello",
+      translation: "привет",
+      word_lang: "auto",
+      translation_lang: "auto",
+      interval: 0,
+      repetitions: 0,
+      next_review: 0,
+      last_direction: "en_ru",
+      best_time: null,
+      avg_time: null,
+      know_count: 0,
+      forgot_count: 0,
+      hint_count: 0,
+    });
+
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <Review />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Start training" })).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole("button", { name: "Start training" }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("word-text")).toBeInTheDocument();
+    });
+
+    expect(screen.getByText("Remember the translation:")).toBeInTheDocument();
+    expect(screen.queryByTestId("word-lang-badge")).not.toBeInTheDocument();
+  });
 });

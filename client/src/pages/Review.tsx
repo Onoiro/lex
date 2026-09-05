@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { useLocale } from "@/i18n";
+import { getLanguageName } from "@/i18n/languages";
 import { getAllWords, updateWord } from "@/data/wordRepository";
 import { getSettings } from "@/data/settingsRepository";
 import { recordAnswer, getTodayStats, getRecentDays, getStreak } from "@/data/dailyStatsRepository";
@@ -639,6 +640,12 @@ export function Review() {
   const displayWord = direction === "en_ru" ? word.word : word.translation;
   const displayTranslation = direction === "en_ru" ? word.translation : word.word;
 
+  // Language of the shown word and of the expected translation
+  const promptLang = direction === "en_ru" ? word.word_lang : word.translation_lang;
+  const answerLang = direction === "en_ru" ? word.translation_lang : word.word_lang;
+  const promptLangLabel = promptLang && promptLang !== "auto" ? promptLang.toUpperCase() : null;
+  const answerLangName = answerLang && answerLang !== "auto" ? getLanguageName(answerLang, "short") : null;
+
   const total = word.know_count + word.forgot_count;
   const pct = total > 0 ? Math.round((word.know_count / total) * 100) : null;
 
@@ -687,8 +694,15 @@ export function Review() {
         <div className={`flip-card-inner${showTranslation ? " flipped" : ""}`}>
           {/* Front: word */}
           <div className="flip-card-front">
+            {promptLangLabel && (
+              <span data-testid="word-lang-badge" className="flip-card-lang">
+                {promptLangLabel}
+              </span>
+            )}
             <small style={{ display: "block", color: "var(--pico-muted-color)", marginBottom: "0.5rem" }}>
-              {t("review.remember")}
+              {answerLangName
+                ? t("review.remember_to", { lang: answerLangName })
+                : t("review.remember")}
             </small>
             <h2 data-testid="word-text" style={{ fontSize: "2.5rem", margin: 0 }}>
               {displayWord}

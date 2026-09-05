@@ -622,3 +622,15 @@ nav strong {
 .flip-card-back {
   transform: rotateY(180deg);
 }
+
+/* Language badge in the corner of the review card */
+.flip-card-lang {
+  position: absolute;
+  top: 0.5rem;
+  left: 0.75rem;
+  font-size: 0.75rem;
+  font-weight: bold;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--pico-muted-color);
+}

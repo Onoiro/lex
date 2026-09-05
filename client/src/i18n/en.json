@@ -52,6 +52,7 @@
   "review.show_hint": "💡 Hint",
   "review.hint": "Hint:",
   "review.remember": "Remember the translation:",
+  "review.remember_to": "Remember the translation into {lang}:",
   "review.btn_know": "✓ I know",
   "review.btn_forgot": "✗ I don't remember",
   "review.next_word": "Next word →",

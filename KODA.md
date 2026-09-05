@@ -185,6 +185,7 @@ make d-run    # docker compose up -d
 - **Correct with hint:** ответ с подсказкой («почти знал») засчитывается, но итоговый интервал вдвое меньше обычного (max(1, trunc(обычный/2))), repetitions НЕ инкрементируется, hint_count + 1.
 - **Wrong:** Interval and repetitions reset to 0.
 - **Подсказка и время:** при клике «Подсказка» таймер замораживается — в avg_time и daily stats идёт только время до клика; best_time при подсказке не обновляется (updateResponseTime(word, elapsed, recordBest=false)).
+- **Языки на карточке:** на лицевой стороне карточки Повтора — бейдж языка показываемого слова в левом верхнем углу (`.flip-card-lang`, код языка, скрывается при `auto`) и подпись «Вспомните перевод на {язык}» с целевым языком (i18n-ключи `review.remember_to`, имя языка через `getLanguageName(code, "short")`). При `word_lang`/`translation_lang` = `auto` показывается старая подпись без языка.
 - Выбор слова: взвешенный рандом, вес = 1 / (interval + 1) × (1 + RT_COEFF × normAvgTime). Меньший интервал и медленнее реакция = выше шанс.
   - RT_COEFF = 1.0 (Reaction Time Coefficient)
   - normAvgTime = clamp(avg_time / 10, 0, 1), null → 1.0 (новые слова — максимальный приоритет)

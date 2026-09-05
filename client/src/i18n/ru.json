@@ -52,6 +52,7 @@
   "review.show_hint": "💡 Подсказка",
   "review.hint": "Подсказка:",
   "review.remember": "Вспомните перевод:",
+  "review.remember_to": "Вспомните перевод на {lang}:",
   "review.btn_know": "✓ Знаю",
   "review.btn_forgot": "✗ Не помню",
   "review.next_word": "Следующее слово →",
