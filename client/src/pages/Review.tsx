@@ -704,7 +704,11 @@ export function Review() {
                 ? t("review.remember_to", { lang: answerLangName })
                 : t("review.remember")}
             </small>
-            <h2 data-testid="word-text" style={{ fontSize: "2.5rem", margin: 0 }}>
+            <h2
+              data-testid="word-text"
+              lang={word.word_lang && word.word_lang !== "auto" ? word.word_lang : undefined}
+              style={{ fontSize: "clamp(1.4rem, 9vw, 2.5rem)", margin: 0 }}
+            >
               {displayWord}
             </h2>
             {total > 0 && (
@@ -740,7 +744,10 @@ export function Review() {
           {/* Back: translation (rendered only when flipped) */}
           <div className="flip-card-back">
             {showTranslation && (
-              <p data-testid="translation-text" style={{ fontSize: "2rem", fontWeight: "bold", margin: 0, color: "var(--pico-color)" }}>
+              <p
+                data-testid="translation-text"
+                style={{ fontSize: "clamp(1.2rem, 8vw, 2rem)", fontWeight: "bold", margin: 0, color: "var(--pico-color)" }}
+              >
                 {displayTranslation}
               </p>
             )}

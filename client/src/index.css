@@ -617,6 +617,9 @@ nav strong {
   background-color: var(--pico-card-background-color);
   border: 1px solid var(--pico-card-border-color);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  /* Long words: shrink on narrow screens and wrap instead of overflowing */
+  overflow-wrap: anywhere;
+  hyphens: auto;
 }
 
 .flip-card-back {
