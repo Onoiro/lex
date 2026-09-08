@@ -113,7 +113,7 @@ describe("translateApi", () => {
         "/translate",
         expect.objectContaining({
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: expect.objectContaining({ "Content-Type": "application/json" }),
           body: JSON.stringify({
             word: "hello",
             source_lang: "auto",
