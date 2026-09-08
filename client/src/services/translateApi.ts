@@ -73,7 +73,9 @@ export async function translateWord(
  * Fetch supported languages from the proxy.
  */
 export async function getLanguages(): Promise<LanguageInfo[]> {
-  const response = await fetch(`${PROXY_URL}/languages`);
+  const response = await fetch(`${PROXY_URL}/languages`, {
+    headers: proxyHeaders(),
+  });
 
   if (!response.ok) {
     throw new Error(`HTTP ${response.status}`);
