@@ -480,7 +480,9 @@ describe("Add", () => {
       detectedLanguage: "en",
     });
 
-    const user = userEvent.setup();
+    // Typing 501 chars fires 501 keystroke events — skip inter-key delays
+    // and allow a generous timeout so slow CI runners don't flake
+    const user = userEvent.setup({ delay: null });
     render(
       <MemoryRouter>
         <Add />
@@ -503,7 +505,7 @@ describe("Add", () => {
     await new Promise((r) => setTimeout(r, 50));
     const lastCall = vi.mocked(translateWord).mock.calls.at(-1);
     expect(lastCall?.[0].length ?? 0).toBeLessThanOrEqual(MAX_TEXT_LENGTH);
-  });
+  }, 15_000);
 
   it("does not show too-long warning for text within limit", async () => {
     vi.mocked(translateWord).mockResolvedValue({
