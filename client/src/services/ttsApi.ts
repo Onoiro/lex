@@ -1,4 +1,4 @@
-const PROXY_URL = import.meta.env.VITE_PROXY_URL ?? "";
+import { PROXY_URL, proxyHeaders } from "./proxyClient";
 
 // ── Persistent audio cache (Cache API) ─────────────────────────
 //
@@ -230,7 +230,7 @@ export async function synthesizeSpeech(
   try {
     const response = await fetch(`${PROXY_URL}/tts`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: proxyHeaders(),
       body: JSON.stringify({ text: trimmed, lang }),
     });
 

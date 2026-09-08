@@ -1,4 +1,4 @@
-const PROXY_URL = import.meta.env.VITE_PROXY_URL ?? "";
+import { PROXY_URL, proxyHeaders } from "./proxyClient";
 
 export interface TranslateResult {
   translation: string;
@@ -49,7 +49,7 @@ export async function translateWord(
 ): Promise<TranslateResult> {
   const response = await fetch(`${PROXY_URL}/translate`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: proxyHeaders(),
     body: JSON.stringify({
       word,
       source_lang: sourceLang,

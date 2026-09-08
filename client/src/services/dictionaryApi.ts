@@ -1,4 +1,4 @@
-const PROXY_URL = import.meta.env.VITE_PROXY_URL ?? "";
+import { PROXY_URL, proxyHeaders } from "./proxyClient";
 
 export interface DictionaryExample {
   text: string;
@@ -19,7 +19,7 @@ export async function getExamples(
 ): Promise<DictionaryExample[]> {
   const response = await fetch(`${PROXY_URL}/dictionary`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: proxyHeaders(),
     body: JSON.stringify({ word, lang_pair: langPair }),
   });
 

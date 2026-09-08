@@ -21,6 +21,7 @@ Lex is a translator and vocabulary trainer. Your dictionary, spaced repetition, 
 - **Auto-answer & pause** - Auto-records "Forgot" after 10s, pauses after 3 consecutive auto-answers or 30s inactivity
 - **TTS** - Text-to-speech for words and translations via Yandex SpeechKit
 - **Usage limits** - 500 chars per request, 500 chars/day translation and TTS quotas per IP (resets at midnight UTC); repeated requests are served from cache and do not count against the quota
+- **API protection** - CORS origin whitelist + shared app token (`X-App-Token` header) on all proxy endpoints; global daily char budget as a financial safety net
 - **Example sentences** - Load corpus examples from Yandex Dictionary into the note field on the Translate page
 - **PWA** - Installable, offline-capable via service worker
 - **Android** - Native app via Capacitor (RuStore, AppGallery)
@@ -79,8 +80,21 @@ Lex is a translator and vocabulary trainer. Your dictionary, spaced repetition, 
 
 ### Proxy (`proxy/`)
 - Python 3.13, FastAPI
-- Hides Yandex API key, rate limiting, daily usage quotas, translation cache, TTS (text-to-speech), dictionary examples (Yandex Corpus), feedback (Telegram Bot)
+- Hides Yandex API key, rate limiting, daily usage quotas, global daily budget, app token check, CORS whitelist, translation cache, TTS (text-to-speech), dictionary examples (Yandex Corpus), feedback (Telegram Bot)
 - Endpoints: POST `/translate`, GET `/languages`, POST `/tts`, GET `/`, GET `/cache/stats`, GET `/tts/cache/stats`, POST `/dictionary`, GET `/dictionary/cache/stats`, POST `/feedback`
+
+### API Protection (proxy)
+
+Layers of protection (see `.env.example` for configuration):
+
+- **App token** — clients send a shared secret in the `X-App-Token` header (baked in at build time via `VITE_APP_TOKEN`). The proxy validates it against `APP_TOKENS` (comma-separated list for rotation). Unset `APP_TOKENS` disables the check (backward compatibility during rollout). Missing/invalid token → `403 {"error": "unauthorized"}`. `GET /` (health check) stays open.
+- **CORS whitelist** — only client app origins are allowed (`ALLOWED_ORIGINS` env var, defaults: `https://lex.2-way.ru`, `https://localhost` (Capacitor Android), `capacitor://localhost` (iOS), `http://tauri.localhost` / `tauri://localhost` (Tauri)). Requests from other origins get no CORS headers, so browsers block them.
+- **Rate limiting** — 30 req/min per endpoint per IP, feedback 3/hour.
+- **Daily quotas** — 500 chars/day translation + 500 chars/day TTS per IP → `429 {"error": "daily_quota_exceeded"}`.
+- **Global daily budget** — hard stop for all users combined (`GLOBAL_DAILY_CHAR_LIMIT`, default 300 000 chars/day) → `503 {"error": "service_overloaded"}`.
+- **Max text length** — 500 chars per request → `400 {"error": "text_too_long"}`.
+
+Cache hits (server-side and client TTS cache) never consume quotas or the budget.
 
 ## Quick Start
 
@@ -202,7 +216,7 @@ All commands are run via `make`. Run `make help` to see the full list.
 | `make proxy` | Start translate proxy (port 8004) |
 | `make client-dev` | Start client dev server (port 5173) |
 | `make client-build` | Build client for production |
-| `make client-test` | Run client tests (vitest, 290 tests) |
+| `make client-test` | Run client tests (vitest, 293 tests) |
 | `make client-lint` | Lint client code (eslint) |
 | `make client-typecheck` | Type-check client (tsc) |
 | `make proxy-lint` | Lint proxy code (ruff) |
@@ -228,7 +242,7 @@ All commands are run via `make`. Run `make help` to see the full list.
 │   │   ├── domain/            # srs.ts, stats.ts, validators.ts, dictionarySort.ts, dailyStats.ts
 │   │   ├── i18n/              # index.ts, languages.ts, en/ru.json
 │   │   ├── pages/             # Home, Add, Review, Dictionary, Settings, Privacy, Terms
-│   │   ├── services/          # translateApi.ts, ttsApi.ts, dictionaryApi.ts, feedbackApi.ts, theme.ts
+│   │   ├── services/          # proxyClient.ts, translateApi.ts, ttsApi.ts, dictionaryApi.ts, feedbackApi.ts, theme.ts
 │   │   ├── test/              # Component and service tests (Vitest)
 │   │   └── types/             # Word, LanguageSettings, DailyStats
 │   ├── capacitor.config.ts    # Android config
@@ -246,7 +260,8 @@ All commands are run via `make`. Run `make help` to see the full list.
 │   │   └── feedback.py        # Telegram Bot feedback service
 │   ├── security/
 │   │   ├── rate_limiter.py    # Rate limiting
-│   │   └── quota.py           # Daily char quotas per IP
+│   │   ├── quota.py           # Daily char quotas per IP + global budget
+│   │   └── token_auth.py      # X-App-Token check
 │   ├── Dockerfile
 │   └── requirements.txt
 ├── tests/                     # Proxy tests (pytest)

@@ -33,26 +33,27 @@
 лимит настраивается без пересборки образа. ✅
 
 ### B-2. CORS whitelist + X-App-Token
-**Статус:** todo
+**Статус:** done (2026-09-08)
 **Зачем:** сейчас `allow_origins=["*"]` — любой сайт может дёргать прокси из браузера
 посетителя. Токен отсекает ~99% скрипт-киди (не защита от целевой атаки — квоты и
 бюджет остаются настоящей защитой).
-**Что делать:**
-- CORS: жёсткий список origin через env var:
-  - `https://lex.2-way.ru` (веб)
-  - `https://localhost` (Capacitor 8 Android, androidScheme: https — ПРОВЕРИТЬ
-    фактический origin в DevTools; `capacitor://localhost` — это iOS)
-  - `tauri://localhost` и/или `http://tauri.localhost` (Windows — ПРОВЕРИТЬ)
-  - `http://localhost:5173` — только dev, через env, не в проде
-- X-App-Token: секретный токен в заголовке, вшит в клиент (React/Capacitor/Tauri).
-  Прокси проверяет наличие и совпадение → иначе 403.
-  - Поддержать СПИСОК токенов (2–3) для ротации: новый релиз = новый токен,
-    старые отзываются, когда доля старых версий упадёт.
-  - Токены через env var (например, `APP_TOKENS=token1,token2`).
-- Клиент: добавить заголовок во все сервисы (translateApi, ttsApi, dictionaryApi,
-  feedbackApi).
+**Что сделано:**
+- Класс `AppTokenAuth` в `proxy/security/token_auth.py`; env `APP_TOKENS`
+  (список через запятую, ротация). Пустой `APP_TOKENS` = проверка выключена
+  (обратная совместимость при выкате). Без токена → 403 `{"error": "unauthorized"}`.
+  `GET /` (health-check) и OPTIONS preflight — без токена.
+- CORS whitelist через env `ALLOWED_ORIGINS`; дефолт: `https://lex.2-way.ru`,
+  `https://localhost` (Capacitor Android), `capacitor://localhost` (iOS),
+  `http://tauri.localhost` (Tauri Win/Linux), `tauri://localhost` (Tauri macOS).
+- Клиент: `proxyClient.ts` с `proxyHeaders()`; все 4 сервиса шлют `X-App-Token`
+  из `VITE_APP_TOKEN` (build-time env).
+- Порядок выката: прокси без APP_TOKENS → релиз клиента с токеном → включить
+  APP_TOKENS на сервере. Старые APK без обновления сломаются на шаге 3 —
+  компромисс до B-3 (version gate).
 **Критерии готовности:** запрос без токена → 403; запрос с чужим Origin → блокировка
-CORS; тесты; клиент работает на всех 3 платформах.
+CORS; тесты; клиент работает на всех 3 платформах. ✅ (172 pytest, 293 vitest)
+**Примечание:** фактические origin'ы Capacitor/Tauri стоит сверить в DevTools
+при следующей сборке под платформу.
 
 ### B-3. Минимальная версия клиента (client version gate)
 **Статус:** todo

@@ -5,7 +5,9 @@ Provides three endpoints:
   GET  /languages — list supported languages
   POST /tts       — synthesize speech (text-to-speech)
 
-No auth or CSRF: protected by rate limiting. CORS enabled for client apps.
+Protected by rate limiting, daily char quotas, a global daily budget and
+an app token check (X-App-Token header, disabled when APP_TOKENS is unset).
+CORS is restricted to a whitelist of client app origins.
 """
 
 import os
@@ -28,6 +30,7 @@ from proxy.services.dictionary import lookup_word, dictionary_cache
 from proxy.services.feedback import send_feedback, is_configured as feedback_configured
 from proxy.security.rate_limiter import RateLimiter, get_client_ip
 from proxy.security.quota import DailyQuota, GlobalBudget
+from proxy.security.token_auth import AppTokenAuth
 
 load_dotenv()
 
@@ -46,12 +49,54 @@ global_budget = GlobalBudget(max_chars_per_day=GLOBAL_DAILY_CHAR_LIMIT)
 translate_quota = DailyQuota(max_chars_per_day=500)
 tts_quota = DailyQuota(max_chars_per_day=500)
 
-# CORS: allow client apps from any origin
+# App token check (X-App-Token header). Disabled when APP_TOKENS is unset.
+token_auth = AppTokenAuth()
+
+
+# CORS: whitelist of client app origins. Configurable via ALLOWED_ORIGINS
+# (comma-separated). Defaults cover web, Capacitor (Android/iOS) and Tauri
+# (Windows/Linux use http://tauri.localhost, macOS uses tauri://localhost).
+DEFAULT_ALLOWED_ORIGINS = [
+    "https://lex.2-way.ru",
+    "https://localhost",
+    "capacitor://localhost",
+    "http://tauri.localhost",
+    "tauri://localhost",
+]
+
+
+def load_allowed_origins() -> list[str]:
+    """Resolve the CORS origin list from ALLOWED_ORIGINS or the default."""
+    raw = os.getenv("ALLOWED_ORIGINS", "")
+    if raw.strip():
+        return [o.strip() for o in raw.split(",") if o.strip()]
+    return list(DEFAULT_ALLOWED_ORIGINS)
+
+
+ALLOWED_ORIGINS = load_allowed_origins()
+
+# Token middleware is added first so CORS (added second) wraps it and
+# attaches CORS headers to 403 responses as well.
+@app.middleware("http")
+async def app_token_middleware(request: Request, call_next):
+    # Preflight requests are handled by CORSMiddleware, health check
+    # stays open for uptime monitoring.
+    if request.method == "OPTIONS" or request.url.path == "/":
+        return await call_next(request)
+    if not token_auth.is_valid(request.headers.get("X-App-Token")):
+        return JSONResponse(
+            status_code=403,
+            content={"error": "unauthorized"},
+        )
+    return await call_next(request)
+
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["GET", "POST"],
-    allow_headers=["*"],
+    allow_origins=ALLOWED_ORIGINS,
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["Content-Type", "X-App-Token", "X-Device-Id"],
+    max_age=86400,
 )
 
 # Rate limiters: 30 requests per minute per endpoint

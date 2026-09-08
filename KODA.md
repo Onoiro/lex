@@ -5,7 +5,7 @@ Lex — local-first приложение-переводчик и помощни�
 
 **Демо:** [lex.2-way.ru](https://lex.2-way.ru)
 
-**Текущая версия:** 1.19.2
+**Текущая версия:** 1.20.0
 
 ## Архитектура
 
@@ -113,7 +113,7 @@ make d-run    # docker compose up -d
 │   │   ├── domain/            # srs.ts (SM-2), stats.ts, validators.ts, dictionarySort.ts, dailyStats.ts
 │   │   ├── i18n/              # index.ts, languages.ts, en.json, ru.json
 │   │   ├── pages/             # Home, Add, Review, Dictionary, Settings
-│   │   ├── services/          # translateApi.ts (proxy client), ttsApi.ts, dictionaryApi.ts, feedbackApi.ts, theme.ts
+│   │   ├── services/          # translateApi.ts (proxy client), ttsApi.ts, dictionaryApi.ts, feedbackApi.ts, proxyClient.ts, theme.ts
 │   │   ├── test/              # Component and service tests (Vitest)
 │   │   └── types/             # Word, LanguageSettings, DailyStats
 │   │   └── main.tsx           # App entry, SW registration, native plugins
@@ -137,7 +137,8 @@ make d-run    # docker compose up -d
 │   │   └── feedback.py        # Telegram Bot feedback service
 │   ├── security/
 │   │   ├── rate_limiter.py    # Rate limiting
-│   │   └── quota.py           # Daily char quotas per IP (UTC day window)
+│   │   ├── quota.py           # Daily char quotas per IP + global budget (UTC day window)
+│   │   └── token_auth.py      # X-App-Token check (APP_TOKENS env, empty = disabled)
 │   ├── Dockerfile
 │   └── requirements.txt
 ├── tests/                     # Proxy tests (pytest)
@@ -168,12 +169,15 @@ make d-run    # docker compose up -d
 - **TTS:** `ttsApi.ts` — персистентный кеш аудио через Cache API (`lex-tts-audio`, ключи `tts:{lang}:{text}`, LRU-лимит ~50 МБ). Офлайн: пропускает запрос при `navigator.onLine === false`, ранее прослушанные слова озвучиваются из кеша. Ошибки лимитов (квота, длина) пробрасываются через опциональный callback `onError`.
 - **Лимиты на клиенте:** `translateApi.ts` бросает `LimitError` с кодами `text_too_long` / `daily_quota_exceeded`. Add.tsx: при исчерпании дневной квоты автоперевод останавливается до конца дня (флаг в state, без спама 429), при вводе >500 символов — предупреждение и отказ от автоперевода. В Настройках — сворачиваемый раздел «Лимиты использования» (перед Feedback).
 - **VITE_PROXY_URL:** env var для proxy base URL (пустая строка = relative path).
+- **proxyClient.ts:** общий модуль прокси-клиента — `PROXY_URL`, `proxyHeaders()` (Content-Type + `X-App-Token`, когда задан `VITE_APP_TOKEN`). Все сервисы (translateApi, ttsApi, dictionaryApi, feedbackApi) используют `proxyHeaders()`. Токен вшивается при сборке через `VITE_APP_TOKEN` (build-time env, на сервер не попадает).
 - **Ежедневная статистика:** таблица `dailyStats` (Dexie v6, ключ — локальная дата `YYYY-MM-DD`). Запись инкрементальная: `recordAnswer` после каждого ответа в Review, `incrementNewWords` после добавления слова в Add. Репозиторий: `dailyStatsRepository.ts` (`recordAnswer`, `incrementNewWords`, `getRecentDays`, `getStreak`, `todayKey`). UI на странице Повтор: блок «Сегодня» (повторения, точность, время, новые слова, streak) на стартовом экране, «Сегодня всего» на paused/done, сворачиваемая история за 14 дней. Streak — дни с `reviewed > 0` или `new_words > 0`; если сегодня пусто, серия считается от вчера.
 
 ### Proxy
-- **Proxy:** FastAPI, порт 8004. Скрывает Yandex API key. Rate limiting. Дневные символьные квоты. Кэш переводов. TTS (text-to-speech). Feedback (Telegram Bot).
+- **Proxy:** FastAPI, порт 8004. Скрывает Yandex API key. Rate limiting. Дневные символьные квоты. Глобальный дневной бюджет. Проверка X-App-Token. CORS whitelist. Кэш переводов. TTS (text-to-speech). Feedback (Telegram Bot).
 - Эндпоинты: POST `/translate` (body: word, source_lang, target_lang), GET `/languages`, POST `/tts`, POST `/dictionary` (body: word, lang_pair), POST `/feedback` (body: category, message, contact), GET `/`, GET `/cache/stats`, GET `/tts/cache/stats`, GET `/dictionary/cache/stats`.
 - **Лимиты использования:** максимум 500 символов на запрос (`/translate`, `/tts`) — превышение → 400 `{"error": "text_too_long", "max_length": 500}`. Дневные квоты на IP: 500 символов перевода/день + 500 символов TTS/день (класс `DailyQuota` в `proxy/security/quota.py`, окно — календарный день UTC, in-memory, сброс при рестарте) — превышение → 429 `{"error": "daily_quota_exceeded"}`. Глобальный дневной бюджет на всех пользователей суммарно (translate + tts вместе): класс `GlobalBudget` в `proxy/security/quota.py`, лимит через env `GLOBAL_DAILY_CHAR_LIMIT` (дефолт 300 000 симв/день) — превышение → 503 `{"error": "service_overloaded"}`. Кэши (серверные и клиентский TTS Cache API) не расходуют квоты и глобальный бюджет — лимитируется только фактический вызов Yandex API (в `/translate` и `/tts` кэш проверяется до списания). `/dictionary` — бесплатный эндпоинт, без квот.
+- **App token (X-App-Token):** все эндпоинты кроме `GET /` (health-check) требуют заголовок `X-App-Token` (класс `AppTokenAuth` в `proxy/security/token_auth.py`). Токены через env `APP_TOKENS` (список через запятую, для ротации). Пустой/не заданный `APP_TOKENS` = проверка выключена (обратная совместимость при выкате). Отсутствие/несовпадение токена → 403 `{"error": "unauthorized"}`. Токен — фильтр от скрипт-киди, не защита от целевой атаки (токен извлекается из APK); настоящая защита — квоты и бюджет.
+- **CORS whitelist:** env `ALLOWED_ORIGINS` (через запятую); если не задан — дефолт: `https://lex.2-way.ru`, `https://localhost` (Capacitor Android), `capacitor://localhost` (iOS), `http://tauri.localhost` (Tauri Win/Linux), `tauri://localhost` (Tauri macOS). Чужие origin не получают CORS-заголовков (браузер блокирует ответ). `allow_headers`: Content-Type, X-App-Token, X-Device-Id (задел под B-5). Порядок middleware: токен-мидлварь добавлена первой, CORS — второй (CORS вешает заголовки и на 403-ответы).
 - Самодостаточный модуль: все зависимости внутри `proxy/` (services/, security/, languages.py).
 - **Линтинг:** `uv run ruff check proxy/` — без ошибок.
 - **Тестирование:** `uv run pytest tests/ -v`.
@@ -196,10 +200,10 @@ make d-run    # docker compose up -d
 - Справка: на стартовом экране Повтора — сворачиваемый блок «Как это работает?» с объяснением алгоритма простым языком (i18n-ключи review.how_it_works_*).
 
 ## Дальнейшие планы
-- **Бэклог подготовки к маркетплейсам:** `.koda/backlog.md` — задачи P0–P3 (глобальный бюджет, CORS+токен, version gate, SQLite-кэши, device ID, биллинг RuStore, мониторинг). Брать задачи по порядку приоритета; перед реализацией — план в `.koda/plans/`.
+- **Бэклог подготовки к маркетплейсам:** `.koda/backlog.md` — задачи P0–P3 (глобальный бюджет ✅, CORS+токен ✅, version gate, SQLite-кэши, device ID, биллинг RuStore, мониторинг). Брать задачи по порядку приоритета; перед реализацией — план в `.koda/plans/`.
 - Пагинация по словарю при росте
 - CI для кросс-компиляции Tauri (Windows MSI/NSIS, macOS DMG)
 - График активности за 14 дней на странице Повтор (данные dailyStats уже есть)
 
 ---
-**Последнее обновление:** 3 сентября 2026
+**Последнее обновление:** 8 сентября 2026

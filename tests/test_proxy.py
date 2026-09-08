@@ -230,10 +230,13 @@ class TestCors:
     """Tests for CORS headers."""
 
     def test_cors_headers_present(self, client):
-        """CORS headers are present in response."""
+        """CORS headers are present for a whitelisted origin."""
+        from proxy.main import ALLOWED_ORIGINS
+
+        origin = ALLOWED_ORIGINS[0]
         resp = client.options("/translate", headers={
-            "Origin": "http://localhost:5173",
+            "Origin": origin,
             "Access-Control-Request-Method": "POST",
         })
 
-        assert resp.headers.get("access-control-allow-origin") == "*"
+        assert resp.headers.get("access-control-allow-origin") == origin
