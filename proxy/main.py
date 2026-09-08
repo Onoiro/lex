@@ -8,19 +8,26 @@ Provides three endpoints:
 No auth or CSRF: protected by rate limiting. CORS enabled for client apps.
 """
 
+import os
+
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel
 from dotenv import load_dotenv
 
-from proxy.services.translator import translate_word, get_supported_languages, get_api_language_names
+from proxy.services.translator import (
+    translate_word,
+    get_supported_languages,
+    get_api_language_names,
+    get_cached_translation,
+)
 from proxy.services.cache import translation_cache
 from proxy.services.tts import synthesize_speech, speech_cache
 from proxy.services.dictionary import lookup_word, dictionary_cache
 from proxy.services.feedback import send_feedback, is_configured as feedback_configured
 from proxy.security.rate_limiter import RateLimiter, get_client_ip
-from proxy.security.quota import DailyQuota
+from proxy.security.quota import DailyQuota, GlobalBudget
 
 load_dotenv()
 
@@ -28,6 +35,12 @@ app = FastAPI(title="Lex Translate Proxy", version="1.0.0")
 
 # Max text length per request (protects against bulk text abuse)
 MAX_TEXT_LENGTH = 500
+
+# Global daily char budget across ALL users (translate + tts combined).
+# Financial safety net: hard stop for Yandex API spending. Configurable
+# via env var without rebuilding the image.
+GLOBAL_DAILY_CHAR_LIMIT = int(os.getenv("GLOBAL_DAILY_CHAR_LIMIT", "300000"))
+global_budget = GlobalBudget(max_chars_per_day=GLOBAL_DAILY_CHAR_LIMIT)
 
 # Daily char quotas per IP (free tier, resets at midnight UTC)
 translate_quota = DailyQuota(max_chars_per_day=500)
@@ -100,6 +113,17 @@ async def translate(request: Request, body: TranslateRequest):
             content={"error": "text_too_long", "max_length": MAX_TEXT_LENGTH},
         )
 
+    # Cache hits don't consume the global budget or per-IP quota
+    cached = get_cached_translation(word, body.source_lang, body.target_lang)
+    if cached:
+        return {"translation": cached, "detected_language": ""}
+
+    if not global_budget.try_consume(len(word)):
+        return JSONResponse(
+            status_code=503,
+            content={"error": "service_overloaded"},
+        )
+
     if not translate_quota.try_consume(ip, len(word)):
         return JSONResponse(
             status_code=429,
@@ -162,6 +186,20 @@ async def tts(request: Request, body: TtsRequest):
         return JSONResponse(
             status_code=400,
             content={"error": "text_too_long", "max_length": MAX_TEXT_LENGTH},
+        )
+
+    # Cache hits don't consume the global budget or per-IP quota
+    if speech_cache.get(text, body.lang) is not None:
+        return Response(
+            content=speech_cache.get(text, body.lang),
+            media_type="audio/mpeg",
+            headers={"Cache-Control": "public, max-age=86400"},
+        )
+
+    if not global_budget.try_consume(len(text)):
+        return JSONResponse(
+            status_code=503,
+            content={"error": "service_overloaded"},
         )
 
     if not tts_quota.try_consume(ip, len(text)):

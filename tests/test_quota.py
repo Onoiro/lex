@@ -1,7 +1,7 @@
 """Тесты для модуля дневных квот."""
 
 import pytest
-from proxy.security.quota import DailyQuota
+from proxy.security.quota import DailyQuota, GlobalBudget
 
 
 @pytest.fixture
@@ -64,3 +64,50 @@ class TestDailyQuota:
         monkeypatch.setattr(DailyQuota, "_today", staticmethod(lambda: "2000-01-02"))
         assert quota.remaining("192.168.1.1") == 10
         assert quota.try_consume("192.168.1.1", 5) is True
+
+
+@pytest.fixture
+def budget():
+    """Fresh GlobalBudget instance (10 chars/day) for each test."""
+    return GlobalBudget(max_chars_per_day=10)
+
+
+class TestGlobalBudget:
+    """Тесты GlobalBudget."""
+
+    def test_consume_within_limit(self, budget):
+        """Списание в пределах лимита разрешено."""
+        assert budget.try_consume(5) is True
+        assert budget.try_consume(5) is True
+
+    def test_blocks_over_limit(self, budget):
+        """Блокирует списание сверх лимита."""
+        assert budget.try_consume(7) is True
+        assert budget.try_consume(4) is False
+
+    def test_remaining(self, budget):
+        """remaining() возвращает остаток символов."""
+        assert budget.remaining() == 10
+        budget.try_consume(3)
+        assert budget.remaining() == 7
+
+    def test_remaining_never_negative(self, budget):
+        """remaining() не бывает отрицательным."""
+        budget.try_consume(10)
+        assert budget.remaining() == 0
+
+    def test_reset(self, budget):
+        """reset() очищает состояние."""
+        budget.try_consume(10)
+        budget.reset()
+        assert budget.remaining() == 10
+        assert budget.try_consume(10) is True
+
+    def test_day_rollover(self, budget, monkeypatch):
+        """При смене UTC-дня учёт начинается заново."""
+        budget.try_consume(10)
+        assert budget.try_consume(1) is False
+
+        monkeypatch.setattr(DailyQuota, "_today", staticmethod(lambda: "2000-01-02"))
+        assert budget.remaining() == 10
+        assert budget.try_consume(5) is True

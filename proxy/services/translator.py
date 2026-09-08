@@ -96,6 +96,21 @@ def _get_language_name(code: str) -> str:
     return LANGUAGE_NAMES_EN.get(code, code)
 
 
+def _cache_key(word: str, source_language: str, target_language: str) -> str:
+    """Build the translation cache key (shared by lookup and store)."""
+    return f"{source_language}:{target_language}:{word}"
+
+
+def get_cached_translation(
+    word: str, source_language: str, target_language: str
+) -> str | None:
+    """Return cached translation if present, else None.
+
+    Used by the endpoint layer to skip budget consumption on cache hits.
+    """
+    return translation_cache.get(_cache_key(word, source_language, target_language))
+
+
 def _translate_sync(
     word: str, source_language: str = "en", target_language: str = "ru"
 ) -> tuple[str | None, str | None, str]:
@@ -109,7 +124,7 @@ def _translate_sync(
     Returns (translation, detected_language_code, raw_response_for_debug).
     """
     # Check cache first — key includes source and target to avoid cross-language collisions
-    cache_key = f"{source_language}:{target_language}:{word}"
+    cache_key = _cache_key(word, source_language, target_language)
     cached = translation_cache.get(cache_key)
     if cached:
         return cached, None, ""  # None means "from cache, no detected language"

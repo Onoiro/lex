@@ -4,17 +4,36 @@ import pytest
 from unittest.mock import patch
 from fastapi.testclient import TestClient
 
-from proxy.main import app, translate_limiter, translate_quota
+from proxy.main import (
+    app,
+    translate_limiter,
+    translate_quota,
+    tts_limiter,
+    tts_quota,
+    global_budget,
+    translation_cache,
+    speech_cache,
+)
 
 
 @pytest.fixture(autouse=True)
 def reset_rate_limiter():
-    """Clear rate limiter and quota state before each test."""
+    """Clear rate limiter, quota, budget and cache state before each test."""
     translate_limiter._requests.clear()
     translate_quota.reset()
+    tts_limiter._requests.clear()
+    tts_quota.reset()
+    global_budget.reset()
+    translation_cache.clear()
+    speech_cache.clear()
     yield
     translate_limiter._requests.clear()
     translate_quota.reset()
+    tts_limiter._requests.clear()
+    tts_quota.reset()
+    global_budget.reset()
+    translation_cache.clear()
+    speech_cache.clear()
 
 
 @pytest.fixture
@@ -131,6 +150,28 @@ class TestTranslate:
         with patch("proxy.main.translate_word", return_value=("тест", "en")):
             resp = client.post("/translate", json={"word": "a" * 500})
         assert resp.status_code == 200
+
+    def test_global_budget_exceeded_returns_503(self, client):
+        """Returns 503 service_overloaded when global budget is exhausted."""
+        assert global_budget.try_consume(global_budget.remaining()) is True
+
+        with patch("proxy.main.translate_word", return_value=("тест", "en")):
+            resp = client.post("/translate", json={"word": "hi"})
+
+        assert resp.status_code == 503
+        assert resp.json()["error"] == "service_overloaded"
+
+    def test_global_budget_not_consumed_on_cache_hit(self, client):
+        """Cached translations don't consume the global budget."""
+        translation_cache.set("auto:ru:hello", "тест")
+
+        with patch("proxy.main.translate_word") as mock_translate:
+            resp = client.post("/translate", json={"word": "hello"})
+
+        assert resp.status_code == 200
+        assert resp.json()["translation"] == "тест"
+        assert resp.json()["detected_language"] == ""
+        mock_translate.assert_not_called()
 
 
 class TestLanguages:

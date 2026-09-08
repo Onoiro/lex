@@ -69,3 +69,35 @@ class DailyQuota:
         """Очистить всё состояние (для тестов)."""
         with self._lock:
             self._usage.clear()
+
+
+class GlobalBudget:
+    """
+    Глобальный дневной бюджет символов на всех пользователей суммарно.
+
+    Финансовый предохранитель: гарантированно останавливает траты на внешние
+    API при превышении дневного лимита. Окно — календарный день UTC,
+    состояние в памяти и сбрасывается при рестарте.
+    """
+
+    _KEY = "global"
+
+    def __init__(self, max_chars_per_day: int):
+        self._quota = DailyQuota(max_chars_per_day=max_chars_per_day)
+
+    def remaining(self) -> int:
+        """Оставшиеся символы глобального бюджета на сегодня."""
+        return self._quota.remaining(self._KEY)
+
+    def try_consume(self, chars: int) -> bool:
+        """
+        Попытаться списать символы из глобального бюджета. Списание атомарно.
+
+        Returns:
+            True если бюджет позволяет, False если превышен.
+        """
+        return self._quota.try_consume(self._KEY, chars)
+
+    def reset(self) -> None:
+        """Очистить состояние (для тестов)."""
+        self._quota.reset()

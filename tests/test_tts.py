@@ -11,19 +11,21 @@ from proxy.services.tts import (
     LANG_MAP,
     speech_cache,
 )
-from proxy.main import app, tts_limiter, tts_quota
+from proxy.main import app, tts_limiter, tts_quota, global_budget
 
 
 @pytest.fixture(autouse=True)
 def reset_tts_state():
-    """Clear TTS cache, rate limiter and quota before and after each test."""
+    """Clear TTS cache, rate limiter, quota and global budget before/after each test."""
     speech_cache.clear()
     tts_limiter._requests.clear()
     tts_quota.reset()
+    global_budget.reset()
     yield
     speech_cache.clear()
     tts_limiter._requests.clear()
     tts_quota.reset()
+    global_budget.reset()
 
 
 class TestLanguageMapping:
@@ -237,3 +239,21 @@ class TestTtsEndpoint:
             resp = client.post("/tts", json={"text": "hi", "lang": "en"})
             assert resp.status_code == 429
             assert resp.json()["error"] == "daily_quota_exceeded"
+
+    def test_global_budget_exceeded_returns_503(self):
+        """Returns 503 service_overloaded when global budget is exhausted."""
+        assert global_budget.try_consume(global_budget.remaining()) is True
+
+        client = TestClient(app)
+        response = client.post("/tts", json={"text": "hi", "lang": "en"})
+        assert response.status_code == 503
+        assert response.json()["error"] == "service_overloaded"
+
+    def test_global_budget_not_consumed_on_cache_hit(self):
+        """Cached audio doesn't consume the global budget."""
+        speech_cache.set("hello", "en", b"cached_audio")
+
+        client = TestClient(app)
+        response = client.post("/tts", json={"text": "hello", "lang": "en"})
+        assert response.status_code == 200
+        assert response.content == b"cached_audio"

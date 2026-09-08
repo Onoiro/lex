@@ -5,7 +5,7 @@ Lex — local-first приложение-переводчик и помощни�
 
 **Демо:** [lex.2-way.ru](https://lex.2-way.ru)
 
-**Текущая версия:** 1.18.0
+**Текущая версия:** 1.19.2
 
 ## Архитектура
 
@@ -173,7 +173,7 @@ make d-run    # docker compose up -d
 ### Proxy
 - **Proxy:** FastAPI, порт 8004. Скрывает Yandex API key. Rate limiting. Дневные символьные квоты. Кэш переводов. TTS (text-to-speech). Feedback (Telegram Bot).
 - Эндпоинты: POST `/translate` (body: word, source_lang, target_lang), GET `/languages`, POST `/tts`, POST `/dictionary` (body: word, lang_pair), POST `/feedback` (body: category, message, contact), GET `/`, GET `/cache/stats`, GET `/tts/cache/stats`, GET `/dictionary/cache/stats`.
-- **Лимиты использования:** максимум 500 символов на запрос (`/translate`, `/tts`) — превышение → 400 `{"error": "text_too_long", "max_length": 500}`. Дневные квоты на IP: 500 символов перевода/день + 500 символов TTS/день (класс `DailyQuota` в `proxy/security/quota.py`, окно — календарный день UTC, in-memory, сброс при рестарте) — превышение → 429 `{"error": "daily_quota_exceeded"}`. Кэши (серверные и клиентский TTS Cache API) не расходуют квоту — лимитируется только фактический вызов Yandex API. `/dictionary` — бесплатный эндпоинт, без квот.
+- **Лимиты использования:** максимум 500 символов на запрос (`/translate`, `/tts`) — превышение → 400 `{"error": "text_too_long", "max_length": 500}`. Дневные квоты на IP: 500 символов перевода/день + 500 символов TTS/день (класс `DailyQuota` в `proxy/security/quota.py`, окно — календарный день UTC, in-memory, сброс при рестарте) — превышение → 429 `{"error": "daily_quota_exceeded"}`. Глобальный дневной бюджет на всех пользователей суммарно (translate + tts вместе): класс `GlobalBudget` в `proxy/security/quota.py`, лимит через env `GLOBAL_DAILY_CHAR_LIMIT` (дефолт 300 000 симв/день) — превышение → 503 `{"error": "service_overloaded"}`. Кэши (серверные и клиентский TTS Cache API) не расходуют квоты и глобальный бюджет — лимитируется только фактический вызов Yandex API (в `/translate` и `/tts` кэш проверяется до списания). `/dictionary` — бесплатный эндпоинт, без квот.
 - Самодостаточный модуль: все зависимости внутри `proxy/` (services/, security/, languages.py).
 - **Линтинг:** `uv run ruff check proxy/` — без ошибок.
 - **Тестирование:** `uv run pytest tests/ -v`.
