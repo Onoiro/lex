@@ -4,7 +4,7 @@ import pytest
 from unittest.mock import patch
 from fastapi.testclient import TestClient
 
-from proxy.main import app, token_auth, ALLOWED_ORIGINS
+from proxy.main import app, token_auth, ALLOWED_ORIGINS, translation_cache
 
 
 @pytest.fixture(autouse=True)
@@ -13,6 +13,14 @@ def token_auth_disabled(monkeypatch):
     monkeypatch.setattr(token_auth, "_tokens", set())
     yield
     token_auth.reload()
+
+
+@pytest.fixture(autouse=True)
+def clear_translation_cache():
+    """Clear the shared translation cache so tests don't see each other's entries."""
+    translation_cache.clear()
+    yield
+    translation_cache.clear()
 
 
 @pytest.fixture
@@ -81,7 +89,7 @@ class TestTokenMiddleware:
                 headers={"X-App-Token": "secret"},
             )
         assert resp.status_code == 200
-        assert resp.json()["translation"] == "здравствуйте"
+        assert resp.json()["translation"] == "привет"
 
     def test_health_check_open_without_token(self, client, monkeypatch):
         monkeypatch.setattr(token_auth, "_tokens", {"secret"})
