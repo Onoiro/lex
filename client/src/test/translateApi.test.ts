@@ -1,5 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { translateWord, getLanguages, LimitError } from "@/services/translateApi";
+import {
+  isUpdateRequired,
+  onUpdateRequired,
+} from "@/services/updateGate";
 
 describe("translateApi", () => {
   beforeEach(() => {
@@ -98,6 +102,29 @@ describe("translateApi", () => {
       const err = await translateWord("hello", "en", "ru").catch((e) => e);
       expect(err).toBeInstanceOf(LimitError);
       expect(err.code).toBe("daily_quota_exceeded");
+    });
+
+    it("notifies update gate on 426 update_required", async () => {
+      vi.stubGlobal(
+        "fetch",
+        vi.fn().mockResolvedValue({
+          ok: false,
+          status: 426,
+          json: () => Promise.resolve({ error: "update_required" }),
+        }),
+      );
+
+      let notified = false;
+      const unsub = onUpdateRequired(() => {
+        notified = true;
+      });
+
+      await expect(translateWord("hello", "en", "ru")).rejects.toThrow(
+        "update_required",
+      );
+      expect(notified).toBe(true);
+      expect(isUpdateRequired()).toBe(true);
+      unsub();
     });
 
     it("sends correct request body", async () => {

@@ -1,4 +1,5 @@
 import { PROXY_URL, proxyHeaders } from "./proxyClient";
+import { notifyUpdateRequired } from "./updateGate";
 
 export interface FeedbackResult {
   success: boolean;
@@ -26,6 +27,9 @@ export async function sendFeedback(
     });
 
     if (!response.ok) {
+      if (response.status === 426) {
+        notifyUpdateRequired();
+      }
       const body = await response.json().catch(() => ({}));
       return { success: false, error: body.error ?? `HTTP ${response.status}` };
     }

@@ -1,4 +1,5 @@
 import { PROXY_URL, proxyHeaders } from "./proxyClient";
+import { notifyUpdateRequired } from "./updateGate";
 
 // ── Persistent audio cache (Cache API) ─────────────────────────
 //
@@ -235,6 +236,10 @@ export async function synthesizeSpeech(
     });
 
     if (!response.ok) {
+      if (response.status === 426) {
+        notifyUpdateRequired();
+        return;
+      }
       if (onError) {
         const body = (await response.json().catch(() => ({}))) as { error?: string };
         if (body.error === "daily_quota_exceeded" || body.error === "text_too_long") {

@@ -257,5 +257,8 @@
   "terms.age": "Age",
   "terms.age_text": "The app is intended for users aged 13 and older.",
   "terms.contact": "Contact",
-  "terms.contact_text": "For questions about using the app, contact donoriono@gmail.com or send a message via the feedback form in the app."
+  "terms.contact_text": "For questions about using the app, contact donoriono@gmail.com or send a message via the feedback form in the app.",
+  "update.title": "New version available",
+  "update.message": "Your app version is outdated and no longer supported. Please update the app to continue using translation and speech synthesis.",
+  "update.hint": "Your words and statistics are stored on your device and will not be affected by the update."
 }

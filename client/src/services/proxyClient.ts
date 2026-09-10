@@ -6,10 +6,15 @@ export const PROXY_URL = import.meta.env.VITE_PROXY_URL ?? "";
 // (the proxy has token checking disabled when APP_TOKENS is unset).
 const APP_TOKEN = import.meta.env.VITE_APP_TOKEN ?? "";
 
+// App version injected at build time from package.json (vite define).
+// Sent as X-App-Version so the proxy can gate outdated clients.
+declare const __APP_VERSION__: string;
+
 /** Headers for proxy API requests (Content-Type + app token when set). */
 export function proxyHeaders(): Record<string, string> {
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
+    "X-App-Version": __APP_VERSION__,
   };
   if (APP_TOKEN) {
     headers["X-App-Token"] = APP_TOKEN;

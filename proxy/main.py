@@ -31,6 +31,7 @@ from proxy.services.feedback import send_feedback, is_configured as feedback_con
 from proxy.security.rate_limiter import RateLimiter, get_client_ip
 from proxy.security.quota import DailyQuota, GlobalBudget
 from proxy.security.token_auth import AppTokenAuth
+from proxy.security.version_gate import VersionGate
 
 load_dotenv()
 
@@ -51,6 +52,10 @@ tts_quota = DailyQuota(max_chars_per_day=500)
 
 # App token check (X-App-Token header). Disabled when APP_TOKENS is unset.
 token_auth = AppTokenAuth()
+
+# Client version gate (X-App-Version header). Disabled when
+# MIN_APP_VERSION is unset — outdated clients get 426 Upgrade Required.
+version_gate = VersionGate()
 
 
 # CORS: whitelist of client app origins. Configurable via ALLOWED_ORIGINS
@@ -88,6 +93,14 @@ async def app_token_middleware(request: Request, call_next):
             status_code=403,
             content={"error": "unauthorized"},
         )
+    if not version_gate.is_supported(request.headers.get("X-App-Version")):
+        return JSONResponse(
+            status_code=426,
+            content={
+                "error": "update_required",
+                "min_version": version_gate.min_version,
+            },
+        )
     return await call_next(request)
 
 
@@ -95,7 +108,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
     allow_methods=["GET", "POST", "OPTIONS"],
-    allow_headers=["Content-Type", "X-App-Token", "X-Device-Id"],
+    allow_headers=["Content-Type", "X-App-Token", "X-App-Version", "X-Device-Id"],
     max_age=86400,
 )
 

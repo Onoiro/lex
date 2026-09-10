@@ -88,6 +88,7 @@ Lex is a translator and vocabulary trainer. Your dictionary, spaced repetition, 
 Layers of protection (see `.env.example` for configuration):
 
 - **App token** — clients send a shared secret in the `X-App-Token` header (baked in at build time via `VITE_APP_TOKEN`). The proxy validates it against `APP_TOKENS` (comma-separated list for rotation). Unset `APP_TOKENS` disables the check (backward compatibility during rollout). Missing/invalid token → `403 {"error": "unauthorized"}`. `GET /` (health check) stays open.
+- **Client version gate** — clients send their app version in the `X-App-Version` header (injected at build time from `package.json`). The proxy compares it against `MIN_APP_VERSION` (semver). Unset `MIN_APP_VERSION` disables the check (same rollout pattern as the app token: deploy proxy → release clients → enable on server). Outdated/missing/unparseable version → `426 {"error": "update_required", "min_version": "..."}`; the client then shows a full-screen "update the app" screen. `GET /` and preflight stay open.
 - **CORS whitelist** — only client app origins are allowed (`ALLOWED_ORIGINS` env var, defaults: `https://lex.2-way.ru`, `https://localhost` (Capacitor Android), `capacitor://localhost` (iOS), `http://tauri.localhost` / `tauri://localhost` (Tauri)). Requests from other origins get no CORS headers, so browsers block them.
 - **Rate limiting** — 30 req/min per endpoint per IP, feedback 3/hour.
 - **Daily quotas** — 500 chars/day translation + 500 chars/day TTS per IP → `429 {"error": "daily_quota_exceeded"}`.
@@ -216,7 +217,7 @@ All commands are run via `make`. Run `make help` to see the full list.
 | `make proxy` | Start translate proxy (port 8004) |
 | `make client-dev` | Start client dev server (port 5173) |
 | `make client-build` | Build client for production |
-| `make client-test` | Run client tests (vitest, 293 tests) |
+| `make client-test` | Run client tests (vitest, 299 tests) |
 | `make client-lint` | Lint client code (eslint) |
 | `make client-typecheck` | Type-check client (tsc) |
 | `make proxy-lint` | Lint proxy code (ruff) |
@@ -242,7 +243,7 @@ All commands are run via `make`. Run `make help` to see the full list.
 │   │   ├── domain/            # srs.ts, stats.ts, validators.ts, dictionarySort.ts, dailyStats.ts
 │   │   ├── i18n/              # index.ts, languages.ts, en/ru.json
 │   │   ├── pages/             # Home, Add, Review, Dictionary, Settings, Privacy, Terms
-│   │   ├── services/          # proxyClient.ts, translateApi.ts, ttsApi.ts, dictionaryApi.ts, feedbackApi.ts, theme.ts
+│   │   ├── services/          # proxyClient.ts, translateApi.ts, ttsApi.ts, dictionaryApi.ts, feedbackApi.ts, updateGate.ts, theme.ts
 │   │   ├── test/              # Component and service tests (Vitest)
 │   │   └── types/             # Word, LanguageSettings, DailyStats
 │   ├── capacitor.config.ts    # Android config
@@ -261,7 +262,8 @@ All commands are run via `make`. Run `make help` to see the full list.
 │   ├── security/
 │   │   ├── rate_limiter.py    # Rate limiting
 │   │   ├── quota.py           # Daily char quotas per IP + global budget
-│   │   └── token_auth.py      # X-App-Token check
+│   │   ├── token_auth.py      # X-App-Token check
+│   │   └── version_gate.py    # X-App-Version check (min client version)
 │   ├── Dockerfile
 │   └── requirements.txt
 ├── tests/                     # Proxy tests (pytest)

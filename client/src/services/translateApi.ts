@@ -1,4 +1,5 @@
 import { PROXY_URL, proxyHeaders } from "./proxyClient";
+import { notifyUpdateRequired } from "./updateGate";
 
 export interface TranslateResult {
   translation: string;
@@ -58,6 +59,10 @@ export async function translateWord(
   });
 
   if (!response.ok) {
+    if (response.status === 426) {
+      notifyUpdateRequired();
+      throw new Error("update_required");
+    }
     const body = await response.json().catch(() => ({}));
     throw toLimitError(body, response.status);
   }
@@ -78,6 +83,9 @@ export async function getLanguages(): Promise<LanguageInfo[]> {
   });
 
   if (!response.ok) {
+    if (response.status === 426) {
+      notifyUpdateRequired();
+    }
     throw new Error(`HTTP ${response.status}`);
   }
 

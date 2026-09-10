@@ -1,4 +1,5 @@
 import { PROXY_URL, proxyHeaders } from "./proxyClient";
+import { notifyUpdateRequired } from "./updateGate";
 
 export interface DictionaryExample {
   text: string;
@@ -24,6 +25,9 @@ export async function getExamples(
   });
 
   if (!response.ok) {
+    if (response.status === 426) {
+      notifyUpdateRequired();
+    }
     const body = await response.json().catch(() => ({}));
     throw new Error(body.error ?? `HTTP ${response.status}`);
   }
