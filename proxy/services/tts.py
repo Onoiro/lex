@@ -7,8 +7,9 @@ Uses the same API key as Yandex Translate.
 import os
 import httpx
 import asyncio
-from threading import Lock
 from typing import Optional
+
+from proxy.services.cache import SqliteCache
 
 API_KEY = os.getenv("YANDEX_API_KEY")
 FOLDER_ID = os.getenv("YANDEX_FOLDER_ID", "b1gqq9rjega7119p3a2f")
@@ -176,39 +177,22 @@ def map_language(lang_code: str) -> str:
     return LANG_MAP.get(lang_code, lang_code)
 
 
-class SpeechCache:
-    """In-memory cache for synthesized audio bytes.
+class SpeechCache(SqliteCache):
+    """Persistent cache for synthesized audio bytes (max 500 entries)."""
 
-    Thread-safe, with a size limit to avoid excessive memory usage.
-    """
-
-    def __init__(self, max_entries: int = 500):
-        self._cache: dict[str, bytes] = {}
-        self._max = max_entries
-        self._lock = Lock()
+    def __init__(self, max_entries: int = 500, db_path: Optional[str] = None):
+        super().__init__(
+            table="tts_audio", max_entries=max_entries, db_path=db_path
+        )
 
     def _key(self, text: str, lang: str) -> str:
         return f"{lang}:{text}"
 
     def get(self, text: str, lang: str) -> Optional[bytes]:
-        with self._lock:
-            return self._cache.get(self._key(text, lang))
+        return super().get(self._key(text, lang))
 
     def set(self, text: str, lang: str, audio: bytes) -> None:
-        with self._lock:
-            if len(self._cache) >= self._max:
-                # Evict oldest entry (dict preserves insertion order in Python 3.7+)
-                oldest = next(iter(self._cache))
-                del self._cache[oldest]
-            self._cache[self._key(text, lang)] = audio
-
-    def clear(self) -> None:
-        with self._lock:
-            self._cache.clear()
-
-    def size(self) -> int:
-        with self._lock:
-            return len(self._cache)
+        super().set(self._key(text, lang), audio)
 
 
 # Global cache instance

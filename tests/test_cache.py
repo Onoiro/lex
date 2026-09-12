@@ -1,107 +1,85 @@
 """Тесты для модуля кэширования."""
 
 import time
-from proxy.services.cache import CacheEntry, TranslationCache
-
-
-class TestCacheEntry:
-    """Тесты элемента кэша."""
-
-    def test_entry_not_expired(self):
-        """Запись не истекла."""
-        entry = CacheEntry("translation", ttl_seconds=60)
-        assert entry.is_expired() is False
-        assert entry.value == "translation"
-
-    def test_entry_expired(self):
-        """Запись истекла."""
-        entry = CacheEntry("translation", ttl_seconds=0)
-        time.sleep(0.1)  # Небольшая задержка
-        assert entry.is_expired() is True
+import pytest
+from proxy.services.cache import TranslationCache
 
 
 class TestTranslationCache:
     """Тесты кэша переводов."""
 
-    def test_set_and_get(self):
+    @pytest.fixture
+    def cache(self, tmp_path):
+        return TranslationCache(ttl_seconds=60, db_path=str(tmp_path / "c.db"))
+
+    def test_set_and_get(self, cache):
         """Установка и получение значения."""
-        cache = TranslationCache(ttl_seconds=60)
-        
         cache.set("hello", "привет")
         assert cache.get("hello") == "привет"
 
-    def test_get_missing_key(self):
+    def test_get_missing_key(self, cache):
         """Получение отсутствующего ключа."""
-        cache = TranslationCache(ttl_seconds=60)
-        
         assert cache.get("nonexistent") is None
 
-    def test_ttl_expiration(self):
+    def test_ttl_expiration(self, tmp_path):
         """Истечение времени жизни записи."""
-        cache = TranslationCache(ttl_seconds=1)
-        
+        cache = TranslationCache(ttl_seconds=1, db_path=str(tmp_path / "c.db"))
+
         cache.set("hello", "привет")
         assert cache.get("hello") == "привет"
-        
+
         time.sleep(1.1)  # Ждём истечения TTL
-        
+
         assert cache.get("hello") is None
 
-    def test_overwrite(self):
+    def test_overwrite(self, cache):
         """Перезапись значения."""
-        cache = TranslationCache(ttl_seconds=60)
-        
         cache.set("hello", "привет")
         cache.set("hello", "здравствуй")
-        
+
         assert cache.get("hello") == "здравствуй"
 
-    def test_clear(self):
+    def test_clear(self, cache):
         """Очистка кэша."""
-        cache = TranslationCache(ttl_seconds=60)
-        
         cache.set("hello", "привет")
         cache.set("world", "мир")
-        
+
         assert cache.size() == 2
-        
+
         cache.clear()
-        
+
         assert cache.size() == 0
         assert cache.get("hello") is None
 
-    def test_size(self):
+    def test_size(self, cache):
         """Размер кэша."""
-        cache = TranslationCache(ttl_seconds=60)
-        
         assert cache.size() == 0
-        
+
         cache.set("one", "1")
         assert cache.size() == 1
-        
+
         cache.set("two", "2")
         assert cache.size() == 2
 
-    def test_auto_cleanup_on_set(self):
+    def test_auto_cleanup_on_set(self, tmp_path):
         """Автоматическая очистка при добавлении."""
-        cache = TranslationCache(ttl_seconds=1)
-        
+        cache = TranslationCache(ttl_seconds=1, db_path=str(tmp_path / "c.db"))
+
         cache.set("hello", "привет")
         time.sleep(1.1)
-        
+
         # Добавляем новую запись, должна сработать очистка
         cache.set("world", "мир")
-        
+
         assert cache.get("hello") is None
         assert cache.get("world") == "мир"
 
-    def test_thread_safety(self):
+    def test_thread_safety(self, cache):
         """Потокобезопасность (базовый тест)."""
         import threading
-        
-        cache = TranslationCache(ttl_seconds=60)
+
         errors = []
-        
+
         def worker(n):
             try:
                 for i in range(100):
@@ -109,12 +87,12 @@ class TestTranslationCache:
                     cache.get(f"key_{n}_{i}")
             except Exception as e:
                 errors.append(e)
-        
+
         threads = [threading.Thread(target=worker, args=(i,)) for i in range(5)]
         for t in threads:
             t.start()
         for t in threads:
             t.join()
-        
+
         assert len(errors) == 0, f"Errors occurred: {errors}"
         assert cache.size() > 0

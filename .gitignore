@@ -77,6 +77,8 @@ Thumbs.db
 # Database
 *.db
 *.sqlite3
+*.db-shm
+*.db-wal
 
 # Nginx config (local example, real config is on the server)
 nginx.example

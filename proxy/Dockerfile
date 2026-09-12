@@ -15,6 +15,9 @@ COPY proxy/ ./proxy/
 # Change ownership to non-root user
 RUN chown -R lex:lex /app
 
+# Persistent cache directory (mounted as a Docker volume in docker-compose.yml)
+RUN mkdir -p /app/data && chown lex:lex /app/data
+
 USER lex
 
 # Expose proxy port

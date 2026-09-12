@@ -7,4 +7,9 @@ services:
       - "8004:8004"
     env_file:
       - ./.env
+    volumes:
+      - lex-cache:/app/data
     restart: unless-stopped
+
+volumes:
+  lex-cache:

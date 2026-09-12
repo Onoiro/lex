@@ -8,12 +8,12 @@ import json
 import httpx
 import asyncio
 
-from proxy.services.cache import TranslationCache
+from proxy.services.cache import TextCache
 
 CORPUS_URL = "https://dictionary.yandex.net/dicservice.json/queryCorpus"
 
 # Examples change rarely — cache for 30 days
-dictionary_cache = TranslationCache(ttl_seconds=86400 * 30)
+dictionary_cache = TextCache(table="dictionary", ttl_seconds=86400 * 30)
 
 
 def _clean_text(text: str) -> str:

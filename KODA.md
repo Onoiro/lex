@@ -131,7 +131,7 @@ make d-run    # docker compose up -d
 │   ├── services/
 │   │   ├── __init__.py
 │   │   ├── translator.py      # Yandex Translate API client
-│   │   ├── cache.py           # Translation cache (TTL)
+│   │   ├── cache.py           # SQLite-backed caches (SqliteCache/TextCache/TranslationCache)
 │   │   ├── tts.py             # Speechkin TTS client
 │   │   ├── dictionary.py      # Yandex Dictionary corpus client
 │   │   └── feedback.py        # Telegram Bot feedback service
@@ -180,6 +180,7 @@ make d-run    # docker compose up -d
 - **App token (X-App-Token):** все эндпоинты кроме `GET /` (health-check) требуют заголовок `X-App-Token` (класс `AppTokenAuth` в `proxy/security/token_auth.py`). Токены через env `APP_TOKENS` (список через запятую, для ротации). Пустой/не заданный `APP_TOKENS` = проверка выключена (обратная совместимость при выкате). Отсутствие/несовпадение токена → 403 `{"error": "unauthorized"}`. Токен — фильтр от скрипт-киди, не защита от целевой атаки (токен извлекается из APK); настоящая защита — квоты и бюджет.
 - **Version gate (X-App-Version):** клиент шлёт версию приложения (semver) в заголовке `X-App-Version` — инжектится при сборке из `client/package.json` через `define` в `vite.config.ts` и `vitest.config.ts` (`__APP_VERSION__`). Прокси сравнивает с env `MIN_APP_VERSION` (класс `VersionGate` в `proxy/security/version_gate.py`). Пустой/не заданный `MIN_APP_VERSION` = проверка выключена (тот же паттерн выката, что у APP_TOKENS: прокси без проверки → релиз клиента с заголовком → включить проверку на сервере). Устаревшая/отсутствующая/невалидная версия → 426 `{"error": "update_required", "min_version": "..."}`. Клиент: при 426 все 4 сервиса вызывают `notifyUpdateRequired()` из `services/updateGate.ts`, App рендерит полноэкранную заглушку `components/UpdateScreen.tsx` — кнопка «Перезагрузить» (для PWA) + ссылка на магазин/загрузку в зависимости от платформы (Android: `VITE_RUSTORE_URL`, web/desktop: `VITE_DOWNLOAD_URL`; пустые env = ссылка скрыта; i18n-ключи `update.*`). Порядок проверки в middleware: токен → версия.
 - **CORS whitelist:** env `ALLOWED_ORIGINS` (через запятую); если не задан — дефолт: `https://lex.2-way.ru`, `https://localhost` (Capacitor Android), `capacitor://localhost` (iOS), `http://tauri.localhost` (Tauri Win/Linux), `tauri://localhost` (Tauri macOS). Чужие origin не получают CORS-заголовков (браузер блокирует ответ). `allow_headers`: Content-Type, X-App-Token, X-Device-Id (задел под B-5). Порядок middleware: токен-мидлварь добавлена первой, CORS — второй (CORS вешает заголовки и на 403-ответы).
+- **Персистентные кэши (SQLite):** все 3 серверных кэша хранятся в одной SQLite БД (путь через env `SQLITE_CACHE_PATH`, дефолт `data/cache.db`): переводы (TTL 7 дней, таблица `translations`), TTS-аудио (до 500 записей, eviction по времени вставки, таблица `tts_audio`), примеры словаря (TTL 30 дней, таблица `dictionary`). База переживает рестарт контейнера — повторный перевод того же слова не тратит квоту и бюджет. Классы в `proxy/services/cache.py`: `SqliteCache` (bytes), `TextCache` (UTF-8 текст), `TranslationCache` (совместимое имя, таблица переводов); `SpeechCache` в `tts.py` — подкласс `SqliteCache`. Соединение открывается лениво (при первом обращении), защищено отдельным локом инициализации; при недоступной БД кэш деградирует до промахов без исключений. В Docker БД лежит в volume `lex-cache` → `/app/data` (см. `docker-compose.yml`), каталог создаётся и передаётся пользователю `lex` в Dockerfile.
 - Самодостаточный модуль: все зависимости внутри `proxy/` (services/, security/, languages.py).
 - **Линтинг:** `uv run ruff check proxy/` — без ошибок.
 - **Тестирование:** `uv run pytest tests/ -v`.
@@ -202,10 +203,10 @@ make d-run    # docker compose up -d
 - Справка: на стартовом экране Повтора — сворачиваемый блок «Как это работает?» с объяснением алгоритма простым языком (i18n-ключи review.how_it_works_*).
 
 ## Дальнейшие планы
-- **Бэклог подготовки к маркетплейсам:** `.koda/backlog.md` — задачи P0–P3 (глобальный бюджет ✅, CORS+токен ✅, version gate ✅, SQLite-кэши, device ID, биллинг RuStore, мониторинг). Брать задачи по порядку приоритета; перед реализацией — план в `.koda/plans/`.
+- **Бэклог подготовки к маркетплейсам:** `.koda/backlog.md` — задачи P0–P3 (глобальный бюджет ✅, CORS+токен ✅, version gate ✅, SQLite-кэши ✅, device ID, биллинг RuStore, мониторинг). Брать задачи по порядку приоритета; перед реализацией — план в `.koda/plans/`.
 - Пагинация по словарю при росте
 - CI для кросс-компиляции Tauri (Windows MSI/NSIS, macOS DMG)
 - График активности за 14 дней на странице Повтор (данные dailyStats уже есть)
 
 ---
-**Последнее обновление:** 8 сентября 2026
+**Последнее обновление:** 12 сентября 2026

@@ -21,6 +21,7 @@ Lex is a translator and vocabulary trainer. Your dictionary, spaced repetition, 
 - **Auto-answer & pause** - Auto-records "Forgot" after 10s, pauses after 3 consecutive auto-answers or 30s inactivity
 - **TTS** - Text-to-speech for words and translations via Yandex SpeechKit
 - **Usage limits** - 500 chars per request, 500 chars/day translation and TTS quotas per IP (resets at midnight UTC); repeated requests are served from cache and do not count against the quota
+- **Persistent caches** - Translations (7d), TTS audio (500 entries) and dictionary examples (30d) are stored in SQLite and survive proxy restarts; the DB lives in a Docker volume
 - **API protection** - CORS origin whitelist + shared app token (`X-App-Token` header) on all proxy endpoints; global daily char budget as a financial safety net
 - **Example sentences** - Load corpus examples from Yandex Dictionary into the note field on the Translate page
 - **PWA** - Installable, offline-capable via service worker
@@ -96,6 +97,16 @@ Layers of protection (see `.env.example` for configuration):
 - **Max text length** — 500 chars per request → `400 {"error": "text_too_long"}`.
 
 Cache hits (server-side and client TTS cache) never consume quotas or the budget.
+
+### Persistent caches (proxy)
+
+All three server-side caches are backed by a single SQLite database (path via `SQLITE_CACHE_PATH`, default `data/cache.db`):
+
+- **Translations** — 7-day TTL
+- **TTS audio** — max 500 entries (oldest evicted)
+- **Dictionary examples** — 30-day TTL
+
+The DB survives proxy/container restarts, so the same word is translated via the Yandex API only once per server lifetime. In Docker the DB lives in the `lex-cache` volume mounted at `/app/data`. If the DB is unavailable, caches degrade gracefully to misses (no crashes, just API calls).
 
 ## Quick Start
 
@@ -221,7 +232,7 @@ All commands are run via `make`. Run `make help` to see the full list.
 | `make client-lint` | Lint client code (eslint) |
 | `make client-typecheck` | Type-check client (tsc) |
 | `make proxy-lint` | Lint proxy code (ruff) |
-| `make proxy-test` | Run proxy tests (pytest) |
+| `make proxy-test` | Run proxy tests (pytest, 203 tests) |
 | `make check` | Run all checks (client + proxy) |
 | `make android-build` | Build Android APK |
 | `make tauri-dev` | Start Tauri desktop dev mode |
@@ -255,7 +266,7 @@ All commands are run via `make`. Run `make help` to see the full list.
 │   ├── languages.py           # Language metadata
 │   ├── services/
 │   │   ├── translator.py      # Yandex Translate API client
-│   │   ├── cache.py           # Translation cache (TTL)
+│   │   ├── cache.py           # SQLite-backed caches (translations, TTS, dictionary)
 │   │   ├── tts.py             # Yandex SpeechKit TTS client
 │   │   ├── dictionary.py      # Yandex Dictionary corpus client
 │   │   └── feedback.py        # Telegram Bot feedback service
