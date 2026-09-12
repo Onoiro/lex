@@ -45,6 +45,11 @@ export function Privacy() {
       </section>
 
       <section style={{ marginBottom: "1.5rem" }}>
+        <h3>{t("privacy.device_id")}</h3>
+        <p>{t("privacy.device_id_text")}</p>
+      </section>
+
+      <section style={{ marginBottom: "1.5rem" }}>
         <h3>{t("privacy.proxy_cache")}</h3>
         <p>{t("privacy.proxy_cache_text")}</p>
       </section>

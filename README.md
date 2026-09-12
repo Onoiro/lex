@@ -20,7 +20,7 @@ Lex is a translator and vocabulary trainer. Your dictionary, spaced repetition, 
 - **Response time tracking** - Best/average times, live timer with color thresholds
 - **Auto-answer & pause** - Auto-records "Forgot" after 10s, pauses after 3 consecutive auto-answers or 30s inactivity
 - **TTS** - Text-to-speech for words and translations via Yandex SpeechKit
-- **Usage limits** - 500 chars per request, 500 chars/day translation and TTS quotas per IP (resets at midnight UTC); repeated requests are served from cache and do not count against the quota
+- **Usage limits** - 500 chars per request, 500 chars/day translation and TTS quotas per device (resets at midnight UTC); repeated requests are served from cache and do not count against the quota
 - **Persistent caches** - Translations (7d), TTS audio (500 entries) and dictionary examples (30d) are stored in SQLite and survive proxy restarts; the DB lives in a Docker volume
 - **API protection** - CORS origin whitelist + shared app token (`X-App-Token` header) on all proxy endpoints; global daily char budget as a financial safety net
 - **Example sentences** - Load corpus examples from Yandex Dictionary into the note field on the Translate page
@@ -92,7 +92,7 @@ Layers of protection (see `.env.example` for configuration):
 - **Client version gate** — clients send their app version in the `X-App-Version` header (injected at build time from `package.json`). The proxy compares it against `MIN_APP_VERSION` (semver). Unset `MIN_APP_VERSION` disables the check (same rollout pattern as the app token: deploy proxy → release clients → enable on server). Outdated/missing/unparseable version → `426 {"error": "update_required", "min_version": "..."}`; the client then shows a full-screen "update the app" screen. `GET /` and preflight stay open.
 - **CORS whitelist** — only client app origins are allowed (`ALLOWED_ORIGINS` env var, defaults: `https://lex.2-way.ru`, `https://localhost` (Capacitor Android), `capacitor://localhost` (iOS), `http://tauri.localhost` / `tauri://localhost` (Tauri)). Requests from other origins get no CORS headers, so browsers block them.
 - **Rate limiting** — 30 req/min per endpoint per IP, feedback 3/hour.
-- **Daily quotas** — 500 chars/day translation + 500 chars/day TTS per IP → `429 {"error": "daily_quota_exceeded"}`.
+- **Daily quotas** — three levels per endpoint (translation and TTS separately), persistent in SQLite: device quota 500 chars/day (primary, follows the `X-Device-Id` header), IP quota 3000 chars/day (antibot layer, consumed by all requests with a device ID), anon quota 100 chars/day for requests without a device ID. Limits configurable via `DEVICE_DAILY_CHAR_LIMIT` / `IP_DAILY_CHAR_LIMIT` / `ANON_DAILY_CHAR_LIMIT`. Exceeded → `429 {"error": "daily_quota_exceeded"}`.
 - **Global daily budget** — hard stop for all users combined (`GLOBAL_DAILY_CHAR_LIMIT`, default 300 000 chars/day) → `503 {"error": "service_overloaded"}`.
 - **Max text length** — 500 chars per request → `400 {"error": "text_too_long"}`.
 
@@ -272,7 +272,7 @@ All commands are run via `make`. Run `make help` to see the full list.
 │   │   └── feedback.py        # Telegram Bot feedback service
 │   ├── security/
 │   │   ├── rate_limiter.py    # Rate limiting
-│   │   ├── quota.py           # Daily char quotas per IP + global budget
+│   │   ├── quota.py           # Daily char quotas (device/IP/anon, SQLite-backed) + global budget
 │   │   ├── token_auth.py      # X-App-Token check
 │   │   └── version_gate.py    # X-App-Version check (min client version)
 │   ├── Dockerfile

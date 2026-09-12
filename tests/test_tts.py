@@ -11,7 +11,7 @@ from proxy.services.tts import (
     LANG_MAP,
     speech_cache,
 )
-from proxy.main import app, tts_limiter, tts_quota, global_budget
+from proxy.main import app, tts_limiter, tts_quotas, global_budget
 
 
 @pytest.fixture(autouse=True)
@@ -19,12 +19,14 @@ def reset_tts_state():
     """Clear TTS cache, rate limiter, quota and global budget before/after each test."""
     speech_cache.clear()
     tts_limiter._requests.clear()
-    tts_quota.reset()
+    for quota in tts_quotas.values():
+        quota.reset()
     global_budget.reset()
     yield
     speech_cache.clear()
     tts_limiter._requests.clear()
-    tts_quota.reset()
+    for quota in tts_quotas.values():
+        quota.reset()
     global_budget.reset()
 
 
@@ -205,7 +207,7 @@ class TestTtsEndpoint:
     @patch("proxy.services.tts._synthesize_sync")
     def test_rate_limiting(self, mock_synthesize):
         mock_synthesize.return_value = b"fake_mp3_audio"
-        client = TestClient(app)
+        client = TestClient(app, headers={"X-Device-Id": "tts-rl-test"})
         # Make 30 successful requests (the limit)
         for _ in range(30):
             resp = client.post("/tts", json={"text": "hello", "lang": "en"})
@@ -230,7 +232,7 @@ class TestTtsEndpoint:
 
     def test_daily_quota_exceeded(self):
         with patch("proxy.services.tts._synthesize_sync", return_value=b"audio"):
-            client = TestClient(app)
+            client = TestClient(app, headers={"X-Device-Id": "tts-quota-test"})
             # 500 chars/day: 5 requests x 100 chars
             for _ in range(5):
                 resp = client.post("/tts", json={"text": "a" * 100, "lang": "en"})

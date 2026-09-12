@@ -7,9 +7,9 @@ from fastapi.testclient import TestClient
 from proxy.main import (
     app,
     translate_limiter,
-    translate_quota,
+    translate_quotas,
     tts_limiter,
-    tts_quota,
+    tts_quotas,
     global_budget,
     translation_cache,
     speech_cache,
@@ -20,25 +20,33 @@ from proxy.main import (
 def reset_rate_limiter():
     """Clear rate limiter, quota, budget and cache state before each test."""
     translate_limiter._requests.clear()
-    translate_quota.reset()
     tts_limiter._requests.clear()
-    tts_quota.reset()
     global_budget.reset()
     translation_cache.clear()
     speech_cache.clear()
+    for quotas in (translate_quotas, tts_quotas):
+        for quota in quotas.values():
+            quota.reset()
     yield
     translate_limiter._requests.clear()
-    translate_quota.reset()
     tts_limiter._requests.clear()
-    tts_quota.reset()
     global_budget.reset()
     translation_cache.clear()
     speech_cache.clear()
+    for quotas in (translate_quotas, tts_quotas):
+        for quota in quotas.values():
+            quota.reset()
 
 
 @pytest.fixture
 def client():
     return TestClient(app)
+
+
+@pytest.fixture
+def device_client():
+    """TestClient sending a default X-Device-Id header on every request."""
+    return TestClient(app, headers={"X-Device-Id": "test-device-1"})
 
 
 class TestHealthCheck:
@@ -99,16 +107,16 @@ class TestTranslate:
         assert resp.status_code == 200
         assert resp.json()["detected_language"] == ""
 
-    def test_rate_limit_exceeded(self, client):
+    def test_rate_limit_exceeded(self, device_client):
         """Returns 429 after exceeding rate limit."""
         with patch("proxy.main.translate_word", return_value=("тест", "en")):
             # Exhaust the rate limit (30 requests)
             for _ in range(30):
-                resp = client.post("/translate", json={"word": "test"})
+                resp = device_client.post("/translate", json={"word": "test"})
                 assert resp.status_code == 200
 
             # 31st request should be rate limited
-            resp = client.post("/translate", json={"word": "test"})
+            resp = device_client.post("/translate", json={"word": "test"})
             assert resp.status_code == 429
             assert "error" in resp.json()
             assert resp.headers.get("Retry-After") == "60"
@@ -129,16 +137,16 @@ class TestTranslate:
 
         assert resp.status_code == 200
 
-    def test_daily_quota_exceeded(self, client):
+    def test_daily_quota_exceeded(self, device_client):
         """Returns 429 daily_quota_exceeded after exhausting daily chars."""
         with patch("proxy.main.translate_word", return_value=("тест", "en")):
             # 500 chars/day: 5 requests x 100 chars
             for _ in range(5):
-                resp = client.post("/translate", json={"word": "a" * 100})
+                resp = device_client.post("/translate", json={"word": "a" * 100})
                 assert resp.status_code == 200
 
             # Quota exhausted — even a short word is rejected
-            resp = client.post("/translate", json={"word": "hi"})
+            resp = device_client.post("/translate", json={"word": "hi"})
             assert resp.status_code == 429
             assert resp.json()["error"] == "daily_quota_exceeded"
 
@@ -172,6 +180,68 @@ class TestTranslate:
         assert resp.json()["translation"] == "тест"
         assert resp.json()["detected_language"] == ""
         mock_translate.assert_not_called()
+
+
+class TestQuotaLevels:
+    """Tests for device / IP / anon daily quota levels."""
+
+    def test_two_devices_one_ip_have_independent_quotas(self, device_client):
+        """Devices behind one IP each get a full device quota."""
+        device_a = TestClient(app, headers={"X-Device-Id": "device-a"})
+        device_b = TestClient(app, headers={"X-Device-Id": "device-b"})
+
+        with patch("proxy.main.translate_word", return_value=("тест", "en")):
+            for _ in range(5):
+                resp = device_a.post("/translate", json={"word": "a" * 100})
+                assert resp.status_code == 200
+
+            # Device A is out of quota, device B is not affected
+            resp = device_a.post("/translate", json={"word": "hi"})
+            assert resp.status_code == 429
+
+            resp = device_b.post("/translate", json={"word": "a" * 100})
+            assert resp.status_code == 200
+
+    def test_ip_quota_blocks_many_devices(self, monkeypatch):
+        """IP quota stops a flood of distinct device IDs from one IP."""
+        monkeypatch.setattr("proxy.main.IP_DAILY_CHAR_LIMIT", 600)
+        monkeypatch.setattr(translate_quotas["ip"], "max_chars_per_day", 600)
+
+        with patch("proxy.main.translate_word", return_value=("тест", "en")):
+            # 7 devices x 100 chars = 700 > 600 IP limit, each device well
+            # within its own 500-char device quota
+            for i in range(6):
+                client = TestClient(app, headers={"X-Device-Id": f"flood-{i}"})
+                resp = client.post("/translate", json={"word": "a" * 100})
+                assert resp.status_code == 200
+
+            client = TestClient(app, headers={"X-Device-Id": "flood-last"})
+            resp = client.post("/translate", json={"word": "a" * 100})
+            assert resp.status_code == 429
+            assert resp.json()["error"] == "daily_quota_exceeded"
+
+    def test_request_without_device_id_uses_anon_quota(self, client):
+        """Anonymous request gets the reduced anon quota."""
+        from proxy.main import translate_quotas as quotas
+
+        anon_limit = quotas["anon"].max_chars_per_day
+
+        with patch("proxy.main.translate_word", return_value=("тест", "en")):
+            resp = client.post("/translate", json={"word": "x" * anon_limit})
+            assert resp.status_code == 200
+
+            resp = client.post("/translate", json={"word": "hi"})
+            assert resp.status_code == 429
+            assert resp.json()["error"] == "daily_quota_exceeded"
+
+    def test_blank_device_id_treated_as_anonymous(self, client):
+        """Whitespace-only X-Device-Id falls back to the anon quota."""
+        resp = client.post(
+            "/translate",
+            json={"word": "hi"},
+            headers={"X-Device-Id": "   "},
+        )
+        assert resp.status_code == 200
 
 
 class TestLanguages:

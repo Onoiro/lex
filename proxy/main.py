@@ -5,9 +5,10 @@ Provides three endpoints:
   GET  /languages — list supported languages
   POST /tts       — synthesize speech (text-to-speech)
 
-Protected by rate limiting, daily char quotas, a global daily budget and
-an app token check (X-App-Token header, disabled when APP_TOKENS is unset).
-CORS is restricted to a whitelist of client app origins.
+Protected by rate limiting, daily char quotas (per device / per IP / anon),
+a global daily budget and an app token check (X-App-Token header, disabled
+when APP_TOKENS is unset). CORS is restricted to a whitelist of client app
+origins.
 """
 
 import os
@@ -29,7 +30,7 @@ from proxy.services.tts import synthesize_speech, speech_cache
 from proxy.services.dictionary import lookup_word, dictionary_cache
 from proxy.services.feedback import send_feedback, is_configured as feedback_configured
 from proxy.security.rate_limiter import RateLimiter, get_client_ip
-from proxy.security.quota import DailyQuota, GlobalBudget
+from proxy.security.quota import GlobalBudget, PersistentQuotaStore, PersistentDailyQuota
 from proxy.security.token_auth import AppTokenAuth
 from proxy.security.version_gate import VersionGate
 
@@ -46,9 +47,39 @@ MAX_TEXT_LENGTH = 500
 GLOBAL_DAILY_CHAR_LIMIT = int(os.getenv("GLOBAL_DAILY_CHAR_LIMIT", "300000"))
 global_budget = GlobalBudget(max_chars_per_day=GLOBAL_DAILY_CHAR_LIMIT)
 
-# Daily char quotas per IP (free tier, resets at midnight UTC)
-translate_quota = DailyQuota(max_chars_per_day=500)
-tts_quota = DailyQuota(max_chars_per_day=500)
+# Daily char quotas (free tier, resets at midnight UTC). Three levels per
+# endpoint: device quota (primary, follows X-Device-Id), IP quota (antibot
+# layer, consumed by ALL requests with a device ID) and anon quota (heavily
+# reduced, for requests WITHOUT a device ID). Persistent in SQLite so they
+# survive restarts; limits configurable via env vars.
+DEVICE_DAILY_CHAR_LIMIT = int(os.getenv("DEVICE_DAILY_CHAR_LIMIT", "500"))
+IP_DAILY_CHAR_LIMIT = int(os.getenv("IP_DAILY_CHAR_LIMIT", "3000"))
+ANON_DAILY_CHAR_LIMIT = int(os.getenv("ANON_DAILY_CHAR_LIMIT", "100"))
+
+quota_store = PersistentQuotaStore()
+translate_quotas = {
+    "device": PersistentDailyQuota(DEVICE_DAILY_CHAR_LIMIT, "tr:dev", quota_store),
+    "ip": PersistentDailyQuota(IP_DAILY_CHAR_LIMIT, "tr:ip", quota_store),
+    "anon": PersistentDailyQuota(ANON_DAILY_CHAR_LIMIT, "tr:anon", quota_store),
+}
+tts_quotas = {
+    "device": PersistentDailyQuota(DEVICE_DAILY_CHAR_LIMIT, "tts:dev", quota_store),
+    "ip": PersistentDailyQuota(IP_DAILY_CHAR_LIMIT, "tts:ip", quota_store),
+    "anon": PersistentDailyQuota(ANON_DAILY_CHAR_LIMIT, "tts:anon", quota_store),
+}
+
+
+def consume_daily_quota(quotas: dict, ip: str, device_id: str, chars: int) -> bool:
+    """
+    Consume chars from the daily quota levels in order: device quota
+    (only when a device ID is present), then IP quota (antibot) or
+    anon quota for clients without a device ID.
+    """
+    if device_id:
+        if not quotas["device"].try_consume(device_id, chars):
+            return False
+        return quotas["ip"].try_consume(ip, chars)
+    return quotas["anon"].try_consume(ip, chars)
 
 # App token check (X-App-Token header). Disabled when APP_TOKENS is unset.
 token_auth = AppTokenAuth()
@@ -182,7 +213,8 @@ async def translate(request: Request, body: TranslateRequest):
             content={"error": "service_overloaded"},
         )
 
-    if not translate_quota.try_consume(ip, len(word)):
+    device_id = (request.headers.get("X-Device-Id") or "").strip()
+    if not consume_daily_quota(translate_quotas, ip, device_id, len(word)):
         return JSONResponse(
             status_code=429,
             content={"error": "daily_quota_exceeded"},
@@ -260,7 +292,8 @@ async def tts(request: Request, body: TtsRequest):
             content={"error": "service_overloaded"},
         )
 
-    if not tts_quota.try_consume(ip, len(text)):
+    device_id = (request.headers.get("X-Device-Id") or "").strip()
+    if not consume_daily_quota(tts_quotas, ip, device_id, len(text)):
         return JSONResponse(
             status_code=429,
             content={"error": "daily_quota_exceeded"},
