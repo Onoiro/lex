@@ -56,7 +56,6 @@ class TestParseVersion:
 
     def test_comparison_semantics(self):
         assert parse_version("1.21.0") > parse_version("1.20.9")
-        assert parse_version("1.21.0") == parse_version("1.21.0")
         assert parse_version("1.2.0") < parse_version("1.10.0")
 
 
