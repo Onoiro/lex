@@ -14,7 +14,7 @@ import { Dictionary } from "@/pages/Dictionary";
 import { Settings } from "@/pages/Settings";
 import { Privacy } from "@/pages/Privacy";
 import { Terms } from "@/pages/Terms";
-import { useInitLocale, t } from "@/i18n";
+import { useInitLocale } from "@/i18n";
 import { applyTheme } from "@/services/theme";
 import { getSettings } from "@/data/settingsRepository";
 import { initTtsUnlock } from "@/services/ttsApi";
@@ -22,6 +22,7 @@ import {
   isUpdateRequired,
   onUpdateRequired,
 } from "@/services/updateGate";
+import { UpdateScreen } from "@/components/UpdateScreen";
 
 function App() {
   useInitLocale();
@@ -32,17 +33,7 @@ function App() {
   }, []);
 
   if (updateRequired) {
-    return (
-      <main className="container">
-        <div>
-          <h1>{t("update.title")}</h1>
-          <p>{t("update.message")}</p>
-          <p>
-            <small>{t("update.hint")}</small>
-          </p>
-        </div>
-      </main>
-    );
+    return <UpdateScreen />;
   }
 
   return (

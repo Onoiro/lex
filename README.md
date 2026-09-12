@@ -217,7 +217,7 @@ All commands are run via `make`. Run `make help` to see the full list.
 | `make proxy` | Start translate proxy (port 8004) |
 | `make client-dev` | Start client dev server (port 5173) |
 | `make client-build` | Build client for production |
-| `make client-test` | Run client tests (vitest, 299 tests) |
+| `make client-test` | Run client tests (vitest, 302 tests) |
 | `make client-lint` | Lint client code (eslint) |
 | `make client-typecheck` | Type-check client (tsc) |
 | `make proxy-lint` | Lint proxy code (ruff) |
@@ -238,7 +238,7 @@ All commands are run via `make`. Run `make help` to see the full list.
 .
 ├── client/                    # Local-first client app
 │   ├── src/
-│   │   ├── components/        # Layout, OfflineIndicator
+│   │   ├── components/        # Layout, OfflineIndicator, UpdateScreen
 │   │   ├── data/              # db.ts, wordRepository, settingsRepository, dailyStatsRepository
 │   │   ├── domain/            # srs.ts, stats.ts, validators.ts, dictionarySort.ts, dailyStats.ts
 │   │   ├── i18n/              # index.ts, languages.ts, en/ru.json
