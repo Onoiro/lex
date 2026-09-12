@@ -236,11 +236,12 @@ class TestQuotaLevels:
 
     def test_blank_device_id_treated_as_anonymous(self, client):
         """Whitespace-only X-Device-Id falls back to the anon quota."""
-        resp = client.post(
-            "/translate",
-            json={"word": "hi"},
-            headers={"X-Device-Id": "   "},
-        )
+        with patch("proxy.main.translate_word", return_value=("тест", "en")):
+            resp = client.post(
+                "/translate",
+                json={"word": "hi"},
+                headers={"X-Device-Id": "   "},
+            )
         assert resp.status_code == 200
 
 
