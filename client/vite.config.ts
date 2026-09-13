@@ -109,6 +109,7 @@ export default defineConfig({
       "/translate": "http://localhost:8004",
       "/languages": "http://localhost:8004",
       "/tts": "http://localhost:8004",
+      "/quota": "http://localhost:8004",
       "/dictionary": {
         target: "http://localhost:8004",
         bypass: (req) => {
