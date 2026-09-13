@@ -1,9 +1,10 @@
 """Translate proxy: thin FastAPI service that hides Yandex API key.
 
-Provides three endpoints:
+Provides these endpoints:
   POST /translate — translate a word
   GET  /languages — list supported languages
   POST /tts       — synthesize speech (text-to-speech)
+  GET  /quota     — remaining daily chars for this device/IP
 
 Protected by rate limiting, daily char quotas (per device / per IP / anon),
 a global daily budget and an app token check (X-App-Token header, disabled
@@ -178,6 +179,41 @@ async def health():
     return {"status": "ok"}
 
 
+@app.get("/quota")
+async def quota(request: Request):
+    """
+    Remaining daily chars for this client (translate and tts separately).
+
+    With a device ID the effective remaining is min(device, IP) — the IP
+    (antibot) quota is consumed by every device request, so it can run
+    out first. Without a device ID the anon quota (per IP) applies.
+    Read-only: consumes nothing.
+    """
+    ip = get_client_ip(request)
+    device_id = (request.headers.get("X-Device-Id") or "").strip()
+
+    def level(quotas: dict) -> dict:
+        if device_id:
+            remaining = min(
+                quotas["device"].remaining(device_id),
+                quotas["ip"].remaining(ip),
+            )
+            limit = quotas["device"].max_chars_per_day
+        else:
+            remaining = quotas["anon"].remaining(ip)
+            limit = quotas["anon"].max_chars_per_day
+        return {
+            "used": limit - remaining,
+            "limit": limit,
+            "remaining": remaining,
+        }
+
+    return {
+        "translate": level(translate_quotas),
+        "tts": level(tts_quotas),
+    }
+
+
 @app.post("/translate")
 async def translate(request: Request, body: TranslateRequest):
     # Rate limit
@@ -205,7 +241,7 @@ async def translate(request: Request, body: TranslateRequest):
     # Cache hits don't consume the global budget or per-IP quota
     cached = get_cached_translation(word, body.source_lang, body.target_lang)
     if cached:
-        return {"translation": cached, "detected_language": ""}
+        return {"translation": cached, "detected_language": "", "cached": True}
 
     if not global_budget.try_consume(len(word)):
         return JSONResponse(
@@ -228,6 +264,7 @@ async def translate(request: Request, body: TranslateRequest):
         return {
             "translation": translation,
             "detected_language": detected or "",
+            "cached": False,
         }
 
     return JSONResponse(
@@ -279,11 +316,15 @@ async def tts(request: Request, body: TtsRequest):
         )
 
     # Cache hits don't consume the global budget or per-IP quota
-    if speech_cache.get(text, body.lang) is not None:
+    cached_audio = speech_cache.get(text, body.lang)
+    if cached_audio is not None:
         return Response(
-            content=speech_cache.get(text, body.lang),
+            content=cached_audio,
             media_type="audio/mpeg",
-            headers={"Cache-Control": "public, max-age=86400"},
+            headers={
+                "Cache-Control": "public, max-age=86400",
+                "X-Cached": "1",
+            },
         )
 
     if not global_budget.try_consume(len(text)):

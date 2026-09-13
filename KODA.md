@@ -5,7 +5,7 @@ Lex — local-first приложение-переводчик и помощни�
 
 **Демо:** [lex.2-way.ru](https://lex.2-way.ru)
 
-**Текущая версия:** 1.23.0
+**Текущая версия:** 1.24.0
 
 ## Архитектура
 
@@ -32,7 +32,7 @@ Lex — local-first приложение-переводчик и помощни�
 │  GET  /languages   POST /dictionary          │
 │  POST /feedback    GET  /cache/stats         │
 │  GET  /            GET  /tts/cache           │
-│  GET  /dictionary/cache                      │
+│  GET  /quota         GET  /dictionary/cache  │
 │                                               │
 │  Yandex Translate API + SpeechKit + Corpus   │
 │  + Telegram Bot (feedback)                   │
@@ -40,7 +40,7 @@ Lex — local-first приложение-переводчик и помощни�
 ```
 
 - **Client:** React 19 + TypeScript, Vite 7, Dexie.js (IndexedDB), Pico CSS, vite-plugin-pwa
-- **Proxy:** FastAPI, порт 8004. Скрывает Yandex API key. Эндпоинты: POST `/translate`, GET `/languages`, POST `/tts`, GET `/`, GET `/cache/stats`, GET `/tts/cache/stats`, POST `/dictionary`, GET `/dictionary/cache/stats`, POST `/feedback`
+- **Proxy:** FastAPI, порт 8004. Скрывает Yandex API key. Эндпоинты: POST `/translate`, GET `/languages`, POST `/tts`, GET `/quota`, GET `/`, GET `/cache/stats`, GET `/tts/cache/stats`, POST `/dictionary`, GET `/dictionary/cache/stats`, POST `/feedback`
 
 ## Используемые технологии
 
@@ -179,6 +179,8 @@ make d-run    # docker compose up -d
 - **Лимиты использования:** максимум 500 символов на запрос (`/translate`, `/tts`) — превышение → 400 `{"error": "text_too_long", "max_length": 500}`. Дневные квоты трёхуровневые, отдельные для перевода и TTS, персистентные (SQLite-таблица `quota_usage` в той же БД, что и кэши): device-квота 500 симв/день на `X-Device-Id` (основная), IP-квота 3000 симв/день (антибот: списывается у ВСЕХ запросов с device ID — 6 устройств по 500 одновременно, семья/офис за одним NAT не блокируются), anon-квота 100 симв/день на IP для запросов БЕЗ device ID (стимул обновиться). Лимиты через env `DEVICE_DAILY_CHAR_LIMIT` / `IP_DAILY_CHAR_LIMIT` / `ANON_DAILY_CHAR_LIMIT` (на переходный период можно поднять `ANON_DAILY_CHAR_LIMIT=500`). Превышение → 429 `{"error": "daily_quota_exceeded"}`. Порядок проверок после кэша: global budget → device-квота → IP/anon-квота. При недоступной БД — in-memory fallback (квота работает, но не переживает рестарт). Классы `PersistentQuotaStore` (атомарный условный UPSERT, смена дня, graceful degradation) и `PersistentDailyQuota` в `proxy/security/quota.py`.
 - **Device ID:** клиент генерирует UUID v4 один раз (`crypto.randomUUID`) и хранит в localStorage (`lex_device_id`), шлёт заголовком `X-Device-Id` через `proxyHeaders()` (модуль `services/deviceId.ts`). Пустой/отсутствующий = анонимный клиент (anon-квота). При очистке данных сайта устройство становится «новым» — приемлемый компромисс для Free-тарифа (биллинг B-8 привяжет Pro к server-side валидации покупок). Очистка localStorage недоступна → `getDeviceId()` возвращает пустую строку (заголовок не шлётся). Упомянут в Политике конфиденциальности (раздел «Идентификатор устройства»).
 - **Глобальный дневной бюджет** на всех пользователей суммарно (translate + tts вместе): класс `GlobalBudget` в `proxy/security/quota.py`, лимит через env `GLOBAL_DAILY_CHAR_LIMIT` (дефолт 300 000 симв/день) — превышение → 503 `{"error": "service_overloaded"}`. Кэши (серверные и клиентский TTS Cache API) не расходуют квоты и глобальный бюджет — лимитируется только фактический вызов Yandex API (в `/translate` и `/tts` кэш проверяется до списания). `/dictionary` — бесплатный эндпоинт, без квот.
+- **Эндпоинт остатка квоты (GET /quota):** возвращает `{"translate": {"used", "limit", "remaining"}, "tts": {...}}` для текущего клиента. С device ID — эффективный остаток = min(device, IP) (IP-квота списывается у всех device-запросов и может исчерпаться раньше); без device ID — anon-квота по IP. `used = limit - remaining` (учитывает min с IP). Read-only, ничего не списывает, защищён токен-мидлварью (как все эндпоинты кроме `GET /`). Признак кэша: `/translate` добавляет `"cached": bool` в JSON, `/tts` — заголовок `X-Cached: 1` на кэш-попаданиях.
+- **Индикатор квоты на клиенте:** `services/quotaApi.ts` (`getQuota()`, тип `QuotaInfo`). Страница Перевод (Add.tsx): строка `data-testid="quota-indicator"` под языковой панелью («Перевод: X/500 · Озвучка: Y/500»), загрузка при монтировании, скрыта при ошибке сети; оптимистичный декремент после некэшированного перевода/озвучки (`translateApi` возвращает `cached`, `ttsApi.synthesizeSpeech` возвращает `{played, cached}`); при 429 остаток → 0. Настройки: живые счётчики `data-testid="limits-today"` в разделе «Лимиты использования». Повтор — БЕЗ индикатора (TTS фоновый).
 - **App token (X-App-Token):** все эндпоинты кроме `GET /` (health-check) требуют заголовок `X-App-Token` (класс `AppTokenAuth` в `proxy/security/token_auth.py`). Токены через env `APP_TOKENS` (список через запятую, для ротации). Пустой/не заданный `APP_TOKENS` = проверка выключена (обратная совместимость при выкате). Отсутствие/несовпадение токена → 403 `{"error": "unauthorized"}`. Токен — фильтр от скрипт-киди, не защита от целевой атаки (токен извлекается из APK); настоящая защита — квоты и бюджет.
 - **Version gate (X-App-Version):** клиент шлёт версию приложения (semver) в заголовке `X-App-Version` — инжектится при сборке из `client/package.json` через `define` в `vite.config.ts` и `vitest.config.ts` (`__APP_VERSION__`). Прокси сравнивает с env `MIN_APP_VERSION` (класс `VersionGate` в `proxy/security/version_gate.py`). Пустой/не заданный `MIN_APP_VERSION` = проверка выключена (тот же паттерн выката, что у APP_TOKENS: прокси без проверки → релиз клиента с заголовком → включить проверку на сервере). Устаревшая/отсутствующая/невалидная версия → 426 `{"error": "update_required", "min_version": "..."}`. Клиент: при 426 все 4 сервиса вызывают `notifyUpdateRequired()` из `services/updateGate.ts`, App рендерит полноэкранную заглушку `components/UpdateScreen.tsx` — кнопка «Перезагрузить» (для PWA) + ссылка на магазин/загрузку в зависимости от платформы (Android: `VITE_RUSTORE_URL`, web/desktop: `VITE_DOWNLOAD_URL`; пустые env = ссылка скрыта; i18n-ключи `update.*`). Порядок проверки в middleware: токен → версия.
 - **CORS whitelist:** env `ALLOWED_ORIGINS` (через запятую); если не задан — дефолт: `https://lex.2-way.ru`, `https://localhost` (Capacitor Android), `capacitor://localhost` (iOS), `http://tauri.localhost` (Tauri Win/Linux), `tauri://localhost` (Tauri macOS). Чужие origin не получают CORS-заголовков (браузер блокирует ответ). `allow_headers`: Content-Type, X-App-Token, X-Device-Id. Порядок middleware: токен-мидлварь добавлена первой, CORS — второй (CORS вешает заголовки и на 403-ответы).
@@ -205,10 +207,10 @@ make d-run    # docker compose up -d
 - Справка: на стартовом экране Повтора — сворачиваемый блок «Как это работает?» с объяснением алгоритма простым языком (i18n-ключи review.how_it_works_*).
 
 ## Дальнейшие планы
-- **Бэклог подготовки к маркетплейсам:** `.koda/backlog.md` — задачи P0–P3 (глобальный бюджет ✅, CORS+токен ✅, version gate ✅, SQLite-кэши ✅, device ID, биллинг RuStore, мониторинг). Брать задачи по порядку приоритета; перед реализацией — план в `.koda/plans/`.
+- **Бэклог подготовки к маркетплейсам:** `.koda/backlog.md` — задачи P0–P3 (глобальный бюджет ✅, CORS+токен ✅, version gate ✅, SQLite-кэши ✅, device ID ✅, индикатор квоты ✅, биллинг RuStore, мониторинг). Брать задачи по порядку приоритета; перед реализацией — план в `.koda/plans/`.
 - Пагинация по словарю при росте
 - CI для кросс-компиляции Tauri (Windows MSI/NSIS, macOS DMG)
 - График активности за 14 дней на странице Повтор (данные dailyStats уже есть)
 
 ---
-**Последнее обновление:** 12 сентября 2026
+**Последнее обновление:** 13 сентября 2026

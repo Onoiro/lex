@@ -6,6 +6,8 @@ import { getSettings, saveSettings } from "@/data/settingsRepository";
 import { getWordCount } from "@/data/wordRepository";
 import { resetAllData } from "@/data/db";
 import { getLanguages } from "@/services/translateApi";
+import { getQuota } from "@/services/quotaApi";
+import type { QuotaInfo } from "@/services/quotaApi";
 import { applyTheme } from "@/services/theme";
 import { DEFAULT_LANGUAGE_SETTINGS, LANG_LIST_TTL_MS } from "@/types";
 import type { Theme, Skin } from "@/types";
@@ -29,6 +31,7 @@ export function Settings() {
   const [feedbackContact, setFeedbackContact] = useState("");
   const [feedbackStatus, setFeedbackStatus] = useState<"idle" | "sending" | "success" | "error">("idle");
   const [feedbackError, setFeedbackError] = useState("");
+  const [quota, setQuota] = useState<QuotaInfo | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -83,6 +86,21 @@ export function Settings() {
 
     void load();
 
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Load remaining quota for the live counters (hidden on failure)
+  useEffect(() => {
+    let cancelled = false;
+    void getQuota()
+      .then((q) => {
+        if (!cancelled) setQuota(q);
+      })
+      .catch(() => {
+        // Network error — only the static limits text is shown
+      });
     return () => {
       cancelled = true;
     };
@@ -345,6 +363,19 @@ export function Settings() {
           📊 {t("settings.limits")}
         </summary>
         <article style={{ marginTop: "1rem" }}>
+          {quota && (
+            <p
+              data-testid="limits-today"
+              style={{ color: "var(--pico-muted-color)", marginBottom: "1rem" }}
+            >
+              {t("settings.limits_today", {
+                translate_used: quota.translate.used,
+                translate_limit: quota.translate.limit,
+                tts_used: quota.tts.used,
+                tts_limit: quota.tts.limit,
+              })}
+            </p>
+          )}
           <p style={{ color: "var(--pico-muted-color)", marginBottom: "1rem" }}>
             {t("settings.limits_intro")}
           </p>

@@ -4,6 +4,8 @@ import { useLocale } from "@/i18n";
 import { getLanguageName, LANGUAGE_NAMES_EN, LANGUAGE_NAMES_RU } from "@/i18n/languages";
 import { validateWord, validateTranslation, validateNote } from "@/domain/validators";
 import { translateWord, getLanguages, LimitError, MAX_TEXT_LENGTH } from "@/services/translateApi";
+import { getQuota } from "@/services/quotaApi";
+import type { QuotaInfo } from "@/services/quotaApi";
 import { getExamples } from "@/services/dictionaryApi";
 import { synthesizeSpeech } from "@/services/ttsApi";
 import { addWord, getWord, updateWordEntry } from "@/data/wordRepository";
@@ -47,6 +49,7 @@ export function Add() {
   const [examplesLoading, setExamplesLoading] = useState(false);
   const [examplesError, setExamplesError] = useState(false);
   const [quotaExceeded, setQuotaExceeded] = useState(false);
+  const [quota, setQuota] = useState<QuotaInfo | null>(null);
   const prevWordRef = useRef("");
 
   const initialSettingsRef = useRef<LanguageSettings | null>(null);
@@ -87,6 +90,21 @@ export function Add() {
       setSettings(s);
       initialSettingsRef.current = s;
     });
+  }, []);
+
+  // Load remaining quota for the indicator (hidden on failure)
+  useEffect(() => {
+    let cancelled = false;
+    void getQuota()
+      .then((q) => {
+        if (!cancelled) setQuota(q);
+      })
+      .catch(() => {
+        // Network error — indicator stays hidden
+      });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // Load word for editing when ?id= is present
@@ -202,9 +220,14 @@ export function Add() {
         } else {
           showMessage("error_translation", t("add.error_translation"));
         }
+        // Optimistic decrement: server cache hits don't consume quota
+        if (result.cached === false) {
+          decrementQuota("translate", word.trim().length);
+        }
       } catch (e) {
         if (e instanceof LimitError && e.code === "daily_quota_exceeded") {
           setQuotaExceeded(true);
+          setQuota((q) => (q ? { ...q, translate: { ...q.translate, remaining: 0, used: q.translate.limit } } : q));
           showMessage("error_quota", t("add.error_quota"));
         } else {
           showMessage("error_network", t("add.error_network") + ": " + (e as Error).message);
@@ -213,6 +236,25 @@ export function Add() {
       setTranslating(false);
     }, _debounceMs);
   }, [word, settings, userEditingTranslation, quotaExceeded, showMessage, t]);
+
+  // Optimistically decrement the remaining quota after a non-cached request
+  const decrementQuota = (kind: "translate" | "tts", chars: number) => {
+    setQuota((q) => {
+      if (!q) return q;
+      const level = q[kind];
+      const remaining = Math.max(0, level.remaining - chars);
+      return { ...q, [kind]: { ...level, remaining, used: level.limit - remaining } };
+    });
+  };
+
+  // Zero out a quota level after a 429 daily_quota_exceeded
+  const zeroQuota = (kind: "translate" | "tts") => {
+    setQuota((q) => {
+      if (!q) return q;
+      const level = q[kind];
+      return { ...q, [kind]: { ...level, remaining: 0, used: level.limit } };
+    });
+  };
 
   const handleTranslationEdit = () => {
     setUserEditingTranslation(true);
@@ -245,13 +287,17 @@ export function Add() {
     if (!trimmed || !settings) return;
     const lang = settings.source_lang === "auto" ? (detectedLang || "en") : settings.source_lang;
     setTtsLoading("word");
-    await synthesizeSpeech(trimmed, lang, (code) => {
+    const result = await synthesizeSpeech(trimmed, lang, (code) => {
       if (code === "daily_quota_exceeded") {
+        zeroQuota("tts");
         showMessage("error_quota", t("add.error_quota_tts"));
       } else {
         showMessage("error_quota", t("add.error_too_long"));
       }
     });
+    if (result.played && !result.cached) {
+      decrementQuota("tts", trimmed.length);
+    }
     setTtsLoading(null);
   };
 
@@ -259,13 +305,17 @@ export function Add() {
     const trimmed = translation.trim();
     if (!trimmed || !settings) return;
     setTtsLoading("translation");
-    await synthesizeSpeech(trimmed, settings.target_lang, (code) => {
+    const result = await synthesizeSpeech(trimmed, settings.target_lang, (code) => {
       if (code === "daily_quota_exceeded") {
+        zeroQuota("tts");
         showMessage("error_quota", t("add.error_quota_tts"));
       } else {
         showMessage("error_quota", t("add.error_too_long"));
       }
     });
+    if (result.played && !result.cached) {
+      decrementQuota("tts", trimmed.length);
+    }
     setTtsLoading(null);
   };
 
@@ -482,6 +532,25 @@ export function Add() {
             ))}
           </select>
         </div>
+
+        {/* Daily quota indicator (hidden when quota is unknown) */}
+        {quota && (
+          <small
+            data-testid="quota-indicator"
+            style={{
+              display: "block",
+              textAlign: "center",
+              marginBottom: "1rem",
+              marginTop: "-0.75rem",
+              color: "var(--pico-muted-color)",
+              fontSize: "0.75rem",
+            }}
+          >
+            {t("quota.translate_line", { used: quota.translate.used, limit: quota.translate.limit })}
+            {" · "}
+            {t("quota.tts_line", { used: quota.tts.used, limit: quota.tts.limit })}
+          </small>
+        )}
 
         <form onSubmit={handleSave} style={{ marginBottom: 0 }}>
           {/* Word input */}

@@ -191,6 +191,14 @@ function playBlob(blob: Blob, token: number): void {
   });
 }
 
+/** Result of a synthesizeSpeech call. */
+export interface TtsResult {
+  /** Audio playback was started (or attempted). */
+  played: boolean;
+  /** Audio came from a cache (local Cache API or server X-Cached) — no quota consumed. */
+  cached: boolean;
+}
+
 /**
  * Synthesize speech via the proxy and play it.
  * Uses a persistent Cache API cache to avoid redundant requests
@@ -205,9 +213,9 @@ export async function synthesizeSpeech(
   text: string,
   lang: string,
   onError?: (code: "daily_quota_exceeded" | "text_too_long") => void,
-): Promise<void> {
+): Promise<TtsResult> {
   const trimmed = text.trim();
-  if (!trimmed) return;
+  if (!trimmed) return { played: false, cached: false };
 
   // Stop any currently playing audio (this increments generationToken)
   stopTts();
@@ -219,14 +227,14 @@ export async function synthesizeSpeech(
 
   // Check persistent cache first
   const cached = await cacheGetBlob(cacheKey);
-  if (token !== generationToken) return;
+  if (token !== generationToken) return { played: false, cached: false };
   if (cached) {
     playBlob(cached, token);
-    return;
+    return { played: true, cached: true };
   }
 
   // Offline with no cached audio — skip the doomed request
-  if (!navigator.onLine) return;
+  if (!navigator.onLine) return { played: false, cached: false };
 
   try {
     const response = await fetch(`${PROXY_URL}/tts`, {
@@ -238,7 +246,7 @@ export async function synthesizeSpeech(
     if (!response.ok) {
       if (response.status === 426) {
         notifyUpdateRequired();
-        return;
+        return { played: false, cached: false };
       }
       if (onError) {
         const body = (await response.json().catch(() => ({}))) as { error?: string };
@@ -246,17 +254,22 @@ export async function synthesizeSpeech(
           onError(body.error);
         }
       }
-      return;
+      return { played: false, cached: false };
     }
 
     const blob = await response.blob();
 
     // Discard stale results
-    if (token !== generationToken) return;
+    if (token !== generationToken) return { played: false, cached: false };
+
+    // Server cache hit — no quota consumed on the server side
+    const serverCached = response.headers?.get?.("X-Cached") === "1";
 
     await cachePutBlob(cacheKey, blob);
     playBlob(blob, token);
+    return { played: true, cached: serverCached };
   } catch {
     // Silent fail
+    return { played: false, cached: false };
   }
 }

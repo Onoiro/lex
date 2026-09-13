@@ -164,7 +164,10 @@ describe("synthesizeSpeech", () => {
   it("fails silently on HTTP error", async () => {
     mockFetch.mockResolvedValueOnce({ ok: false, status: 502 });
 
-    await expect(synthesizeSpeech("hello", "en")).resolves.toBeUndefined();
+    await expect(synthesizeSpeech("hello", "en")).resolves.toEqual({
+      played: false,
+      cached: false,
+    });
   });
 
   it("reports daily_quota_exceeded via onError callback", async () => {
@@ -209,7 +212,10 @@ describe("synthesizeSpeech", () => {
   it("fails silently on network error", async () => {
     mockFetch.mockRejectedValueOnce(new Error("Network error"));
 
-    await expect(synthesizeSpeech("hello", "en")).resolves.toBeUndefined();
+    await expect(synthesizeSpeech("hello", "en")).resolves.toEqual({
+      played: false,
+      cached: false,
+    });
   });
 
   it("trims text before sending", async () => {

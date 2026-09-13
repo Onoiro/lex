@@ -20,7 +20,7 @@ Lex is a translator and vocabulary trainer. Your dictionary, spaced repetition, 
 - **Response time tracking** - Best/average times, live timer with color thresholds
 - **Auto-answer & pause** - Auto-records "Forgot" after 10s, pauses after 3 consecutive auto-answers or 30s inactivity
 - **TTS** - Text-to-speech for words and translations via Yandex SpeechKit
-- **Usage limits** - 500 chars per request, 500 chars/day translation and TTS quotas per device (resets at midnight UTC); repeated requests are served from cache and do not count against the quota
+- **Usage limits** - 500 chars per request, 500 chars/day translation and TTS quotas per device (resets at midnight UTC); repeated requests are served from cache and do not count against the quota; remaining quota is shown on the Translate page and in Settings
 - **Persistent caches** - Translations (7d), TTS audio (500 entries) and dictionary examples (30d) are stored in SQLite and survive proxy restarts; the DB lives in a Docker volume
 - **API protection** - CORS origin whitelist + shared app token (`X-App-Token` header) on all proxy endpoints; global daily char budget as a financial safety net
 - **Example sentences** - Load corpus examples from Yandex Dictionary into the note field on the Translate page
@@ -58,7 +58,7 @@ Lex is a translator and vocabulary trainer. Your dictionary, spaced repetition, 
 │  GET  /languages   POST /dictionary          │
 │  POST /feedback    GET  /cache/stats         │
 │  GET  /            GET  /tts/cache           │
-│  GET  /dictionary/cache                      │
+│  GET  /quota         GET  /dictionary/cache  │
 │                                               │
 │  Yandex Translate API + SpeechKit + Corpus   │
 │  + Telegram Bot (feedback)                   │
@@ -66,7 +66,7 @@ Lex is a translator and vocabulary trainer. Your dictionary, spaced repetition, 
 ```
 
 - **Client:** React 19 + TypeScript, Vite 7, Dexie.js (IndexedDB), Pico CSS, vite-plugin-pwa
-- **Proxy:** FastAPI, port 8004. Hides Yandex API key. Endpoints: POST `/translate`, GET `/languages`, POST `/tts`, GET `/`, GET `/cache/stats`, GET `/tts/cache`, POST `/dictionary`, GET `/dictionary/cache`, POST `/feedback`
+- **Proxy:** FastAPI, port 8004. Hides Yandex API key. Endpoints: POST `/translate`, GET `/languages`, POST `/tts`, GET `/quota`, GET `/`, GET `/cache/stats`, GET `/tts/cache`, POST `/dictionary`, GET `/dictionary/cache`, POST `/feedback`
 
 ## Tech Stack
 
@@ -82,7 +82,7 @@ Lex is a translator and vocabulary trainer. Your dictionary, spaced repetition, 
 ### Proxy (`proxy/`)
 - Python 3.13, FastAPI
 - Hides Yandex API key, rate limiting, daily usage quotas, global daily budget, app token check, CORS whitelist, translation cache, TTS (text-to-speech), dictionary examples (Yandex Corpus), feedback (Telegram Bot)
-- Endpoints: POST `/translate`, GET `/languages`, POST `/tts`, GET `/`, GET `/cache/stats`, GET `/tts/cache/stats`, POST `/dictionary`, GET `/dictionary/cache/stats`, POST `/feedback`
+- Endpoints: POST `/translate`, GET `/languages`, POST `/tts`, GET `/quota`, GET `/`, GET `/cache/stats`, GET `/tts/cache/stats`, POST `/dictionary`, GET `/dictionary/cache/stats`, POST `/feedback`
 
 ### API Protection (proxy)
 
@@ -93,6 +93,7 @@ Layers of protection (see `.env.example` for configuration):
 - **CORS whitelist** — only client app origins are allowed (`ALLOWED_ORIGINS` env var, defaults: `https://lex.2-way.ru`, `https://localhost` (Capacitor Android), `capacitor://localhost` (iOS), `http://tauri.localhost` / `tauri://localhost` (Tauri)). Requests from other origins get no CORS headers, so browsers block them.
 - **Rate limiting** — 30 req/min per endpoint per IP, feedback 3/hour.
 - **Daily quotas** — three levels per endpoint (translation and TTS separately), persistent in SQLite: device quota 500 chars/day (primary, follows the `X-Device-Id` header), IP quota 3000 chars/day (antibot layer, consumed by all requests with a device ID), anon quota 100 chars/day for requests without a device ID. Limits configurable via `DEVICE_DAILY_CHAR_LIMIT` / `IP_DAILY_CHAR_LIMIT` / `ANON_DAILY_CHAR_LIMIT`. Exceeded → `429 {"error": "daily_quota_exceeded"}`.
+- **Quota endpoint** — `GET /quota` returns the remaining daily chars for this client (translate and tts separately): `{"translate": {"used", "limit", "remaining"}, "tts": {...}}`. With a device ID the effective remaining is min(device, IP); without one the anon quota applies. Read-only, protected by the token middleware. The client shows the remaining quota on the Translate page (under the language bar) and as live counters in Settings → Usage limits; cached responses (server `"cached": true` flag / `X-Cached: 1` header, or the client TTS cache) do not decrement the indicator.
 - **Global daily budget** — hard stop for all users combined (`GLOBAL_DAILY_CHAR_LIMIT`, default 300 000 chars/day) → `503 {"error": "service_overloaded"}`.
 - **Max text length** — 500 chars per request → `400 {"error": "text_too_long"}`.
 
@@ -228,11 +229,11 @@ All commands are run via `make`. Run `make help` to see the full list.
 | `make proxy` | Start translate proxy (port 8004) |
 | `make client-dev` | Start client dev server (port 5173) |
 | `make client-build` | Build client for production |
-| `make client-test` | Run client tests (vitest, 302 tests) |
+| `make client-test` | Run client tests (vitest, 324 tests) |
 | `make client-lint` | Lint client code (eslint) |
 | `make client-typecheck` | Type-check client (tsc) |
 | `make proxy-lint` | Lint proxy code (ruff) |
-| `make proxy-test` | Run proxy tests (pytest, 203 tests) |
+| `make proxy-test` | Run proxy tests (pytest, 232 tests) |
 | `make check` | Run all checks (client + proxy) |
 | `make android-build` | Build Android APK |
 | `make tauri-dev` | Start Tauri desktop dev mode |
@@ -254,7 +255,7 @@ All commands are run via `make`. Run `make help` to see the full list.
 │   │   ├── domain/            # srs.ts, stats.ts, validators.ts, dictionarySort.ts, dailyStats.ts
 │   │   ├── i18n/              # index.ts, languages.ts, en/ru.json
 │   │   ├── pages/             # Home, Add, Review, Dictionary, Settings, Privacy, Terms
-│   │   ├── services/          # proxyClient.ts, translateApi.ts, ttsApi.ts, dictionaryApi.ts, feedbackApi.ts, updateGate.ts, theme.ts
+│   │   ├── services/          # proxyClient.ts, translateApi.ts, ttsApi.ts, dictionaryApi.ts, feedbackApi.ts, quotaApi.ts, updateGate.ts, theme.ts
 │   │   ├── test/              # Component and service tests (Vitest)
 │   │   └── types/             # Word, LanguageSettings, DailyStats
 │   ├── capacitor.config.ts    # Android config
@@ -262,7 +263,7 @@ All commands are run via `make`. Run `make help` to see the full list.
 │   ├── android/               # Capacitor Android project
 │   └── vite.config.ts         # Vite + PWA plugin + dev proxy
 ├── proxy/                     # Translate proxy (FastAPI, port 8004)
-│   ├── main.py                # /translate, /languages, /tts, /dictionary, /feedback, /cache/stats, /tts/cache/stats, /dictionary/cache/stats
+│   ├── main.py                # /translate, /languages, /tts, /quota, /dictionary, /feedback, /cache/stats, /tts/cache/stats, /dictionary/cache/stats
 │   ├── languages.py           # Language metadata
 │   ├── services/
 │   │   ├── translator.py      # Yandex Translate API client

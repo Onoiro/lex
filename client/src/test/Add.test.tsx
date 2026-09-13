@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { Add, setDebounceMs } from "@/pages/Add";
@@ -63,6 +63,13 @@ vi.mock("@/services/dictionaryApi", () => ({
   getExamples: vi.fn(),
 }));
 
+vi.mock("@/services/quotaApi", () => ({
+  getQuota: vi.fn().mockResolvedValue({
+    translate: { used: 63, limit: 500, remaining: 437 },
+    tts: { used: 0, limit: 500, remaining: 500 },
+  }),
+}));
+
 vi.mock("@/data/settingsRepository", () => ({
   getSettings: vi.fn().mockResolvedValue({
     source_lang: "auto",
@@ -76,6 +83,7 @@ vi.mock("@/data/settingsRepository", () => ({
 
 import { translateWord } from "@/services/translateApi";
 import { getExamples } from "@/services/dictionaryApi";
+import { getQuota } from "@/services/quotaApi";
 import { saveSettings } from "@/data/settingsRepository";
 
 describe("Add", () => {
@@ -749,6 +757,135 @@ describe("Add", () => {
     expect(saveSettings).not.toHaveBeenCalledWith(
       expect.objectContaining({ target_lang: "en" }),
     );
+  });
+
+  // --- Quota indicator ---
+
+  it("shows quota indicator after loading quota", async () => {
+    render(
+      <MemoryRouter>
+        <Add />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("quota-indicator")).toBeInTheDocument();
+    });
+    expect(screen.getByTestId("quota-indicator")).toHaveTextContent(
+      "Translate: 63/500",
+    );
+    expect(screen.getByTestId("quota-indicator")).toHaveTextContent(
+      "Speech: 0/500",
+    );
+  });
+
+  it("hides quota indicator when quota fetch fails", async () => {
+    vi.mocked(getQuota).mockRejectedValue(new Error("offline"));
+
+    render(
+      <MemoryRouter>
+        <Add />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText("Enter a word or phrase")).toBeInTheDocument();
+    });
+
+    await new Promise((r) => setTimeout(r, 20));
+    expect(screen.queryByTestId("quota-indicator")).not.toBeInTheDocument();
+
+    // Restore the default mock so later tests see the indicator again
+    vi.mocked(getQuota).mockResolvedValue({
+      translate: { used: 63, limit: 500, remaining: 437 },
+      tts: { used: 0, limit: 500, remaining: 500 },
+    });
+  });
+
+  it("decrements translate quota after non-cached translation", async () => {
+    vi.mocked(translateWord).mockResolvedValue({
+      translation: "привет",
+      detectedLanguage: "en",
+      cached: false,
+    });
+
+    render(
+      <MemoryRouter>
+        <Add />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("quota-indicator")).toBeInTheDocument();
+    });
+
+    // Single change event: exactly one auto-translate -> one decrement
+    fireEvent.change(screen.getByPlaceholderText("Enter a word or phrase"), {
+      target: { value: "hello" },
+    });
+
+    await waitFor(() => {
+      expect(screen.getByTestId("quota-indicator")).toHaveTextContent(
+        "Translate: 68/500",
+      );
+    });
+  });
+
+  it("does not decrement translate quota on cached translation", async () => {
+    vi.mocked(translateWord).mockResolvedValue({
+      translation: "привет",
+      detectedLanguage: "en",
+      cached: true,
+    });
+
+    render(
+      <MemoryRouter>
+        <Add />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("quota-indicator")).toBeInTheDocument();
+    });
+
+    fireEvent.change(screen.getByPlaceholderText("Enter a word or phrase"), {
+      target: { value: "hello" },
+    });
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText("Translation")).toHaveValue("привет");
+    });
+
+    await new Promise((r) => setTimeout(r, 20));
+    expect(screen.getByTestId("quota-indicator")).toHaveTextContent(
+      "Translate: 63/500",
+    );
+  });
+
+  it("shows zero remaining translate quota on 429", async () => {
+    vi.mocked(translateWord).mockRejectedValue(
+      new LimitError("daily_quota_exceeded"),
+    );
+
+    render(
+      <MemoryRouter>
+        <Add />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("quota-indicator")).toBeInTheDocument();
+    });
+
+    fireEvent.change(screen.getByPlaceholderText("Enter a word or phrase"), {
+      target: { value: "hello" },
+    });
+
+    await waitFor(() => {
+      expect(screen.getByTestId("quota-indicator")).toHaveTextContent(
+        "Translate: 500/500",
+      );
+    });
   });
 
   // --- Load examples into note field ---

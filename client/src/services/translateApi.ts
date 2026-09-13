@@ -4,6 +4,8 @@ import { notifyUpdateRequired } from "./updateGate";
 export interface TranslateResult {
   translation: string;
   detectedLanguage: string;
+  /** True when served from the server cache (no quota consumed). */
+  cached?: boolean;
 }
 
 /** Error codes returned by the proxy for limit violations. */
@@ -71,6 +73,7 @@ export async function translateWord(
   return {
     translation: data.translation ?? "",
     detectedLanguage: data.detected_language ?? "",
+    cached: data.cached ?? false,
   };
 }
 

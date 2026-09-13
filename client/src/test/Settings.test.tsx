@@ -11,6 +11,15 @@ vi.mock("@/services/translateApi", () => ({
   getLanguages: vi.fn().mockRejectedValue(new Error("offline")),
 }));
 
+vi.mock("@/services/quotaApi", () => ({
+  getQuota: vi.fn().mockResolvedValue({
+    translate: { used: 63, limit: 500, remaining: 437 },
+    tts: { used: 10, limit: 500, remaining: 490 },
+  }),
+}));
+
+import { getQuota } from "@/services/quotaApi";
+
 describe("Settings", () => {
   beforeEach(async () => {
     setLocale("en");
@@ -94,6 +103,47 @@ describe("Settings", () => {
 
     await waitFor(() => {
       expect(screen.getByText(/Version/)).toBeInTheDocument();
+    });
+  });
+
+  it("shows live quota counters in the limits section", async () => {
+    render(
+      <MemoryRouter>
+        <Settings />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("limits-today")).toBeInTheDocument();
+    });
+    expect(screen.getByTestId("limits-today")).toHaveTextContent(
+      "translation 63/500",
+    );
+    expect(screen.getByTestId("limits-today")).toHaveTextContent(
+      "speech 10/500",
+    );
+  });
+
+  it("hides live quota counters when quota fetch fails", async () => {
+    vi.mocked(getQuota).mockRejectedValue(new Error("offline"));
+
+    render(
+      <MemoryRouter>
+        <Settings />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText(/Usage limits/)).toBeInTheDocument();
+    });
+
+    await new Promise((r) => setTimeout(r, 20));
+    expect(screen.queryByTestId("limits-today")).not.toBeInTheDocument();
+
+    // Restore the default mock for later tests
+    vi.mocked(getQuota).mockResolvedValue({
+      translate: { used: 63, limit: 500, remaining: 437 },
+      tts: { used: 10, limit: 500, remaining: 490 },
     });
   });
 
