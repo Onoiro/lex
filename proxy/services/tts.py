@@ -178,9 +178,9 @@ def map_language(lang_code: str) -> str:
 
 
 class SpeechCache(SqliteCache):
-    """Persistent cache for synthesized audio bytes (max 500 entries)."""
+    """Persistent cache for synthesized audio bytes (max 5000 entries)."""
 
-    def __init__(self, max_entries: int = 500, db_path: Optional[str] = None):
+    def __init__(self, max_entries: int = 5000, db_path: Optional[str] = None):
         super().__init__(
             table="tts_audio", max_entries=max_entries, db_path=db_path
         )
@@ -196,7 +196,7 @@ class SpeechCache(SqliteCache):
 
 
 # Global cache instance
-speech_cache = SpeechCache(max_entries=500)
+speech_cache = SpeechCache(max_entries=5000)
 
 
 def _synthesize_sync(text: str, lang: str) -> bytes | None:

@@ -9,6 +9,8 @@ import { addWord } from "@/data/wordRepository";
 
 vi.mock("@/services/translateApi", () => ({
   getLanguages: vi.fn().mockRejectedValue(new Error("offline")),
+  MAX_TEXT_LENGTH: 500,
+  DAILY_CHAR_LIMIT: 500,
 }));
 
 vi.mock("@/services/quotaApi", () => ({

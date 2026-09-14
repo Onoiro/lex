@@ -26,6 +26,14 @@ export class LimitError extends Error {
 /** Max text length accepted by the proxy per request. */
 export const MAX_TEXT_LENGTH = 500;
 
+/**
+ * Daily character quota per device (translation and TTS are separate).
+ * Mirrors the proxy default (DEVICE_DAILY_CHAR_LIMIT); the actual value
+ * is always taken from GET /quota — this constant is only for static
+ * texts where the live value is not available.
+ */
+export const DAILY_CHAR_LIMIT = 500;
+
 function toLimitError(body: { error?: string; max_length?: number }, status: number): Error {
   if (body.error === "text_too_long") {
     return new LimitError("text_too_long", body.max_length);

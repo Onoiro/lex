@@ -5,7 +5,7 @@ import { getLanguageName, LANGUAGE_NAMES_EN, LANGUAGE_NAMES_RU } from "@/i18n/la
 import { getSettings, saveSettings } from "@/data/settingsRepository";
 import { getWordCount } from "@/data/wordRepository";
 import { resetAllData } from "@/data/db";
-import { getLanguages } from "@/services/translateApi";
+import { getLanguages, DAILY_CHAR_LIMIT, MAX_TEXT_LENGTH } from "@/services/translateApi";
 import { getQuota } from "@/services/quotaApi";
 import type { QuotaInfo } from "@/services/quotaApi";
 import { applyTheme } from "@/services/theme";
@@ -380,9 +380,9 @@ export function Settings() {
             {t("settings.limits_intro")}
           </p>
           <ul style={{ color: "var(--pico-muted-color)", marginBottom: "1rem" }}>
-            <li>{t("settings.limits_length")}</li>
-            <li>{t("settings.limits_translate_quota")}</li>
-            <li>{t("settings.limits_tts_quota")}</li>
+            <li>{t("settings.limits_length", { limit: MAX_TEXT_LENGTH })}</li>
+            <li>{t("settings.limits_translate_quota", { limit: quota?.translate.limit ?? DAILY_CHAR_LIMIT })}</li>
+            <li>{t("settings.limits_tts_quota", { limit: quota?.tts.limit ?? DAILY_CHAR_LIMIT })}</li>
             <li>{t("settings.limits_reset")}</li>
             <li>{t("settings.limits_cache")}</li>
           </ul>

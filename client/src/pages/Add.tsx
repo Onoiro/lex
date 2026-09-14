@@ -3,7 +3,7 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 import { useLocale } from "@/i18n";
 import { getLanguageName, LANGUAGE_NAMES_EN, LANGUAGE_NAMES_RU } from "@/i18n/languages";
 import { validateWord, validateTranslation, validateNote } from "@/domain/validators";
-import { translateWord, getLanguages, LimitError, MAX_TEXT_LENGTH } from "@/services/translateApi";
+import { translateWord, getLanguages, LimitError, MAX_TEXT_LENGTH, DAILY_CHAR_LIMIT } from "@/services/translateApi";
 import { getQuota } from "@/services/quotaApi";
 import type { QuotaInfo } from "@/services/quotaApi";
 import { getExamples } from "@/services/dictionaryApi";
@@ -201,7 +201,7 @@ export function Add() {
     // Stop auto-translate for the rest of the day once quota is exceeded,
     // but remind the user why on every new attempt
     if (quotaExceeded) {
-      showMessage("error_quota", t("add.error_quota"));
+      showMessage("error_quota", t("add.error_quota", { limit: DAILY_CHAR_LIMIT }));
       return;
     }
 
@@ -228,7 +228,7 @@ export function Add() {
         if (e instanceof LimitError && e.code === "daily_quota_exceeded") {
           setQuotaExceeded(true);
           setQuota((q) => (q ? { ...q, translate: { ...q.translate, remaining: 0, used: q.translate.limit } } : q));
-          showMessage("error_quota", t("add.error_quota"));
+          showMessage("error_quota", t("add.error_quota", { limit: DAILY_CHAR_LIMIT }));
         } else {
           showMessage("error_network", t("add.error_network") + ": " + (e as Error).message);
         }
@@ -290,9 +290,9 @@ export function Add() {
     const result = await synthesizeSpeech(trimmed, lang, (code) => {
       if (code === "daily_quota_exceeded") {
         zeroQuota("tts");
-        showMessage("error_quota", t("add.error_quota_tts"));
+        showMessage("error_quota", t("add.error_quota_tts", { limit: DAILY_CHAR_LIMIT }));
       } else {
-        showMessage("error_quota", t("add.error_too_long"));
+        showMessage("error_quota", t("add.error_too_long", { limit: MAX_TEXT_LENGTH }));
       }
     });
     if (result.played && !result.cached) {
@@ -308,9 +308,9 @@ export function Add() {
     const result = await synthesizeSpeech(trimmed, settings.target_lang, (code) => {
       if (code === "daily_quota_exceeded") {
         zeroQuota("tts");
-        showMessage("error_quota", t("add.error_quota_tts"));
+        showMessage("error_quota", t("add.error_quota_tts", { limit: DAILY_CHAR_LIMIT }));
       } else {
-        showMessage("error_quota", t("add.error_too_long"));
+        showMessage("error_quota", t("add.error_too_long", { limit: MAX_TEXT_LENGTH }));
       }
     });
     if (result.played && !result.cached) {
@@ -723,7 +723,7 @@ export function Add() {
                 fontSize: "0.8rem",
               }}
             >
-              {t("add.error_too_long")}
+              {t("add.error_too_long", { limit: MAX_TEXT_LENGTH })}
             </small>
           )}
 

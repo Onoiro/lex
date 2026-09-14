@@ -19,6 +19,7 @@ vi.mock("@/services/translateApi", () => ({
     }
   },
   MAX_TEXT_LENGTH: 500,
+  DAILY_CHAR_LIMIT: 500,
   getLanguages: vi.fn().mockResolvedValue([
     { code: "en", name: "English" },
     { code: "ru", name: "Russian" },
