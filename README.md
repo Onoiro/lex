@@ -205,6 +205,8 @@ Since Lex is local-first, each device has its own independent dictionary (stored
 4. Click **Import** and select the JSON file
 5. Duplicates are automatically skipped, missing fields get defaults
 
+Import limits (protection against oversized or corrupted files): max file size 10 MB (checked before reading), max 10,000 entries. Each entry is validated and sanitized - invalid entries (bad word/translation/note) are skipped and counted separately, numeric fields get safe defaults (no NaN/negative/huge values in the database). The import runs in a single atomic transaction.
+
 ## Spaced Repetition Algorithm
 
 Simplified SM-2:

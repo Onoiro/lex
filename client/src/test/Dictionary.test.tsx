@@ -1,11 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { Dictionary } from "@/pages/Dictionary";
 import { setLocale } from "@/i18n";
 import { db } from "@/data/db";
-import { addWord } from "@/data/wordRepository";
+import { addWord, getWordCount } from "@/data/wordRepository";
 
 describe("Dictionary", () => {
   beforeEach(async () => {
@@ -233,5 +233,105 @@ describe("Dictionary", () => {
     expect(stored).not.toBeNull();
     const parsed = JSON.parse(stored!);
     expect(parsed.sortBy).toBe("rank");
+  });
+
+  it("rejects oversized import file without reading it", async () => {
+    await addWord("hello", "привет");
+
+    render(
+      <MemoryRouter>
+        <Dictionary />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText(/Import/)).toBeInTheDocument();
+    });
+
+    // Duck-typed file: oversized, reading must never happen
+    const giantFile = {
+      size: 11 * 1024 * 1024,
+      text: async () => {
+        throw new Error("should not read oversized file");
+      },
+    };
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+    fireEvent.change(input, { target: { files: [giantFile] } });
+
+    await waitFor(() => {
+      expect(screen.getByText("File is too large (max 10 MB).")).toBeInTheDocument();
+    });
+    // Nothing was imported
+    expect(await getWordCount()).toBe(1);
+  });
+
+  it("rejects import with too many entries", async () => {
+    await addWord("hello", "привет");
+
+    render(
+      <MemoryRouter>
+        <Dictionary />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText(/Import/)).toBeInTheDocument();
+    });
+
+    const entries = Array.from({ length: 10_001 }, (_, i) => ({
+      word: `word${i}`,
+      translation: `перевод${i}`,
+    }));
+    // Duck-typed file: jsdom File has no .text()
+    const file = {
+      size: JSON.stringify(entries).length,
+      text: async () => JSON.stringify(entries),
+    };
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+    fireEvent.change(input, { target: { files: [file] } });
+
+    await waitFor(() => {
+      expect(screen.getByText("Too many entries (max 10000).")).toBeInTheDocument();
+    });
+    // Nothing was imported
+    expect(await getWordCount()).toBe(1);
+  });
+
+  it("shows invalid count in import success message", async () => {
+    await addWord("hello", "привет");
+
+    render(
+      <MemoryRouter>
+        <Dictionary />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText(/Import/)).toBeInTheDocument();
+    });
+
+    // 2 valid new words, 1 duplicate of existing, 3 invalid entries
+    const entries = [
+      { word: "world", translation: "мир" },
+      { word: "test", translation: "тест" },
+      { word: "hello", translation: "дубль" },
+      { word: "", translation: "пустое слово" },
+      { word: "bad!", translation: "мусорные символы" },
+      "not an object",
+    ];
+    // Duck-typed file: jsdom File has no .text()
+    const file = {
+      size: JSON.stringify(entries).length,
+      text: async () => JSON.stringify(entries),
+    };
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+    fireEvent.change(input, { target: { files: [file] } });
+
+    await waitFor(() => {
+      expect(
+        screen.getByText("Imported 2 words, skipped duplicates: 1, invalid: 3."),
+      ).toBeInTheDocument();
+    });
+    expect(await getWordCount()).toBe(3);
   });
 });

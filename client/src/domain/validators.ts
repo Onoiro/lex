@@ -1,6 +1,16 @@
+import type { Word } from "@/types";
+
 export const MAX_WORD_LENGTH = 100;
 export const MAX_TRANSLATION_LENGTH = 500;
 export const MAX_NOTE_LENGTH = 500;
+
+/** Import limits: reject oversized files before reading, cap entry count. */
+export const MAX_IMPORT_FILE_SIZE = 10 * 1024 * 1024;
+export const MAX_IMPORT_ENTRIES = 10_000;
+
+const MAX_INTERVAL_DAYS = 3650; // 10 years
+const MAX_COUNTER = 1_000_000;
+const MAX_TIME_SECONDS = 3600;
 
 const ALLOWED_SPECIAL_CHARS = new Set([" ", "-", "'", "."]);
 
@@ -105,4 +115,69 @@ export function validateNote(note: string): string | null {
   }
 
   return trimmed.normalize("NFC");
+}
+
+/** Sanitize a non-negative integer field: finite and >= 0 → truncated, otherwise 0. */
+function sanitizeInt(value: unknown, max: number): number {
+  if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) {
+    return 0;
+  }
+  return Math.min(Math.trunc(value), max);
+}
+
+/** Sanitize a time field: finite and > 0 → clamped value, otherwise null. */
+function sanitizeTime(value: unknown): number | null {
+  if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) {
+    return null;
+  }
+  return Math.min(value, MAX_TIME_SECONDS);
+}
+
+/** Sanitize a language code: non-empty string → as is, otherwise the default. */
+function sanitizeLang(value: unknown, fallback: string): string {
+  return typeof value === "string" && value ? value : fallback;
+}
+
+/**
+ * Sanitize a single import entry (untrusted JSON from an imported file).
+ * Returns a complete Word object (without id) safe to insert, or null when
+ * the entry is invalid (bad word/translation/note) and must be skipped.
+ */
+export function sanitizeImportEntry(entry: unknown): Word | null {
+  if (typeof entry !== "object" || entry === null) {
+    return null;
+  }
+
+  const raw = entry as Record<string, unknown>;
+
+  const word = typeof raw.word === "string" ? validateWord(raw.word) : null;
+  if (word === null) return null;
+
+  const translation =
+    typeof raw.translation === "string" ? validateTranslation(raw.translation) : null;
+  if (translation === null) return null;
+
+  let note: string | undefined;
+  if (typeof raw.note === "string") {
+    const sanitized = validateNote(raw.note);
+    if (sanitized === null) return null;
+    if (sanitized) note = sanitized;
+  }
+
+  return {
+    word,
+    translation,
+    word_lang: sanitizeLang(raw.word_lang, "en"),
+    translation_lang: sanitizeLang(raw.translation_lang, "ru"),
+    ...(note ? { note } : {}),
+    interval: sanitizeInt(raw.interval, MAX_INTERVAL_DAYS),
+    repetitions: sanitizeInt(raw.repetitions, MAX_COUNTER),
+    next_review: sanitizeInt(raw.next_review, Number.MAX_SAFE_INTEGER),
+    last_direction: raw.last_direction === "ru_en" ? "ru_en" : "en_ru",
+    best_time: sanitizeTime(raw.best_time),
+    avg_time: sanitizeTime(raw.avg_time),
+    know_count: sanitizeInt(raw.know_count, MAX_COUNTER),
+    forgot_count: sanitizeInt(raw.forgot_count, MAX_COUNTER),
+    hint_count: sanitizeInt(raw.hint_count, MAX_COUNTER),
+  };
 }

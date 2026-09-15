@@ -1,4 +1,5 @@
 import { db } from "./db";
+import { sanitizeImportEntry } from "@/domain/validators";
 import type { Word } from "@/types";
 
 /** Create a new word entry with default SRS fields. */
@@ -98,42 +99,39 @@ export async function exportWords(): Promise<Word[]> {
   return db.words.orderBy("word").toArray();
 }
 
-/** Import words from a JSON array, skipping duplicates. */
-export async function importWords(data: Word[]): Promise<{
+/** Import words from a JSON array: sanitize each entry, skip duplicates
+ *  (both existing in the DB and within the file) and invalid entries.
+ *  Runs in a single transaction with one bulkAdd — atomic and fast. */
+export async function importWords(data: unknown[]): Promise<{
   imported: number;
   skipped: number;
+  invalid: number;
 }> {
-  let imported = 0;
-  let skipped = 0;
+  return db.transaction("rw", db.words, async () => {
+    const existing = new Set((await db.words.toArray()).map((w) => w.word));
 
-  for (const entry of data) {
-    const existing = await db.words
-      .where("word")
-      .equals(entry.word)
-      .first();
-    if (existing) {
-      skipped++;
-      continue;
+    let skipped = 0;
+    let invalid = 0;
+    const toAdd: Word[] = [];
+
+    for (const entry of data) {
+      const word = sanitizeImportEntry(entry);
+      if (word === null) {
+        invalid++;
+        continue;
+      }
+      if (existing.has(word.word)) {
+        skipped++;
+        continue;
+      }
+      existing.add(word.word);
+      toAdd.push(word);
     }
 
-    await db.words.add({
-      word: entry.word,
-      translation: entry.translation,
-      word_lang: entry.word_lang ?? "en",
-      translation_lang: entry.translation_lang ?? "ru",
-      ...(entry.note ? { note: entry.note } : {}),
-      interval: entry.interval ?? 0,
-      repetitions: entry.repetitions ?? 0,
-      next_review: entry.next_review ?? 0,
-      last_direction: entry.last_direction ?? "en_ru",
-      best_time: entry.best_time ?? null,
-      avg_time: entry.avg_time ?? null,
-      know_count: entry.know_count ?? 0,
-      forgot_count: entry.forgot_count ?? 0,
-      hint_count: entry.hint_count ?? 0,
-    });
-    imported++;
-  }
+    if (toAdd.length > 0) {
+      await db.words.bulkAdd(toAdd);
+    }
 
-  return { imported, skipped };
+    return { imported: toAdd.length, skipped, invalid };
+  });
 }

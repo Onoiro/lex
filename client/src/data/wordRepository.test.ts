@@ -173,6 +173,7 @@ describe("importWords", () => {
     const result = await importWords(data);
     expect(result.imported).toBe(2);
     expect(result.skipped).toBe(0);
+    expect(result.invalid).toBe(0);
 
     const words = await getAllWords();
     expect(words).toHaveLength(2);
@@ -217,6 +218,7 @@ describe("importWords", () => {
     const result = await importWords(data);
     expect(result.imported).toBe(1);
     expect(result.skipped).toBe(1);
+    expect(result.invalid).toBe(0);
 
     const words = await getAllWords();
     expect(words).toHaveLength(2);
@@ -225,10 +227,95 @@ describe("importWords", () => {
     expect(hello!.translation).toBe("привет");
   });
 
+  it("skips duplicates within the same file", async () => {
+    const data: Word[] = [
+      {
+        word: "hello",
+        translation: "привет",
+        word_lang: "en",
+        translation_lang: "ru",
+        interval: 0,
+        repetitions: 0,
+        next_review: 0,
+        last_direction: "en_ru",
+        best_time: null,
+        avg_time: null,
+        know_count: 0,
+        forgot_count: 0,
+        hint_count: 0,
+      },
+      {
+        word: "hello",
+        translation: "другой перевод",
+        word_lang: "en",
+        translation_lang: "ru",
+        interval: 0,
+        repetitions: 0,
+        next_review: 0,
+        last_direction: "en_ru",
+        best_time: null,
+        avg_time: null,
+        know_count: 0,
+        forgot_count: 0,
+        hint_count: 0,
+      },
+    ];
+
+    const result = await importWords(data);
+    expect(result.imported).toBe(1);
+    expect(result.skipped).toBe(1);
+
+    const words = await getAllWords();
+    expect(words).toHaveLength(1);
+    expect(words[0].translation).toBe("привет");
+  });
+
+  it("counts invalid entries separately and imports valid ones", async () => {
+    const data: unknown[] = [
+      { word: "hello", translation: "привет" },
+      { word: "", translation: "пустое слово" },
+      { word: "bad!", translation: "мусорные символы" },
+      "not an object",
+      null,
+      { word: "world", translation: "мир" },
+    ];
+
+    const result = await importWords(data);
+    expect(result.imported).toBe(2);
+    expect(result.skipped).toBe(0);
+    expect(result.invalid).toBe(4);
+
+    const words = await getAllWords();
+    expect(words.map((w) => w.word).sort()).toEqual(["hello", "world"]);
+  });
+
+  it("sanitizes numeric fields on import", async () => {
+    const data: unknown[] = [
+      { word: "hello", translation: "привет", interval: -5, best_time: -1, know_count: 2.9 },
+    ];
+
+    const result = await importWords(data);
+    expect(result.imported).toBe(1);
+
+    const word = (await getAllWords())[0];
+    expect(word.interval).toBe(0);
+    expect(word.best_time).toBeNull();
+    expect(word.know_count).toBe(2);
+  });
+
   it("handles empty array", async () => {
     const result = await importWords([]);
     expect(result.imported).toBe(0);
     expect(result.skipped).toBe(0);
+    expect(result.invalid).toBe(0);
+  });
+
+  it("handles all-invalid array without calling bulkAdd", async () => {
+    const result = await importWords([{ word: "" }, 42, "junk"]);
+    expect(result.imported).toBe(0);
+    expect(result.invalid).toBe(3);
+
+    expect(await getWordCount()).toBe(0);
   });
 
   it("applies defaults for missing fields", async () => {

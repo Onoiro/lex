@@ -4,6 +4,7 @@ import { useLocale } from "@/i18n";
 import { getAllWords, deleteWord, exportWords, importWords } from "@/data/wordRepository";
 import { formatTime } from "@/domain/stats";
 import { computeRank } from "@/domain/srs";
+import { MAX_IMPORT_FILE_SIZE, MAX_IMPORT_ENTRIES } from "@/domain/validators";
 import { sortWords, loadSortState, saveSortState, nextSortDir } from "@/domain/dictionarySort";
 import type { SortBy, SortDir } from "@/domain/dictionarySort";
 import type { Word } from "@/types";
@@ -87,10 +88,23 @@ export function Dictionary() {
     if (!file) return;
 
     try {
+      if (file.size > MAX_IMPORT_FILE_SIZE) {
+        setImportMsg(
+          t("dictionary.import_too_large", {
+            max: Math.round(MAX_IMPORT_FILE_SIZE / (1024 * 1024)),
+          }),
+        );
+        return;
+      }
+
       const text = await file.text();
       const data = JSON.parse(text);
       if (!Array.isArray(data) || data.length === 0) {
         setImportMsg(t("dictionary.import_empty"));
+        return;
+      }
+      if (data.length > MAX_IMPORT_ENTRIES) {
+        setImportMsg(t("dictionary.import_too_many", { max: MAX_IMPORT_ENTRIES }));
         return;
       }
       const result = await importWords(data);
@@ -98,6 +112,7 @@ export function Dictionary() {
         t("dictionary.import_success", {
           imported: result.imported,
           skipped: result.skipped,
+          invalid: result.invalid,
         }),
       );
       void loadWords();
