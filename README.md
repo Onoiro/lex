@@ -21,7 +21,7 @@ Lex is a translator and vocabulary trainer. Your dictionary, spaced repetition, 
 - **Auto-answer & pause** - Auto-records "Forgot" after 10s, pauses after 3 consecutive auto-answers or 30s inactivity
 - **TTS** - Text-to-speech for words and translations via Yandex SpeechKit
 - **Usage limits** - 500 chars per request, 500 chars/day translation and TTS quotas per device (resets at midnight UTC); repeated requests are served from cache and do not count against the quota; remaining quota is shown on the Translate page and in Settings
-- **Persistent caches** - Translations (7d), TTS audio (500 entries) and dictionary examples (30d) are stored in SQLite and survive proxy restarts; the DB lives in a Docker volume
+- **Persistent caches** - Translations (7d), TTS audio (5000 entries) and dictionary examples (30d) are stored in SQLite and survive proxy restarts; the DB lives in a Docker volume
 - **API protection** - CORS origin whitelist + shared app token (`X-App-Token` header) on all proxy endpoints; global daily char budget as a financial safety net
 - **Example sentences** - Load corpus examples from Yandex Dictionary into the note field on the Translate page
 - **PWA** - Installable, offline-capable via service worker
@@ -36,33 +36,46 @@ Lex is a translator and vocabulary trainer. Your dictionary, spaced repetition, 
 ## Architecture
 
 ```
-┌──────────────────────────────────────────────────────┐
-│                     Client (React)                    │
-│  ┌──────────┐   ┌──────────┐   ┌──────────────────┐  │
-│  │  Pages   │   │  Domain  │   │  Data (Dexie/IDB)│  │
-│  │ (React)  │   │  (SRS)   │   │ wordRepo, settings│  │
-│  └──┬───┬───┘   └──────────┘   └──────────────────┘  │
-│     │   └──────────────┐                              │
-│     ▼                  ▼                              │
-│  ┌────────────┐   ┌──────────┐                       │
-│  │translateApi│   │dictionaryApi│
-│  │  ttsApi    │   │              │
-│  └─────┬──────┘   └──────┬───────┘
-│        │                 │
-└────────┼─────────────────┼──────────────────────────────┘
-         │                 │
-         ▼                 ▼
-┌─────────────────────────────────────────────┐
-│        Proxy (FastAPI, port 8004)            │
-│  POST /translate   POST /tts                │
-│  GET  /languages   POST /dictionary          │
-│  POST /feedback    GET  /cache/stats         │
-│  GET  /            GET  /tts/cache           │
-│  GET  /quota         GET  /dictionary/cache  │
-│                                               │
-│  Yandex Translate API + SpeechKit + Corpus   │
-│  + Telegram Bot (feedback)                   │
-└─────────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────────┐
+│                       Client (React)                       │
+│                                                            │
+│  ┌──────────┐    ┌──────────┐    ┌──────────────────────┐  │
+│  │  Pages   │    │  Domain  │    │  Data (Dexie/IDB)    │  │
+│  │ (React)  │    │  (SRS)   │    │ wordRepo, settings   │  │
+│  └────┬─────┘    └──────────┘    └──────────────────────┘  │
+│       │                                                    │
+│       ▼                                                    │
+│  ┌──────────────────────────────────────────────────────┐  │
+│  │ proxyClient (X-App-Token, X-App-Version, X-Device-Id)│  │
+│  └──────┬───────────┬──────────┬──────────┬─────────────┘  │
+│         │           │          │          │                │
+│         ▼           ▼          ▼          ▼                │
+│   translateApi   ttsApi   dictionaryApi  feedbackApi       │
+│   quotaApi       (TTS Cache API on device)                 │
+│         │           │          │          │                │
+└─────────┼───────────┼──────────┼──────────┼────────────────┘
+          │           │          │          │
+          ▼           ▼          ▼          ▼
+┌────────────────────────────────────────────────────────────┐
+│                  Proxy (FastAPI, port 8004)                │
+│                                                            │
+│  POST /translate        POST /tts        POST /dictionary  │
+│  GET  /languages        GET  /quota      POST /feedback    │
+│  GET  /cache/stats      GET  /tts/cache/stats              │
+│  GET  /dictionary/cache/stats          GET  / (health)     │
+│                                                            │
+│  Security: token auth · version gate · CORS whitelist      │
+│  · rate limiting · daily quotas (device/IP/anon)           │
+│  · global daily budget                                     │
+│                                                            │
+│  ┌──────────────────────────────────────────────────────┐  │
+│  │ SQLite (data/cache.db, Docker volume lex-cache)      │  │
+│  │ translations · tts_audio · dictionary · quota_usage  │  │
+│  └──────────────────────────────────────────────────────┘  │
+│                                                            │
+│  Yandex Translate API + SpeechKit + Corpus                 │
+│  + Telegram Bot (feedback)                                 │
+└────────────────────────────────────────────────────────────┘
 ```
 
 - **Client:** React 19 + TypeScript, Vite 7, Dexie.js (IndexedDB), Pico CSS, vite-plugin-pwa
