@@ -104,7 +104,7 @@ Cache hits (server-side and client TTS cache) never consume quotas or the budget
 All three server-side caches are backed by a single SQLite database (path via `SQLITE_CACHE_PATH`, default `data/cache.db`):
 
 - **Translations** — 7-day TTL
-- **TTS audio** — max 500 entries (oldest evicted)
+- **TTS audio** — max 5000 entries (oldest evicted)
 - **Dictionary examples** — 30-day TTL
 
 The DB survives proxy/container restarts, so the same word is translated via the Yandex API only once per server lifetime. In Docker the DB lives in the `lex-cache` volume mounted at `/app/data`. If the DB is unavailable, caches degrade gracefully to misses (no crashes, just API calls).
