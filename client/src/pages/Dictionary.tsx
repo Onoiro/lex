@@ -127,12 +127,15 @@ export function Dictionary() {
   if (words.length === 0) {
     return (
       <>
-        <hgroup style={{ textAlign: "center", marginBottom: "2rem", marginTop: "1rem" }}>
-          <h1>{t("dictionary.heading")}</h1>
-          <p>{t("dictionary.total", { total: 0 })}</p>
-        </hgroup>
-        <article style={{ textAlign: "center", padding: "3rem 1rem" }}>
+        <div className="page-hero">
           <Mascot emotion="reading" size="hero" />
+          <hgroup style={{ textAlign: "left", marginBottom: 0 }}>
+            <h1>{t("dictionary.heading")}</h1>
+            <p style={{ color: "var(--pico-muted-color)" }}>{t("dictionary.total", { total: 0 })}</p>
+          </hgroup>
+        </div>
+        <article style={{ textAlign: "center", padding: "3rem 1rem" }}>
+          <Mascot emotion="empty" size="hero" />
           <h2 style={{ marginBottom: "1rem", marginTop: "1rem" }}>{t("dictionary.empty")}</h2>
           <p style={{ color: "var(--pico-muted-color)" }}>{t("dictionary.empty_hint")}</p>
           <Link to="/add" role="button">{t("dictionary.add_word")}</Link>
@@ -143,10 +146,13 @@ export function Dictionary() {
 
   return (
     <>
-      <hgroup style={{ textAlign: "center", marginBottom: "2rem", marginTop: "1rem" }}>
-        <h1>{t("dictionary.heading")}</h1>
-        <p>{t("dictionary.total", { total: words.length })}</p>
-      </hgroup>
+      <div className="page-hero">
+        <Mascot emotion="reading" size="hero" />
+        <hgroup style={{ textAlign: "left", marginBottom: 0 }}>
+          <h1>{t("dictionary.heading")}</h1>
+          <p style={{ color: "var(--pico-muted-color)" }}>{t("dictionary.total", { total: words.length })}</p>
+        </hgroup>
+      </div>
 
       <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1rem", flexWrap: "wrap" }}>
         <button type="button" className="outline" onClick={() => void handleExport()} style={{ fontSize: "0.9rem" }}>

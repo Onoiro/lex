@@ -25,8 +25,9 @@ describe("Dictionary", () => {
       expect(screen.getByText("Dictionary is empty 🍃")).toBeInTheDocument();
     });
 
-    // Empty-state mascot
-    expect(screen.getByTestId("mascot")).toHaveAttribute("src", "/mascot/reading.webp");
+    // Empty-state mascot in the heading, empty state below
+    expect(screen.getAllByTestId("mascot")[0]).toHaveAttribute("src", "/mascot/reading.webp");
+    expect(screen.getAllByTestId("mascot")[1]).toHaveAttribute("src", "/mascot/empty.webp");
   });
 
   it("renders word count in heading", async () => {
@@ -42,6 +43,9 @@ describe("Dictionary", () => {
     await waitFor(() => {
       expect(screen.getByText("Total words saved: 2")).toBeInTheDocument();
     });
+
+    // Reading mascot in the heading even with words present
+    expect(screen.getByTestId("mascot")).toHaveAttribute("src", "/mascot/reading.webp");
   });
 
   it("renders table with words", async () => {

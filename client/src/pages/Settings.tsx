@@ -364,23 +364,27 @@ export function Settings() {
           📊 {t("settings.limits")}
         </summary>
         <article style={{ marginTop: "1rem" }}>
-          <Mascot emotion="tired" size="inline" animated={false} />
-          {quota && (
-            <p
-              data-testid="limits-today"
-              style={{ color: "var(--pico-muted-color)", marginBottom: "1rem" }}
-            >
-              {t("settings.limits_today", {
-                translate_used: quota.translate.used,
-                translate_limit: quota.translate.limit,
-                tts_used: quota.tts.used,
-                tts_limit: quota.tts.limit,
-              })}
-            </p>
-          )}
-          <p style={{ color: "var(--pico-muted-color)", marginBottom: "1rem" }}>
-            {t("settings.limits_intro")}
-          </p>
+          <div className="section-hero">
+            <Mascot emotion="tired" size="inline" animated={false} />
+            <div>
+              {quota && (
+                <p
+                  data-testid="limits-today"
+                  style={{ color: "var(--pico-muted-color)", marginBottom: "1rem" }}
+                >
+                  {t("settings.limits_today", {
+                    translate_used: quota.translate.used,
+                    translate_limit: quota.translate.limit,
+                    tts_used: quota.tts.used,
+                    tts_limit: quota.tts.limit,
+                  })}
+                </p>
+              )}
+              <p style={{ color: "var(--pico-muted-color)", marginBottom: "1rem" }}>
+                {t("settings.limits_intro")}
+              </p>
+            </div>
+          </div>
           <ul style={{ color: "var(--pico-muted-color)", marginBottom: "1rem" }}>
             <li>{t("settings.limits_length", { limit: MAX_TEXT_LENGTH })}</li>
             <li>{t("settings.limits_translate_quota", { limit: quota?.translate.limit ?? DAILY_CHAR_LIMIT })}</li>
@@ -407,10 +411,12 @@ export function Settings() {
           💬 {t("settings.feedback")}
         </summary>
         <article style={{ marginTop: "1rem" }}>
-          <Mascot emotion="mail" size="inline" animated={false} />
-          <p style={{ color: "var(--pico-muted-color)", marginBottom: "1rem", marginTop: "0.75rem" }}>
-            {t("settings.feedback_description")}
-          </p>
+          <div className="section-hero">
+            <Mascot emotion="mail" size="inline" animated={false} />
+            <p style={{ color: "var(--pico-muted-color)", marginBottom: 0 }}>
+              {t("settings.feedback_description")}
+            </p>
+          </div>
 
           {feedbackStatus === "success" && (
             <article

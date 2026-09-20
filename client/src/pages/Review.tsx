@@ -468,19 +468,25 @@ export function Review() {
       todayStats !== null && (todayStats.reviewed > 0 || todayStats.new_words > 0);
 
     return (
-      <div style={{ textAlign: "center", padding: "3rem 1rem" }}>
-        <Mascot emotion="training" size="hero" />
-        <h2 style={{ marginTop: "1rem" }}>{t("review.heading")}</h2>
-        <p style={{ color: "var(--pico-muted-color)", marginBottom: "2rem" }}>
-          {t("review.queue", { total_due: queueSize })}
-        </p>
-        <button
-          type="button"
-          onClick={handleStart}
-          style={{ fontSize: "1.5rem", padding: "1rem 3rem" }}
-        >
-          {t("review.start")}
-        </button>
+      <div style={{ padding: "3rem 1rem" }}>
+        <div className="page-hero">
+          <Mascot emotion="training" size="hero" />
+          <hgroup style={{ textAlign: "left", marginBottom: 0 }}>
+            <h2>{t("review.heading")}</h2>
+            <p style={{ color: "var(--pico-muted-color)" }}>
+              {t("review.queue", { total_due: queueSize })}
+            </p>
+          </hgroup>
+        </div>
+        <div style={{ textAlign: "center", marginTop: "2rem" }}>
+          <button
+            type="button"
+            onClick={handleStart}
+            style={{ fontSize: "1.5rem", padding: "1rem 3rem" }}
+          >
+            {t("review.start")}
+          </button>
+        </div>
 
         {hasToday && (
           <div

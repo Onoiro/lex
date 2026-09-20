@@ -669,6 +669,31 @@ nav strong {
   }
 }
 
+/* Page hero (Review, Dictionary): mascot to the left of the page
+   heading, same wrap behavior as the home hero */
+.page-hero {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1.25rem;
+  margin-top: 1rem;
+  margin-bottom: 2rem;
+}
+
+.page-hero hgroup {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Section hero (Settings details): small mascot to the left of the
+   section text, vertically centered on the same line */
+.section-hero {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
 /* Light parts of the parrot melt into dark backgrounds —
    a subtle outline keeps the silhouette readable */
 [data-theme="dark"] .mascot {
