@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { useLocale } from "@/i18n";
 import { getLanguages } from "@/services/translateApi";
 import { getSettings, saveSettings } from "@/data/settingsRepository";
+import { Mascot } from "@/components/Mascot";
 import { LANG_COUNT_TTL_MS } from "@/types";
 
 export function Home() {
@@ -55,13 +56,19 @@ export function Home() {
 
   return (
     <>
-      <hgroup style={{ textAlign: "center", marginBottom: "3rem", marginTop: "2rem" }}>
-        <h1>{t("index.title")}</h1>
-        <p>{t("index.subtitle")}</p>
-        <p style={{ fontSize: "0.9rem", color: "var(--pico-muted-color)" }}>
-          {t("index.subtitle_detail", { count: langCount ?? "..." })}
-        </p>
-      </hgroup>
+      <div className="home-hero">
+        <Mascot emotion="base" size="hero" />
+        <hgroup style={{ textAlign: "left", marginBottom: 0 }}>
+          <h1>{t("index.title")}</h1>
+          <p>{t("index.subtitle")}</p>
+        </hgroup>
+      </div>
+      <p
+        className="home-hero-detail"
+        style={{ textAlign: "center", fontSize: "0.9rem", color: "var(--pico-muted-color)", marginBottom: "3rem" }}
+      >
+        {t("index.subtitle_detail", { count: langCount ?? "..." })}
+      </p>
 
       <div className="grid">
         <article>

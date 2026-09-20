@@ -637,3 +637,65 @@ nav strong {
   text-transform: uppercase;
   color: var(--pico-muted-color);
 }
+
+/* ── Mascot ────────────────────────────────────────── */
+.mascot {
+  display: block;
+  margin: 0 auto;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+/* Home hero: mascot next to the title on wide screens,
+   stacked above it on narrow ones */
+.home-hero {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.25rem;
+  margin-top: 2rem;
+  margin-bottom: 1rem;
+}
+
+.home-hero-detail {
+  margin-bottom: 3rem;
+}
+
+@media (max-width: 576px) {
+  .home-hero {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .home-hero hgroup {
+    text-align: center;
+  }
+}
+
+/* Light parts of the parrot melt into dark backgrounds —
+   a subtle outline keeps the silhouette readable */
+[data-theme="dark"] .mascot {
+  filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.35));
+}
+
+@keyframes mascot-bounce {
+  0% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-8%);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+
+.mascot-bounce {
+  animation: mascot-bounce 200ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mascot-bounce {
+    animation: none;
+  }
+}

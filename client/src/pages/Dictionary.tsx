@@ -7,6 +7,7 @@ import { computeRank } from "@/domain/srs";
 import { MAX_IMPORT_FILE_SIZE, MAX_IMPORT_ENTRIES } from "@/domain/validators";
 import { sortWords, loadSortState, saveSortState, nextSortDir } from "@/domain/dictionarySort";
 import type { SortBy, SortDir } from "@/domain/dictionarySort";
+import { Mascot } from "@/components/Mascot";
 import type { Word } from "@/types";
 
 const MOBILE_BREAKPOINT = 768;
@@ -131,7 +132,8 @@ export function Dictionary() {
           <p>{t("dictionary.total", { total: 0 })}</p>
         </hgroup>
         <article style={{ textAlign: "center", padding: "3rem 1rem" }}>
-          <h2 style={{ marginBottom: "1rem" }}>{t("dictionary.empty")}</h2>
+          <Mascot emotion="empty" size="hero" />
+          <h2 style={{ marginBottom: "1rem", marginTop: "1rem" }}>{t("dictionary.empty")}</h2>
           <p style={{ color: "var(--pico-muted-color)" }}>{t("dictionary.empty_hint")}</p>
           <Link to="/add" role="button">{t("dictionary.add_word")}</Link>
         </article>

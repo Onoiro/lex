@@ -15,6 +15,7 @@ import { Link } from "react-router-dom";
 import { LANG_LIST_TTL_MS } from "@/types";
 import type { LanguageInfo } from "@/services/translateApi";
 import { OfflineIndicator } from "@/components/OfflineIndicator";
+import { Mascot } from "@/components/Mascot";
 import type { LanguageSettings } from "@/types";
 
 type MessageType = "success" | "error_duplicate" | "error_translation" | "error_network" | "error_quota" | null;
@@ -478,9 +479,15 @@ export function Add() {
             padding: "0.75rem 1rem",
             marginBottom: "1rem",
             fontSize: "0.9rem",
+            display: "flex",
+            alignItems: "center",
+            gap: "0.75rem",
           }}
         >
-          {message.text}
+          {message.type === "error_quota" && (
+            <Mascot emotion="tired" size="inline" animated={false} />
+          )}
+          <span>{message.text}</span>
         </article>
       )}
 
@@ -667,8 +674,12 @@ export function Add() {
                   top: "0.5rem",
                   fontSize: "0.85rem",
                   color: "var(--pico-muted-color)",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.25rem",
                 }}
               >
+                <Mascot emotion="thinking" size="inline" animated={false} />
                 ⏳
               </span>
             )}

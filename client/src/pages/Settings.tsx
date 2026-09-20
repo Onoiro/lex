@@ -14,6 +14,7 @@ import type { Theme, Skin } from "@/types";
 import type { LanguageInfo } from "@/services/translateApi";
 import { version } from "../../package.json";
 import { sendFeedback } from "@/services/feedbackApi";
+import { Mascot } from "@/components/Mascot";
 
 export function Settings() {
   const [t] = useLocale();
@@ -363,6 +364,7 @@ export function Settings() {
           📊 {t("settings.limits")}
         </summary>
         <article style={{ marginTop: "1rem" }}>
+          <Mascot emotion="tired" size="inline" animated={false} />
           {quota && (
             <p
               data-testid="limits-today"

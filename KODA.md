@@ -5,7 +5,7 @@ Lex — local-first приложение-переводчик и помощни�
 
 **Демо:** [lex.2-way.ru](https://lex.2-way.ru)
 
-**Текущая версия:** 1.24.0
+**Текущая версия:** 1.25.0
 
 ## Архитектура
 
@@ -108,7 +108,7 @@ make d-run    # docker compose up -d
 .
 ├── client/                    # Local-first клиентское приложение
 │   ├── src/
-│   │   ├── components/        # Layout, OfflineIndicator
+│   │   ├── components/        # Layout, OfflineIndicator, UpdateScreen, Mascot
 │   │   ├── data/              # db.ts (Dexie), wordRepository, settingsRepository, dailyStatsRepository
 │   │   ├── domain/            # srs.ts (SM-2), stats.ts, validators.ts, dictionarySort.ts, dailyStats.ts
 │   │   ├── i18n/              # index.ts, languages.ts, en.json, ru.json
@@ -166,6 +166,7 @@ make d-run    # docker compose up -d
 - **Комментарии:** на простом английском, понятном non-native speakers.
 - **Стиль:** Pico CSS (без классов), Material Design принципы.
 - **i18n:** все UI-строки через `t()` из `@/i18n`. Переводы в `en.json` и `ru.json`.
+- **Маскот:** декоративный попугай (`components/Mascot.tsx`, `aria-hidden`, без текстов). Ассеты: `client/public/mascot/*.webp` — 9 эмоций (base, happy, sad, hint, thinking, sleeping, tired, celebrate, empty), ~30 КБ каждая, в precache SW. Три размера: hero (140px), inline (48px), micro (32px). Анимация — CSS bounce при смене эмоции (перезапуск через `key={emotion}`), уважает `prefers-reduced-motion`; в тёмной теме — лёгкий drop-shadow для читаемости силуэта. Правило дозированности: не более одного маскота в поле зрения. Маппинг: Home — hero base; Add — thinking при автопереводе, tired в сообщении о лимите; Review — hero base на старте, micro над карточкой (thinking → hint → happy/sad), sleeping на паузе, celebrate на done, empty в пустом состоянии; Dictionary — hero empty; OfflineIndicator — inline sleeping; Settings (лимиты) — inline tired; UpdateScreen — hero tired.
 - **PWA:** vite-plugin-pwa генерирует SW. Runtime cache для `/translate`, `/languages` и `/dictionary` (NetworkFirst).
 - **TTS:** `ttsApi.ts` — персистентный кеш аудио через Cache API (`lex-tts-audio`, ключи `tts:{lang}:{text}`, LRU-лимит ~50 МБ). Офлайн: пропускает запрос при `navigator.onLine === false`, ранее прослушанные слова озвучиваются из кеша. Ошибки лимитов (квота, длина) пробрасываются через опциональный callback `onError`.
 - **Лимиты на клиенте:** `translateApi.ts` бросает `LimitError` с кодами `text_too_long` / `daily_quota_exceeded`. Add.tsx: при исчерпании дневной квоты автоперевод останавливается до конца дня (флаг в state, без спама 429), при вводе >500 символов — предупреждение и отказ от автоперевода. В Настройках — сворачиваемый раздел «Лимиты использования» (перед Feedback).
@@ -214,4 +215,4 @@ make d-run    # docker compose up -d
 - График активности за 14 дней на странице Повтор (данные dailyStats уже есть)
 
 ---
-**Последнее обновление:** 13 сентября 2026
+**Последнее обновление:** 20 сентября 2026

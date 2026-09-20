@@ -1,5 +1,6 @@
 import { Capacitor } from "@capacitor/core";
 import { t } from "@/i18n";
+import { Mascot } from "@/components/Mascot";
 
 // Store/download links for the "update the app" screen. Baked in at
 // build time; empty values hide the corresponding button.
@@ -18,6 +19,7 @@ export function UpdateScreen() {
   return (
     <main className="container">
       <div>
+        <Mascot emotion="tired" size="hero" />
         <h1>{t("update.title")}</h1>
         <p>{t("update.message")}</p>
         {platform === "android" && RUSTORE_URL && (

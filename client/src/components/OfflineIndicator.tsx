@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Mascot } from "@/components/Mascot";
 
 export function OfflineIndicator() {
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
@@ -27,9 +28,14 @@ export function OfflineIndicator() {
         marginBottom: "1rem",
         fontSize: "0.9rem",
         textAlign: "center",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: "0.75rem",
       }}
     >
-      ⚠️ Offline — translation requires internet connection
+      <Mascot emotion="sleeping" size="inline" animated={false} />
+      <span>⚠️ Offline — translation requires internet connection</span>
     </article>
   );
 }

@@ -473,6 +473,9 @@ describe("Add", () => {
       expect(screen.getByText(/Daily translation limit reached/)).toBeInTheDocument();
     });
 
+    // Tired mascot appears in the quota message
+    expect(screen.getByTestId("mascot")).toHaveAttribute("src", "/mascot/tired.webp");
+
     const callsAfterQuota = vi.mocked(translateWord).mock.calls.length;
 
     // New word should NOT trigger another auto-translate (no 429 spam)

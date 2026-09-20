@@ -24,6 +24,9 @@ describe("Dictionary", () => {
     await waitFor(() => {
       expect(screen.getByText("Dictionary is empty 🍃")).toBeInTheDocument();
     });
+
+    // Empty-state mascot
+    expect(screen.getByTestId("mascot")).toHaveAttribute("src", "/mascot/empty.webp");
   });
 
   it("renders word count in heading", async () => {

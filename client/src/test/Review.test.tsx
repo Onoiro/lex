@@ -1207,4 +1207,136 @@ describe("Review", () => {
     expect(screen.getByText("Remember the translation:")).toBeInTheDocument();
     expect(screen.queryByTestId("word-lang-badge")).not.toBeInTheDocument();
   });
+
+  // --- Mascot ---
+
+  it("shows thinking mascot above the card during training", async () => {
+    await addWord("hello", "привет");
+
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <Review />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Start training" })).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole("button", { name: "Start training" }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("word-text")).toBeInTheDocument();
+    });
+
+    expect(screen.getByTestId("mascot")).toHaveAttribute("src", "/mascot/thinking.webp");
+  });
+
+  it("mascot becomes happy on Know and sad on Forgot", async () => {
+    await addWord("hello", "привет");
+    await addWord("world", "мир");
+
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <Review />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Start training" })).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole("button", { name: "Start training" }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /I know/ })).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole("button", { name: /I know/ }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("mascot")).toHaveAttribute("src", "/mascot/happy.webp");
+    });
+
+    await user.click(screen.getByRole("button", { name: /Next word/ }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("mascot")).toHaveAttribute("src", "/mascot/thinking.webp");
+    });
+
+    await user.click(screen.getByRole("button", { name: /I don't remember/ }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("mascot")).toHaveAttribute("src", "/mascot/sad.webp");
+    });
+  });
+
+  it("mascot shows hint emotion when the hint is opened", async () => {
+    await addWord("hello", "привет", "en", "ru", "my hint");
+
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <Review />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Start training" })).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole("button", { name: "Start training" }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("hint-btn")).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByTestId("hint-btn"));
+
+    expect(screen.getByTestId("mascot")).toHaveAttribute("src", "/mascot/hint.webp");
+  });
+
+  it("shows hero mascot on start, pause, done and empty screens", async () => {
+    // Empty screen
+    const empty = render(
+      <MemoryRouter>
+        <Review />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("mascot")).toHaveAttribute("src", "/mascot/empty.webp");
+    });
+
+    empty.unmount();
+
+    await addWord("hello", "привет");
+
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <Review />
+      </MemoryRouter>,
+    );
+
+    // Start screen
+    await waitFor(() => {
+      expect(screen.getByTestId("mascot")).toHaveAttribute("src", "/mascot/base.webp");
+    });
+
+    await user.click(screen.getByRole("button", { name: "Start training" }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Stop training" })).toBeInTheDocument();
+    });
+
+    // Paused screen
+    await user.click(screen.getByRole("button", { name: "Stop training" }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("mascot")).toHaveAttribute("src", "/mascot/sleeping.webp");
+    });
+  });
 });

@@ -9,6 +9,8 @@ import { applyReviewResult, pickWeightedWord, pickRandomDirection } from "@/doma
 import { synthesizeSpeech, stopTts } from "@/services/ttsApi";
 import { computeDayAccuracy, computeDayAvgTime } from "@/domain/dailyStats";
 import { updateResponseTime, formatTime } from "@/domain/stats";
+import { Mascot } from "@/components/Mascot";
+import type { MascotEmotion } from "@/components/Mascot";
 import type { DailyStats } from "@/types/dailyStats";
 import type { Word, ReviewDirection, LanguageSettings } from "@/types";
 
@@ -56,6 +58,7 @@ export function Review() {
   const [history, setHistory] = useState<DailyStats[]>([]);
   const [showHistory, setShowHistory] = useState(false);
   const [showHowItWorks, setShowHowItWorks] = useState(false);
+  const [mascotEmotion, setMascotEmotion] = useState<MascotEmotion>("thinking");
 
   // Refs for timers and state that shouldn't trigger re-renders
   const startTimeRef = useRef<number>(0);
@@ -251,6 +254,7 @@ export function Review() {
     setAnswered(false);
     setShowTranslation(false);
     setShowHint(false);
+    setMascotEmotion("thinking");
     usedHintRef.current = false;
     hintElapsedRef.current = null;
     isAutoAnswerRef.current = false;
@@ -276,6 +280,10 @@ export function Review() {
       setAnswered(true);
 
       isAutoAnswerRef.current = isAuto;
+
+      // Mascot reacts to the answer; it goes back to "thinking"
+      // only when the next word is shown
+      setMascotEmotion(correct ? "happy" : "sad");
 
       let elapsedSec: number;
       if (isAuto) {
@@ -427,7 +435,8 @@ export function Review() {
   if (phase === "empty") {
     return (
       <article style={{ textAlign: "center" }}>
-        <p style={{ fontSize: "1.2rem" }}>{t("review.empty", { message: "" })}</p>
+        <Mascot emotion="empty" size="hero" />
+        <p style={{ fontSize: "1.2rem", marginTop: "1rem" }}>{t("review.empty", { message: "" })}</p>
         <Link to="/" role="button" className="outline">{t("review.home")}</Link>
       </article>
     );
@@ -438,7 +447,8 @@ export function Review() {
 
     return (
       <article style={{ textAlign: "center", padding: "2rem" }}>
-        <p style={{ fontSize: "1.2rem" }}>{t("review.done", { message: "" })}</p>
+        <Mascot emotion="celebrate" size="hero" />
+        <p style={{ fontSize: "1.2rem", marginTop: "1rem" }}>{t("review.done", { message: "" })}</p>
         {todayStats && todayStats.reviewed > 0 && (
           <p style={{ color: "var(--pico-muted-color)", fontSize: "0.95rem" }}>
             {t("review.today_total", { count: todayStats.reviewed })}
@@ -459,7 +469,8 @@ export function Review() {
 
     return (
       <div style={{ textAlign: "center", padding: "3rem 1rem" }}>
-        <h2>{t("review.heading")}</h2>
+        <Mascot emotion="base" size="hero" />
+        <h2 style={{ marginTop: "1rem" }}>{t("review.heading")}</h2>
         <p style={{ color: "var(--pico-muted-color)", marginBottom: "2rem" }}>
           {t("review.queue", { total_due: queueSize })}
         </p>
@@ -583,7 +594,8 @@ export function Review() {
   if (phase === "paused") {
     return (
       <div style={{ textAlign: "center", padding: "3rem 1rem", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "60vh" }}>
-        <h2>{t("review.paused")}</h2>
+        <Mascot emotion="sleeping" size="hero" />
+        <h2 style={{ marginTop: "1rem" }}>{t("review.paused")}</h2>
 
         {session.total > 0 && (
           <div style={{ marginTop: "2rem", color: "var(--pico-muted-color)", fontSize: "0.95rem", lineHeight: 1.8 }}>
@@ -651,9 +663,15 @@ export function Review() {
 
   return (
     <article style={{ display: "flex", flexDirection: "column" }}>
-      {/* Timer + TTS toggle — always visible above the card */}
-      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "0.75rem", padding: "1rem 1rem 0.5rem" }}>
-        {settings?.tts_enabled && isOffline && (
+      {/* Timer + TTS toggle — always visible above the card.
+          The mascot sits at the left screen edge while the timer
+          stays centered, so the row is split into two layers. */}
+      <div style={{ position: "relative", padding: "1rem 1rem 0.5rem" }}>
+        <div style={{ position: "absolute", left: "1rem", top: "50%", transform: "translateY(-50%)" }}>
+          <Mascot emotion={mascotEmotion} size="micro" />
+        </div>
+        <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "0.75rem" }}>
+          {settings?.tts_enabled && isOffline && (
           <span
             data-testid="tts-offline-warning"
             style={{ color: "var(--pico-muted-color)", fontSize: "0.85rem" }}
@@ -687,6 +705,7 @@ export function Review() {
             {ttsOverride ? "🔊" : "🔇"}
           </button>
         )}
+        </div>
       </div>
 
       {/* Flip card */}
@@ -728,6 +747,7 @@ export function Review() {
                   hintElapsedRef.current = stopTimer();
                   usedHintRef.current = true;
                   setShowHint(true);
+                  setMascotEmotion("hint");
                 }}
                 style={{ marginTop: "1rem", fontSize: "0.85rem", padding: "0.25rem 0.75rem" }}
               >
