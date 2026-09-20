@@ -181,11 +181,45 @@ no text.
 ...curious welcoming pose, both wings open wide as if presenting, gentle smile.
 ```
 
+### Промпты по «профессиям» (страницы приложения)
+
+Отдельные образы-сцены для страниц, а не только эмоции. Та же база
+(референс + каркас выше), дописывается строка сцены. Отличие от эмоций:
+могут добавляться атрибуты (планшет, книга, конверт) и меняться позиция
+наушников — это осознанные отличия сцены, а не нарушение консистентности.
+
+**training — призыв к тренировке (стартовый экран Review):**
+```
+...standing upright, wearing headphones ON ears (not on neck), holding a tablet in one wing and looking at it attentively, other wing raised ready to tap the screen, focused eager expression, slight forward lean.
+```
+
+- Наушники на ушах (не на шее) — режим тренировки, отличие указано явно,
+  иначе генератор вернёт привычное положение на шее.
+
+**reading — словарь (пустое состояние Dictionary):**
+```
+...sitting down, holding a big open dictionary book in front with both wings, looking at the pages with curious concentrated eyes, head slightly tilted, small round glasses reflecting the page.
+```
+
+- `big open dictionary book` — чтобы книга читалась как словарь.
+- Отражение страниц в очках — милая деталь; если генератор «перегружает»,
+  убрать последнюю фразу.
+
+**mail — обратная связь (раздел Feedback в Settings):**
+```
+...holding a paper envelope in one wing close to the chest, other wing raised waving hello, warm welcoming smile, head slightly tilted, small heart above head.
+```
+
+- Концепция: «напиши мне — я жду твоё письмо».
+- Если сердечко покажется сентиментальным, альтернатива:
+  `...small speech bubble with three dots above head` («я слушаю»).
+
 ### Чек-лист консистентности эмоций
 
 - [ ] Очки: большие, круглые, ЧЁРНАЯ оправа — без изменений.
-- [ ] Наушники: ЧЁРНЫЕ, на шее — не на голове.
+- [ ] Наушники: ЧЁРНЫЕ, на шее — не на голове. Исключение: сцена `training` — наушники на ушах (режим тренировки).
 - [ ] Цвета: жёлтый корпус, голубые крылья, оранжевый клюв.
 - [ ] Стиль: 2D flat, мало форм, без градиентов и теней.
 - [ ] Фон: чистый белый; при вырезке — прозрачный PNG.
 - [ ] Размер: генерировать ≥1024px, в UI — 512px.
+- [ ] Атрибуты сцен (планшет, книга, конверт) — простые формы, в палитре персонажа, без мелких деталей.

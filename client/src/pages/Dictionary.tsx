@@ -132,7 +132,7 @@ export function Dictionary() {
           <p>{t("dictionary.total", { total: 0 })}</p>
         </hgroup>
         <article style={{ textAlign: "center", padding: "3rem 1rem" }}>
-          <Mascot emotion="empty" size="hero" />
+          <Mascot emotion="reading" size="hero" />
           <h2 style={{ marginBottom: "1rem", marginTop: "1rem" }}>{t("dictionary.empty")}</h2>
           <p style={{ color: "var(--pico-muted-color)" }}>{t("dictionary.empty_hint")}</p>
           <Link to="/add" role="button">{t("dictionary.add_word")}</Link>

@@ -13,6 +13,9 @@ const EMOTIONS: MascotEmotion[] = [
   "tired",
   "celebrate",
   "empty",
+  "training",
+  "reading",
+  "mail",
 ];
 
 describe("Mascot", () => {

@@ -7,7 +7,10 @@ export type MascotEmotion =
   | "sleeping"
   | "tired"
   | "celebrate"
-  | "empty";
+  | "empty"
+  | "training"
+  | "reading"
+  | "mail";
 
 export type MascotSize = "hero" | "inline" | "micro";
 

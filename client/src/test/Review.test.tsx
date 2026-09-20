@@ -1323,7 +1323,7 @@ describe("Review", () => {
 
     // Start screen
     await waitFor(() => {
-      expect(screen.getByTestId("mascot")).toHaveAttribute("src", "/mascot/base.webp");
+      expect(screen.getByTestId("mascot")).toHaveAttribute("src", "/mascot/training.webp");
     });
 
     await user.click(screen.getByRole("button", { name: "Start training" }));

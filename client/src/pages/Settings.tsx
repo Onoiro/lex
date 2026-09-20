@@ -407,7 +407,8 @@ export function Settings() {
           💬 {t("settings.feedback")}
         </summary>
         <article style={{ marginTop: "1rem" }}>
-          <p style={{ color: "var(--pico-muted-color)", marginBottom: "1rem" }}>
+          <Mascot emotion="mail" size="inline" animated={false} />
+          <p style={{ color: "var(--pico-muted-color)", marginBottom: "1rem", marginTop: "0.75rem" }}>
             {t("settings.feedback_description")}
           </p>
 

@@ -26,7 +26,7 @@ describe("Dictionary", () => {
     });
 
     // Empty-state mascot
-    expect(screen.getByTestId("mascot")).toHaveAttribute("src", "/mascot/empty.webp");
+    expect(screen.getByTestId("mascot")).toHaveAttribute("src", "/mascot/reading.webp");
   });
 
   it("renders word count in heading", async () => {
