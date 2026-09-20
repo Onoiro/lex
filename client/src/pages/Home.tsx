@@ -59,16 +59,24 @@ export function Home() {
       <div className="home-hero">
         <Mascot emotion="base" size="hero" />
         <hgroup style={{ textAlign: "left", marginBottom: 0 }}>
-          <h1>{t("index.title")}</h1>
-          <p>{t("index.subtitle")}</p>
+          <h1>
+            {t("index.title")}
+            <small
+              style={{
+                display: "block",
+                fontSize: "1.4rem",
+                fontWeight: 500,
+                color: "var(--pico-muted-color)",
+              }}
+            >
+              {t("index.title_tail")}
+            </small>
+          </h1>
+          <p style={{ fontSize: "0.9rem", color: "var(--pico-muted-color)" }}>
+            {t("index.subtitle_detail", { count: langCount ?? "..." })}
+          </p>
         </hgroup>
       </div>
-      <p
-        className="home-hero-detail"
-        style={{ textAlign: "center", fontSize: "0.9rem", color: "var(--pico-muted-color)", marginBottom: "3rem" }}
-      >
-        {t("index.subtitle_detail", { count: langCount ?? "..." })}
-      </p>
 
       <div className="grid">
         <article>

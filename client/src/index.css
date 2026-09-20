@@ -646,29 +646,26 @@ nav strong {
   -webkit-user-drag: none;
 }
 
-/* Home hero: mascot next to the title on wide screens,
-   stacked above it on narrow ones */
+/* Home hero: mascot to the left of all the text on wide screens;
+   on narrow screens the mascot stays at the left screen edge and
+   the text wraps below it, also starting from the left edge */
 .home-hero {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  justify-content: center;
   gap: 1.25rem;
   margin-top: 2rem;
-  margin-bottom: 1rem;
+  margin-bottom: 3rem;
 }
 
-.home-hero-detail {
-  margin-bottom: 3rem;
+.home-hero hgroup {
+  flex: 1;
+  min-width: 0;
 }
 
 @media (max-width: 576px) {
   .home-hero {
-    flex-direction: column;
     gap: 0.75rem;
-  }
-
-  .home-hero hgroup {
-    text-align: center;
   }
 }
 

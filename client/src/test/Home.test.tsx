@@ -16,8 +16,8 @@ describe("Home", () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getByText("Lex - translator and vocabulary trainer")).toBeInTheDocument();
-    expect(screen.getByText("Your personal translator and vocabulary trainer.")).toBeInTheDocument();
+    expect(screen.getByText("Lex")).toBeInTheDocument();
+    expect(screen.getByText("translator and vocabulary trainer")).toBeInTheDocument();
   });
 
   it("renders translate card with link to /add", () => {
