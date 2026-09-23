@@ -5,7 +5,7 @@ Lex — local-first приложение-переводчик и помощни�
 
 **Демо:** [lex.2-way.ru](https://lex.2-way.ru)
 
-**Текущая версия:** 1.25.0
+**Текущая версия:** 1.26.0
 
 ## Архитектура
 
@@ -134,7 +134,10 @@ make d-run    # docker compose up -d
 │   │   ├── cache.py           # SQLite-backed caches (SqliteCache/TextCache/TranslationCache)
 │   │   ├── tts.py             # Speechkin TTS client
 │   │   ├── dictionary.py      # Yandex Dictionary corpus client
-│   │   └── feedback.py        # Telegram Bot feedback service
+│   │   ├── feedback.py        # Telegram Bot feedback service
+│   │   ├── metrics.py         # Counters + daily SQLite persistence (metrics_daily/metrics_uniques)
+│   │   ├── notifier.py        # Telegram alerts (dedup + cooldown, fire-and-forget)
+│   │   └── report.py          # Daily report text builder + 00:05 UTC scheduling helpers
 │   ├── security/
 │   │   ├── rate_limiter.py    # Rate limiting
 │   │   ├── quota.py           # Daily char quotas (device/IP/anon, SQLite-backed) + global budget
@@ -143,14 +146,18 @@ make d-run    # docker compose up -d
 │   ├── Dockerfile
 │   └── requirements.txt
 ├── tests/                     # Proxy tests (pytest)
-│   ├── conftest.py
+│   ├── conftest.py            # SQLITE_CACHE_PATH → tmp, чистит YANDEX_* и TELEGRAM_* env
 │   ├── test_proxy.py
 │   ├── test_translator.py
 │   ├── test_cache.py
 │   ├── test_rate_limiter.py
 │   ├── test_tts.py
 │   ├── test_dictionary.py
-│   └── test_feedback.py
+│   ├── test_feedback.py
+│   ├── test_metrics.py
+│   ├── test_notifier.py
+│   ├── test_alerts.py
+│   └── test_report.py
 ├── pyproject.toml             # Python project config (uv, ruff)
 ├── Makefile                   # Build/run scripts
 ├── docker-compose.yml         # Docker (proxy)
@@ -176,8 +183,8 @@ make d-run    # docker compose up -d
 - **Импорт словаря (hardening):** лимиты в `domain/validators.ts` — `MAX_IMPORT_FILE_SIZE` (10 МБ, проверка `file.size` ДО чтения файла) и `MAX_IMPORT_ENTRIES` (10 000, проверка после JSON.parse). Каждая запись проходит `sanitizeImportEntry` (domain/validators.ts): word/translation/note — через существующие валидаторы (невалидные → запись пропускается, счётчик `invalid`), числовые поля — санитизация с clamp/дефолтами (interval ≤ 3650, счётчики ≤ 1e6, times ≤ 3600 или null), языки/направление — дефолты при мусоре. `importWords` (wordRepository.ts): одна транзакция `db.transaction("rw", ...)` + `bulkAdd`, дедуп через Set (существующие слова одним `toArray()` + дубликаты внутри файла), результат `{imported, skipped, invalid}`. UI (Dictionary.tsx): сообщения `import_too_large` / `import_too_many`, в `import_success` показываются все три числа.
 
 ### Proxy
-- **Proxy:** FastAPI, порт 8004. Скрывает Yandex API key. Rate limiting. Дневные символьные квоты (device/IP/anon, персистентные). Глобальный дневной бюджет. Проверка X-App-Token. CORS whitelist. Кэш переводов. TTS (text-to-speech). Feedback (Telegram Bot).
-- Эндпоинты: POST `/translate` (body: word, source_lang, target_lang), GET `/languages`, POST `/tts`, POST `/dictionary` (body: word, lang_pair), POST `/feedback` (body: category, message, contact), GET `/`, GET `/cache/stats`, GET `/tts/cache/stats`, GET `/dictionary/cache/stats`.
+- **Proxy:** FastAPI, порт 8004. Скрывает Yandex API key. Rate limiting. Дневные символьные квоты (device/IP/anon, персистентные). Глобальный дневной бюджет. Проверка X-App-Token. CORS whitelist. Кэш переводов. TTS (text-to-speech). Feedback (Telegram Bot). Метрики, алерты и ежедневный отчёт (Telegram).
+- Эндпоинты: POST `/translate` (body: word, source_lang, target_lang), GET `/languages`, POST `/tts`, POST `/dictionary` (body: word, lang_pair), POST `/feedback` (body: category, message, contact), GET `/`, GET `/cache/stats`, GET `/tts/cache/stats`, GET `/dictionary/cache/stats`, GET `/quota`, GET `/metrics`.
 - **Лимиты использования:** максимум 500 символов на запрос (`/translate`, `/tts`) — превышение → 400 `{"error": "text_too_long", "max_length": 500}`. Дневные квоты трёхуровневые, отдельные для перевода и TTS, персистентные (SQLite-таблица `quota_usage` в той же БД, что и кэши): device-квота 500 симв/день на `X-Device-Id` (основная), IP-квота 3000 симв/день (антибот: списывается у ВСЕХ запросов с device ID — 6 устройств по 500 одновременно, семья/офис за одним NAT не блокируются), anon-квота 100 симв/день на IP для запросов БЕЗ device ID (стимул обновиться). Лимиты через env `DEVICE_DAILY_CHAR_LIMIT` / `IP_DAILY_CHAR_LIMIT` / `ANON_DAILY_CHAR_LIMIT` (на переходный период можно поднять `ANON_DAILY_CHAR_LIMIT=500`). Превышение → 429 `{"error": "daily_quota_exceeded"}`. Порядок проверок после кэша: global budget → device-квота → IP/anon-квота. При недоступной БД — in-memory fallback (квота работает, но не переживает рестарт). Классы `PersistentQuotaStore` (атомарный условный UPSERT, смена дня, graceful degradation) и `PersistentDailyQuota` в `proxy/security/quota.py`.
 - **Device ID:** клиент генерирует UUID v4 один раз (`crypto.randomUUID`) и хранит в localStorage (`lex_device_id`), шлёт заголовком `X-Device-Id` через `proxyHeaders()` (модуль `services/deviceId.ts`). Пустой/отсутствующий = анонимный клиент (anon-квота). При очистке данных сайта устройство становится «новым» — приемлемый компромисс для Free-тарифа (биллинг B-8 привяжет Pro к server-side валидации покупок). Очистка localStorage недоступна → `getDeviceId()` возвращает пустую строку (заголовок не шлётся). Упомянут в Политике конфиденциальности (раздел «Идентификатор устройства»).
 - **Глобальный дневной бюджет** на всех пользователей суммарно (translate + tts вместе): класс `GlobalBudget` в `proxy/security/quota.py`, лимит через env `GLOBAL_DAILY_CHAR_LIMIT` (дефолт 300 000 симв/день) — превышение → 503 `{"error": "service_overloaded"}`. Кэши (серверные и клиентский TTS Cache API) не расходуют квоты и глобальный бюджет — лимитируется только фактический вызов Yandex API (в `/translate` и `/tts` кэш проверяется до списания). `/dictionary` — бесплатный эндпоинт, без квот.
@@ -186,7 +193,8 @@ make d-run    # docker compose up -d
 - **App token (X-App-Token):** все эндпоинты кроме `GET /` (health-check) требуют заголовок `X-App-Token` (класс `AppTokenAuth` в `proxy/security/token_auth.py`). Токены через env `APP_TOKENS` (список через запятую, для ротации). Пустой/не заданный `APP_TOKENS` = проверка выключена (обратная совместимость при выкате). Отсутствие/несовпадение токена → 403 `{"error": "unauthorized"}`. Токен — фильтр от скрипт-киди, не защита от целевой атаки (токен извлекается из APK); настоящая защита — квоты и бюджет.
 - **Version gate (X-App-Version):** клиент шлёт версию приложения (semver) в заголовке `X-App-Version` — инжектится при сборке из `client/package.json` через `define` в `vite.config.ts` и `vitest.config.ts` (`__APP_VERSION__`). Прокси сравнивает с env `MIN_APP_VERSION` (класс `VersionGate` в `proxy/security/version_gate.py`). Пустой/не заданный `MIN_APP_VERSION` = проверка выключена (тот же паттерн выката, что у APP_TOKENS: прокси без проверки → релиз клиента с заголовком → включить проверку на сервере). Устаревшая/отсутствующая/невалидная версия → 426 `{"error": "update_required", "min_version": "..."}`. Клиент: при 426 все 4 сервиса вызывают `notifyUpdateRequired()` из `services/updateGate.ts`, App рендерит полноэкранную заглушку `components/UpdateScreen.tsx` — кнопка «Перезагрузить» (для PWA) + ссылка на магазин/загрузку в зависимости от платформы (Android: `VITE_RUSTORE_URL`, web/desktop: `VITE_DOWNLOAD_URL`; пустые env = ссылка скрыта; i18n-ключи `update.*`). Порядок проверки в middleware: токен → версия.
 - **CORS whitelist:** env `ALLOWED_ORIGINS` (через запятую); если не задан — дефолт: `https://lex.2-way.ru`, `https://localhost` (Capacitor Android), `capacitor://localhost` (iOS), `http://tauri.localhost` (Tauri Win/Linux), `tauri://localhost` (Tauri macOS). Чужие origin не получают CORS-заголовков (браузер блокирует ответ). `allow_headers`: Content-Type, X-App-Token, X-Device-Id. Порядок middleware: токен-мидлварь добавлена первой, CORS — второй (CORS вешает заголовки и на 403-ответы).
-- **Персистентные кэши (SQLite):** все 3 серверных кэша и персистентные квоты хранятся в одной SQLite БД (путь через env `SQLITE_CACHE_PATH`, дефолт `data/cache.db`): переводы (TTL 7 дней, таблица `translations`), TTS-аудио (до 5000 записей, eviction по времени вставки, таблица `tts_audio`), примеры словаря (TTL 30 дней, таблица `dictionary`), квоты (таблица `quota_usage`). База переживает рестарт контейнера — повторный перевод того же слова не тратит квоту и бюджет. Классы в `proxy/services/cache.py`: `SqliteCache` (bytes), `TextCache` (UTF-8 текст), `TranslationCache` (совместимое имя, таблица переводов); `SpeechCache` в `tts.py` — подкласс `SqliteCache`. Соединение открывается лениво (при первом обращении), защищено отдельным локом инициализации; при недоступной БД кэш деградирует до промахов без исключений. В Docker БД лежит в volume `lex-cache` → `/app/data` (см. `docker-compose.yml`), каталог создаётся и передаётся пользователю `lex` в Dockerfile.
+- **Персистентные кэши (SQLite):** все 3 серверных кэша и персистентные квоты хранятся в одной SQLite БД (путь через env `SQLITE_CACHE_PATH`, дефолт `data/cache.db`): переводы (TTL 7 дней, таблица `translations`), TTS-аудио (до 5000 записей, eviction по времени вставки, таблица `tts_audio`), примеры словаря (TTL 30 дней, таблица `dictionary`), квоты (таблица `quota_usage`), метрики (таблицы `metrics_daily`, `metrics_uniques`). База переживает рестарт контейнера — повторный перевод того же слова не тратит квоту и бюджет. Классы в `proxy/services/cache.py`: `SqliteCache` (bytes), `TextCache` (UTF-8 текст), `TranslationCache` (совместимое имя, таблица переводов); `SpeechCache` в `tts.py` — подкласс `SqliteCache`. Соединение открывается лениво (при первом обращении), защищено отдельным локом инициализации; при недоступной БД кэш деградирует до промахов без исключений. В Docker БД лежит в volume `lex-cache` → `/app/data` (см. `docker-compose.yml`), каталог создаётся и передаётся пользователю `lex` в Dockerfile.
+- **Мониторинг и алерты (Telegram):** лёгкая наблюдаемость без внешних зависимостей — счётчики в памяти + дневная персистентность в ту же SQLite БД (`proxy/services/metrics.py`, синглтон `metrics`), алерты и отчёт через уже подключённого Telegram-бота (`TELEGRAM_BOT_TOKEN`/`TELEGRAM_CHAT_ID`, как feedback). Контент запросов НЕ логируется — только длины, коды ответов, счётчики (privacy). Алерты fire-and-forget (`proxy/services/notifier.py`: `notify()` — синхронная дедуп-проверка + фоновая отправка; сбой отправки не влияет на ответы): бюджет ≥ 80% (дедуп на 10%-бакет в день), бюджет исчерпан/503 (1 раз/день), всплески 502/403/426/429 за UTC-часовой бакет (пороги env `ALERT_HOURLY_*`, дедуп на бакет), SQLite-fallback (1 раз/день, хук `_note_db_fallback` в `cache.py`/`quota.py` при `_init_failed`). Личные квоты пользователей (500/день) НЕ алертятся — норма. Ежедневный отчёт (`proxy/services/report.py`): фоновая asyncio-задача в lifespan FastAPI, 00:05 UTC за прошедший UTC-день (траты translate/TTS с ↑/↓ к позавчера, uniques, запросы по эндпоинтам, cache hit rate, ошибки, feedback); не стартует без Telegram-конфигурации. `GET /metrics` (token-protected) — счётчики за сегодня UTC. Пустые `TELEGRAM_*` = алерты и отчёт выключены. Готча: conftest.py чистит `TELEGRAM_*` — иначе локальные тесты с реальным `.env` шлют настоящие алерты.
 - Самодостаточный модуль: все зависимости внутри `proxy/` (services/, security/, languages.py).
 - **Линтинг:** `uv run ruff check proxy/` — без ошибок.
 - **Тестирование:** `uv run pytest tests/ -v`.
@@ -209,7 +217,7 @@ make d-run    # docker compose up -d
 - Справка: на стартовом экране Повтора — сворачиваемый блок «Как это работает?» с объяснением алгоритма простым языком (i18n-ключи review.how_it_works_*).
 
 ## Дальнейшие планы
-- **Бэклог подготовки к маркетплейсам:** `.koda/backlog.md` — задачи P0–P3 (глобальный бюджет ✅, CORS+токен ✅, version gate ✅, SQLite-кэши ✅, device ID ✅, индикатор квоты ✅, биллинг RuStore, мониторинг). Брать задачи по порядку приоритета; перед реализацией — план в `.koda/plans/`.
+- **Бэклог подготовки к маркетплейсам:** `.koda/backlog.md` — задачи P0–P3 (глобальный бюджет ✅, CORS+токен ✅, version gate ✅, SQLite-кэши ✅, device ID ✅, индикатор квоты ✅, телеметрия затрат ✅ (мониторинг/алерты/отчёт), биллинг RuStore, мониторинг аптайма). Брать задачи по порядку приоритета; перед реализацией — план в `.koda/plans/`.
 - Пагинация по словарю при росте
 - CI для кросс-компиляции Tauri (Windows MSI/NSIS, macOS DMG)
 - График активности за 14 дней на странице Повтор (данные dailyStats уже есть)

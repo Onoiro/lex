@@ -151,6 +151,7 @@ class PersistentQuotaStore:
             except (sqlite3.Error, OSError):
                 self._init_failed = True
                 self._conn = None
+                _note_db_fallback()
         return self._conn
 
     def try_consume(self, key: str, day: str, chars: int, limit: int) -> bool:
@@ -267,3 +268,17 @@ class PersistentDailyQuota:
         """Очистить всё состояние (для тестов)."""
         self.store.clear()
         self._fallback.reset()
+
+
+def _note_db_fallback() -> None:
+    """Сообщить метрикам, что SQLite стала недоступна (алерт раз в день).
+
+    Импортируется лениво, чтобы избежать циклического импорта
+    (metrics импортирует cache).
+    """
+    try:
+        from proxy.services.metrics import metrics
+
+        metrics.note_db_fallback()
+    except Exception:
+        pass  # Метрики никогда не должны ломать квоты.

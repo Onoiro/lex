@@ -123,6 +123,21 @@ All three server-side caches are backed by a single SQLite database (path via `S
 
 The DB survives proxy/container restarts, so the same word is translated via the Yandex API only once per server lifetime. In Docker the DB lives in the `lex-cache` volume mounted at `/app/data`. If the DB is unavailable, caches degrade gracefully to misses (no crashes, just API calls).
 
+### Monitoring, alerts and daily report (proxy)
+
+Lightweight observability without external dependencies (no Sentry/Grafana): in-memory counters + daily persistence to the same SQLite DB + Telegram notifications via the already configured bot (`TELEGRAM_BOT_TOKEN` / `TELEGRAM_CHAT_ID`, same as feedback). No request content is ever logged — only lengths, status codes and counts.
+
+- **Metrics** (`proxy/services/metrics.py`): request counts per endpoint, status codes, spent chars (translate/TTS), cache hits, unique devices/IPs. Daily aggregates are persisted in the `metrics_daily` / `metrics_uniques` tables (same DB, same volume) and survive restarts.
+- **Immediate alerts** (`proxy/services/notifier.py`, fire-and-forget, deduplicated to avoid flooding):
+  - global budget ≥ 80% used (once per 10% bucket per day) and exhausted/503 (once per day);
+  - error spikes per UTC hour bucket: ≥ 5× 502, ≥ 100× 403, ≥ 50× 426, ≥ 100× 429 (once per bucket);
+  - SQLite unavailable (caches/quotas degraded to in-memory, once per day).
+  - Thresholds via env: `ALERT_BUDGET_WARN_PERCENT` (default 80), `ALERT_HOURLY_502` (5), `ALERT_HOURLY_403` (100), `ALERT_HOURLY_426` (50), `ALERT_HOURLY_429` (100).
+- **Daily report** (`proxy/services/report.py`): sent at 00:05 UTC for the previous UTC day — spend (translate/TTS, % of budget, ↑/↓ vs the day before), unique devices/IPs, requests per endpoint, cache hit rates, error counts, feedback received. Runs as a background task in the FastAPI lifespan; not started when Telegram is not configured.
+- **`GET /metrics`** (token-protected): today's counters as JSON for debugging and external monitoring via curl.
+
+Empty `TELEGRAM_BOT_TOKEN` / `TELEGRAM_CHAT_ID` disables all alerts and the daily report (the proxy keeps working normally).
+
 ## Quick Start
 
 ### Prerequisites

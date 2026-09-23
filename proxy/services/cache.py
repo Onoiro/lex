@@ -87,6 +87,7 @@ class SqliteCache:
             except (sqlite3.Error, OSError):
                 self._init_failed = True
                 self._conn = None
+                _note_db_fallback()
         return self._conn
 
     def _is_expired(self, expires_at: Optional[float]) -> bool:
@@ -225,3 +226,16 @@ class TranslationCache(TextCache):
 
 # Global cache instance for translations (7 days TTL)
 translation_cache = TranslationCache(ttl_seconds=86400 * 7)
+
+
+def _note_db_fallback() -> None:
+    """Notify metrics that SQLite became unavailable (alert once per day).
+
+    Imported lazily to avoid a circular import (metrics imports cache).
+    """
+    try:
+        from proxy.services.metrics import metrics
+
+        metrics.note_db_fallback()
+    except Exception:
+        pass  # Metrics must never break the cache.
