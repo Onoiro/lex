@@ -322,3 +322,8 @@ This project may be used for personal or non-commercial purposes.
 ## Contact
 
 Questions or feedback? Email: donoriono@gmail.com
+
+## Monitoring guide
+
+Explanation of the daily Telegram report format, error codes and alerts:
+see [docs/metrics-guide.md](docs/metrics-guide.md).
