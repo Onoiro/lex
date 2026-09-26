@@ -41,7 +41,7 @@ export function Mascot({ emotion, size, animated = true }: MascotProps) {
       aria-hidden="true"
       data-testid="mascot"
       loading={size === "hero" ? "eager" : "lazy"}
-      className={`mascot${animated ? " mascot-bounce" : ""}`}
+      className={`mascot mascot-${size}${animated ? " mascot-bounce" : ""}`}
       style={{ width: SIZES[size], height: SIZES[size] }}
     />
   );
