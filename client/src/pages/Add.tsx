@@ -450,6 +450,22 @@ export function Add() {
         <Mascot emotion="translating" size="hero" />
         <hgroup style={{ textAlign: "left", marginBottom: 0 }}>
           <h1>{editing ? t("add.edit_heading") : t("add.heading")}</h1>
+          {/* Daily quota indicator (hidden when quota is unknown) */}
+          {quota && (
+            <small
+              data-testid="quota-indicator"
+              style={{
+                display: "block",
+                color: "var(--pico-muted-color)",
+                fontSize: "0.75rem",
+                marginTop: "0.25rem",
+              }}
+            >
+              {t("quota.translate_line", { used: quota.translate.used, limit: quota.translate.limit })}
+              {" · "}
+              {t("quota.tts_line", { used: quota.tts.used, limit: quota.tts.limit })}
+            </small>
+          )}
         </hgroup>
       </div>
 
@@ -542,25 +558,6 @@ export function Add() {
             ))}
           </select>
         </div>
-
-        {/* Daily quota indicator (hidden when quota is unknown) */}
-        {quota && (
-          <small
-            data-testid="quota-indicator"
-            style={{
-              display: "block",
-              textAlign: "center",
-              marginBottom: "1rem",
-              marginTop: "-0.75rem",
-              color: "var(--pico-muted-color)",
-              fontSize: "0.75rem",
-            }}
-          >
-            {t("quota.translate_line", { used: quota.translate.used, limit: quota.translate.limit })}
-            {" · "}
-            {t("quota.tts_line", { used: quota.tts.used, limit: quota.tts.limit })}
-          </small>
-        )}
 
         <form onSubmit={handleSave} style={{ marginBottom: 0 }}>
           {/* Word input */}
