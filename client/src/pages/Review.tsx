@@ -470,13 +470,13 @@ export function Review() {
     return (
       <div style={{ padding: "3rem 1rem" }}>
         <div className="page-hero">
-          <Mascot emotion="training" size="hero" />
           <hgroup style={{ textAlign: "left", marginBottom: 0 }}>
             <h2>{t("review.heading")}</h2>
             <p style={{ color: "var(--pico-muted-color)" }}>
               {t("review.queue", { total_due: queueSize })}
             </p>
           </hgroup>
+          <Mascot emotion="training" size="hero" />
         </div>
         <div style={{ textAlign: "center", marginTop: "2rem" }}>
           <button
