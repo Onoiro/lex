@@ -170,7 +170,12 @@ export function Settings() {
 
   return (
     <>
-      <h2 style={{ textAlign: "center" }}>{t("settings.heading")}</h2>
+      <div className="page-hero">
+        <Mascot emotion="sliders" size="hero" />
+        <hgroup style={{ textAlign: "left", marginBottom: 0 }}>
+          <h2 style={{ marginBottom: 0 }}>{t("settings.heading")}</h2>
+        </hgroup>
+      </div>
 
       {saved && (
         <article

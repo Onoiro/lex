@@ -474,7 +474,7 @@ describe("Add", () => {
     });
 
     // Tired mascot appears in the quota message
-    expect(screen.getByTestId("mascot")).toHaveAttribute("src", "/mascot/tired.webp");
+    expect(screen.getAllByTestId("mascot").some((el) => el.getAttribute("src") === "/mascot/tired.webp")).toBe(true);
 
     const callsAfterQuota = vi.mocked(translateWord).mock.calls.length;
 

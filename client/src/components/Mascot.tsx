@@ -10,7 +10,9 @@ export type MascotEmotion =
   | "empty"
   | "training"
   | "reading"
-  | "mail";
+  | "mail"
+  | "translating"
+  | "sliders";
 
 export type MascotSize = "hero" | "inline" | "micro";
 

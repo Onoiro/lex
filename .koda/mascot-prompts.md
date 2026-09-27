@@ -214,6 +214,38 @@ no text.
 - Если сердечко покажется сентиментальным, альтернатива:
   `...small speech bubble with three dots above head` («я слушаю»).
 
+**translating — перевод (страница Add):**
+```
+...standing behind a small round podium, holding a small blank card in one wing, other wing gesturing sideways as if handing something over, confident friendly smile, two tiny stacked books on the podium.
+```
+
+- Концепция: «беру слово здесь — отдаю перевод там» (жест «туда-сюда»).
+- Карточка `blank`, книжки без надписей — иначе модель попытается
+  написать текст. Если текст всё же появляется, усилить:
+  `no letters, no numbers`.
+- Если сцена «перегружена» — убрать `two tiny stacked books on the
+  podium`: трибуны + карточки достаточно.
+
+**sliders — настройки (страница Settings):**
+```
+...standing in front of a simple control panel with three horizontal slider lines, one wing touching the middle slider knob, other wing presenting the panel, pleased helpful smile.
+```
+
+- Панель — простой скруглённый прямоугольник, слайдеры — три линии
+  с круглыми бегунками, без цифр и иконок.
+- Если панель выглядит слишком «технически», альтернатива:
+  `...adjusting a big round dial with one wing, other wing on hip, pleased smile`.
+
+### Советы для Seedream / Gemini (nano banana)
+
+- Модель: Seedream 5.0 pro, Gemini 2.5 Flash Image (nano banana) —
+  давать картинку базового эталона как reference, промпт = одна строка
+  сцены (каркас + дописка), без длинных описаний цвета.
+- Атрибуты сцен (карточка, книжки, панель) описывать простыми формами;
+  при появлении текста на них дописывать `no letters, no numbers`.
+- Консистентность проверять по чек-листу ниже; при дрейфе цветов —
+  понижать creative strength / использовать тот же seed.
+
 ### Чек-лист консистентности эмоций
 
 - [ ] Очки: большие, круглые, ЧЁРНАЯ оправа — без изменений.

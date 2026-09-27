@@ -446,9 +446,12 @@ export function Add() {
   return (
     <>
       <OfflineIndicator />
-      <hgroup style={{ textAlign: "center", marginBottom: "1.5rem", marginTop: "1rem" }}>
-        <h1>{editing ? t("add.edit_heading") : t("add.heading")}</h1>
-      </hgroup>
+      <div className="page-hero">
+        <Mascot emotion="translating" size="hero" />
+        <hgroup style={{ textAlign: "left", marginBottom: 0 }}>
+          <h1>{editing ? t("add.edit_heading") : t("add.heading")}</h1>
+        </hgroup>
+      </div>
 
       {langsChanged && (
         <article
