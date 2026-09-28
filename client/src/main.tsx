@@ -59,8 +59,8 @@ async function setupNativePlugins() {
   if (!Capacitor.isNativePlatform()) return;
 
   try {
+    // Status bar color follows the active skin via applyTheme()
     await StatusBar.setStyle({ style: Style.Default });
-    await StatusBar.setBackgroundColor({ color: "#1095C1" });
   } catch {
     // StatusBar not available on this platform
   }
