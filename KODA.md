@@ -5,7 +5,7 @@ Lex — local-first приложение-переводчик и помощни�
 
 **Демо:** [lex.2-way.ru](https://lex.2-way.ru)
 
-**Текущая версия:** 1.27.2
+**Текущая версия:** 1.28.0
 
 ## Архитектура
 
@@ -49,7 +49,7 @@ Lex — local-first приложение-переводчик и помощни�
 - **Фреймворк:** React 19
 - **Сборка:** Vite 7
 - **Хранилище:** Dexie.js (IndexedDB)
-- **Стили:** Pico CSS (через npm, подход без классов)
+- **Стили:** Pico CSS + собственные классы `lex-*` (styles/tokens.css + styles/components.css), self-hosted шрифт Manrope, inline SVG-иконки (components/icons.tsx)
 - **PWA:** vite-plugin-pwa (service worker, web manifest, offline)
 - **Тестирование:** Vitest + jsdom + fake-indexeddb
 - **Линтинг:** ESLint 9 + typescript-eslint
@@ -108,12 +108,13 @@ make d-run    # docker compose up -d
 .
 ├── client/                    # Local-first клиентское приложение
 │   ├── src/
-│   │   ├── components/        # Layout, OfflineIndicator, UpdateScreen, Mascot
+│   │   ├── components/        # Layout, OfflineIndicator, UpdateScreen, Mascot, icons.tsx
 │   │   ├── data/              # db.ts (Dexie), wordRepository, settingsRepository, dailyStatsRepository
 │   │   ├── domain/            # srs.ts (SM-2), stats.ts, validators.ts, dictionarySort.ts, dailyStats.ts
 │   │   ├── i18n/              # index.ts, languages.ts, en.json, ru.json
 │   │   ├── pages/             # Home, Add, Review, Dictionary, Settings
 │   │   ├── services/          # translateApi.ts (proxy client), ttsApi.ts, dictionaryApi.ts, feedbackApi.ts, proxyClient.ts, theme.ts
+│   │   ├── styles/            # tokens.css (токены + 12 скинов), components.css (lex-* классы)
 │   │   ├── test/              # Component and service tests (Vitest)
 │   │   └── types/             # Word, LanguageSettings, DailyStats
 │   │   └── main.tsx           # App entry, SW registration, native plugins
@@ -171,8 +172,13 @@ make d-run    # docker compose up -d
 - **Тестирование:** Vitest + fake-indexeddb. Все новые функции покрываются тестами.
 - **Линтинг:** `npx eslint .` — 0 ошибок. Предупреждения — некритичные (react-refresh, react-hooks/exhaustive-deps).
 - **Комментарии:** на простом английском, понятном non-native speakers.
-- **Стиль:** Pico CSS (без классов), Material Design принципы.
-- **Дизайн-токены:** визуальный слой Lex поверх Pico объявлен в начале client/src/index.css (блок :root перед скинами): --lex-radius-sm/md/lg/pill (6/12/16px/pill), --lex-shadow-1/2, --lex-press. Базовые Pico-токены переопределены: --pico-border-radius: 0.5rem, --pico-outline-width: 0.125rem. Правило: радиусы и тени только через токены, хардкод border-radius/box-shadow в компонентах запрещён. Карточки (article, flip-card) — lg, основные кнопки — md (12px, не pill — решение пользователя), outline/secondary — базовый радиус. Каждый из 12 блоков скинов задаёт --pico-card-sectioning-background-color, --pico-form-element-background-color, --pico-form-element-border-color, --pico-box-shadow (в dark — none); новый скин обязан определять все четыре. Press-фидбек (:active → --lex-press) и переходы — только под prefers-reduced-motion: no-preference.
+- **Стиль:** Pico CSS + классы `lex-*`, Material Design принципы. Inline-стили в JSX запрещены кроме динамических значений (цвет таймера, размеры Mascot, цвета свотчей скина) — всё остальное в `client/src/styles/components.css`.
+- **Структура стилей:** `src/index.css` — только @import (tokens.css, components.css) + layout/flip-card/mascot/heroes/media. `src/styles/tokens.css` — токены (`--lex-radius-*`, `--lex-shadow-*`, `--lex-press`, шкала типографики `--lex-text-xs..2xl`, `--pico-font-family`) + 12 блоков скинов. `src/styles/components.css` — все переиспользуемые классы (`lex-card`, `lex-alert`, `lex-chip`, `lex-icon-btn`, `lex-field*`, `lex-toolbar`, `lex-table-wrap` (ширины колонок через nth-child), `lex-section`, `lex-details`, `lex-swatches`, `bottom-nav` floating pill и т.д.) + helpers `lex-mt-1/lex-mt-2/lex-mb-0/lex-ml-1`.
+- **Шрифт:** self-hosted `@fontsource-variable/manrope` (только ось wght, cyrillic+latin), импорт `@fontsource-variable/manrope/wght.css` в `main.tsx` ДО Pico. woff2 попадают в precache SW (globPatterns уже включает `**/*.woff2`) — офлайн типографика сохраняется.
+- **Иконки:** `components/icons.tsx` — 25 inline SVG (stroke=currentColor, 24x24, strokeWidth 1.8, aria-hidden, props size/className), без npm-пакетов. Эмодзи-иконки в JSX/i18n запрещены; текстовые маркеры статистики (⚡ 💡 🔥) и 🎉 в review.empty — исключение (часть текста). Доступное имя кнопок-иконок — через aria-label/title.
+- **Bottom-nav (mobile):** floating pill — класс `.bottom-nav` в components.css (left/right 0.75rem, bottom calc(0.75rem + env(safe-area-inset-bottom)), radius pill, backdrop-filter с непрозрачным fallback, `.active` pill-подсветка). `main` имеет padding-bottom `calc(5.5rem + env(safe-area-inset-bottom))`. В index.html `viewport-fit=cover` (pinch zoom разрешён).
+- **theme-color / статус-бар:** `applyTheme()` (services/theme.ts) после установки data-theme/data-skin читает вычисленный `--pico-primary-background` и обновляет meta theme-color и `StatusBar.setBackgroundColor` (Capacitor). Хардкод цвета статуса-бара в main.tsx запрещён.
+- **Дизайн-токены:** визуальный слой Lex поверх Pico объявлен в `client/src/styles/tokens.css` (блок :root перед скинами): --lex-radius-sm/md/lg/pill (6/12/16px/pill), --lex-shadow-1/2, --lex-press. Базовые Pico-токены переопределены: --pico-border-radius: 0.5rem, --pico-outline-width: 0.125rem. Правило: радиусы и тени только через токены, хардкод border-radius/box-shadow в компонентах запрещён. Карточки (article, flip-card) — lg, основные кнопки — md (12px, не pill — решение пользователя), outline/secondary — базовый радиус. Каждый из 12 блоков скинов задаёт --pico-card-sectioning-background-color, --pico-form-element-background-color, --pico-form-element-border-color, --pico-box-shadow (в dark — none); новый скин обязан определять все четыре. Press-фидбек (:active → --lex-press) и переходы — только под prefers-reduced-motion: no-preference.
 - **i18n:** все UI-строки через `t()` из `@/i18n`. Переводы в `en.json` и `ru.json`.
 - **Маскот:** декоративный попугай (`components/Mascot.tsx`, `aria-hidden`, без текстов). Ассеты: `client/public/mascot/*.webp` — 14 эмоций/сцен (base, happy, sad, hint, thinking, sleeping, tired, celebrate, empty, training, reading, mail, translating, sliders), ~30 КБ каждая, в precache SW. Три размера: hero (140px), inline (48px), micro (32px). Анимация — CSS bounce при смене эмоции (перезапуск через `key={emotion}`), уважает `prefers-reduced-motion`; в тёмной теме — лёгкий drop-shadow для читаемости силуэта. Правило дозированности: не более одного маскота в поле зрения. Паттерн «маскот рядом с заголовком» (класс `page-hero`, как `.home-hero` на главной): маскот слева от заголовка — Home (hero base), Dictionary (hero reading, пустое состояние — отдельный hero empty), Add (hero translating); маскот справа от заголовка (образ «смотрит влево») — Review (hero training на старте), Settings (hero sliders). Settings: в details-разделах «Лимиты» (inline tired) и «Feedback» (inline mail) — класс `section-hero`: маскот слева, текст справа на одном уровне. Остальной маппинг: Home — hero base; Add — thinking при автопереводе, tired в сообщении о лимите; Review — micro над карточкой (thinking → hint → happy/sad), sleeping на паузе, celebrate на done, empty в пустом состоянии; OfflineIndicator — inline sleeping; UpdateScreen — hero tired.
 - **PWA:** vite-plugin-pwa генерирует SW. Runtime cache для `/translate`, `/languages` и `/dictionary` (NetworkFirst).
@@ -224,4 +230,4 @@ make d-run    # docker compose up -d
 - График активности за 14 дней на странице Повтор (данные dailyStats уже есть)
 
 ---
-**Последнее обновление:** 20 сентября 2026
+**Последнее обновление:** 29 сентября 2026

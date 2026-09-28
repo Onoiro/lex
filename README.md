@@ -87,7 +87,8 @@ Lex is a translator and vocabulary trainer. Your dictionary, spaced repetition, 
 ### Client (`client/`)
 - React 19, TypeScript (strict), Vite 7
 - Dexie.js (IndexedDB) for local storage
-- Pico CSS + Lex design tokens for styling
+- Pico CSS + Lex design tokens (styles/tokens.css, styles/components.css)
+- Self-hosted Manrope variable font, inline SVG icons (no icon packages)
 - vite-plugin-pwa for offline support
 - Capacitor 8 for Android
 - Tauri 2 for Desktop
@@ -281,12 +282,13 @@ All commands are run via `make`. Run `make help` to see the full list.
 .
 ├── client/                    # Local-first client app
 │   ├── src/
-│   │   ├── components/        # Layout, OfflineIndicator, UpdateScreen, Mascot
+│   │   ├── components/        # Layout, OfflineIndicator, UpdateScreen, Mascot, icons
 │   │   ├── data/              # db.ts, wordRepository, settingsRepository, dailyStatsRepository
 │   │   ├── domain/            # srs.ts, stats.ts, validators.ts, dictionarySort.ts, dailyStats.ts
 │   │   ├── i18n/              # index.ts, languages.ts, en/ru.json
 │   │   ├── pages/             # Home, Add, Review, Dictionary, Settings, Privacy, Terms
 │   │   ├── services/          # proxyClient.ts, translateApi.ts, ttsApi.ts, dictionaryApi.ts, feedbackApi.ts, quotaApi.ts, updateGate.ts, theme.ts
+│   │   ├── styles/            # tokens.css (tokens + skins), components.css (lex-* classes)
 │   │   ├── test/              # Component and service tests (Vitest)
 │   │   └── types/             # Word, LanguageSettings, DailyStats
 │   ├── capacitor.config.ts    # Android config
