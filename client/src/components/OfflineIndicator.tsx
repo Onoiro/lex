@@ -1,7 +1,10 @@
 import { useState, useEffect } from "react";
 import { Mascot } from "@/components/Mascot";
+import { WarnIcon } from "@/components/icons";
+import { useLocale } from "@/i18n";
 
 export function OfflineIndicator() {
+  const [t] = useLocale();
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
 
   useEffect(() => {
@@ -20,22 +23,11 @@ export function OfflineIndicator() {
   if (!isOffline) return null;
 
   return (
-    <article
-      style={{
-        background: "var(--pico-del-color)",
-        color: "var(--pico-primary-inverse)",
-        padding: "0.75rem 1rem",
-        marginBottom: "1rem",
-        fontSize: "0.9rem",
-        textAlign: "center",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: "0.75rem",
-      }}
-    >
+    <article className="lex-alert lex-alert--error lex-alert--row">
       <Mascot emotion="sleeping" size="inline" animated={false} />
-      <span>⚠️ Offline — translation requires internet connection</span>
+      <span className="lex-inline">
+        <WarnIcon size={16} /> {t("offline.banner")}
+      </span>
     </article>
   );
 }

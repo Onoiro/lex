@@ -15,6 +15,14 @@ import type { LanguageInfo } from "@/services/translateApi";
 import { version } from "../../package.json";
 import { sendFeedback } from "@/services/feedbackApi";
 import { Mascot } from "@/components/Mascot";
+import {
+  GlobeIcon,
+  ChatIcon,
+  SoundOnIcon,
+  PaletteIcon,
+  ChartIcon,
+  WarnIcon,
+} from "@/components/icons";
 
 export function Settings() {
   const [t] = useLocale();
@@ -183,7 +191,7 @@ export function Settings() {
 
       <form onSubmit={handleSave}>
         <section className="lex-section">
-          <h3>🌐 {t("settings.app_language")}</h3>
+          <h3><GlobeIcon /> {t("settings.app_language")}</h3>
           <label htmlFor="locale">{t("settings.choose_app_language")}</label>
           <select
             id="locale"
@@ -200,7 +208,7 @@ export function Settings() {
         </section>
 
         <section className="lex-section">
-          <h3>🌍 {t("settings.translate")}</h3>
+          <h3><GlobeIcon /> {t("settings.translate")}</h3>
           <p className="lex-hint">{t("settings.description")}</p>
           <label htmlFor="source_lang">{t("settings.source_lang")}</label>
           <select
@@ -241,7 +249,7 @@ export function Settings() {
         </section>
 
         <section className="lex-section">
-          <h3>🔊 {t("settings.tts")}</h3>
+          <h3><SoundOnIcon /> {t("settings.tts")}</h3>
           <label htmlFor="tts_enabled" className="lex-switch-label">
             <input
               type="checkbox"
@@ -258,7 +266,7 @@ export function Settings() {
         </section>
 
         <section className="lex-section">
-          <h3>🎨 {t("settings.theme")}</h3>
+          <h3><PaletteIcon /> {t("settings.theme")}</h3>
           <label htmlFor="theme">{t("settings.theme_choose")}</label>
           <select
             id="theme"
@@ -321,7 +329,7 @@ export function Settings() {
       )}
 
       <details className="lex-details">
-        <summary>📊 {t("settings.limits")}</summary>
+        <summary><ChartIcon /> {t("settings.limits")}</summary>
         <article>
           <div className="section-hero">
             <Mascot emotion="tired" size="inline" animated={false} />
@@ -358,7 +366,7 @@ export function Settings() {
       </details>
 
       <details className="lex-details">
-        <summary>💬 {t("settings.feedback")}</summary>
+        <summary><ChatIcon /> {t("settings.feedback")}</summary>
         <article>
           <div className="section-hero">
             <Mascot emotion="mail" size="inline" animated={false} />
@@ -434,7 +442,7 @@ export function Settings() {
       </details>
 
       <details className="lex-details lex-details--danger">
-        <summary>⚠️ {t("settings.danger_zone")}</summary>
+        <summary><WarnIcon /> {t("settings.danger_zone")}</summary>
         <article>
           <h3>
             {t("settings.reset_title")}

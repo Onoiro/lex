@@ -4,6 +4,7 @@ import { useLocale } from "@/i18n";
 import { getLanguages } from "@/services/translateApi";
 import { getSettings, saveSettings } from "@/data/settingsRepository";
 import { Mascot } from "@/components/Mascot";
+import { GlobeIcon, BrainIcon } from "@/components/icons";
 import { LANG_COUNT_TTL_MS } from "@/types";
 
 export function Home() {
@@ -72,7 +73,10 @@ export function Home() {
       <div className="grid">
         <article className="lex-card">
           <header>
-            <h2 className="lex-card-title">{t("index.translate_card.title")}</h2>
+            <h2 className="lex-card-title lex-icon-title">
+            <GlobeIcon />
+            {t("index.translate_card.title")}
+          </h2>
           </header>
           <p className="lex-card-desc">{t("index.translate_card.description")}</p>
           <footer>
@@ -84,7 +88,10 @@ export function Home() {
 
         <article className="lex-card">
           <header>
-            <h2 className="lex-card-title">{t("index.review_card.title")}</h2>
+            <h2 className="lex-card-title lex-icon-title">
+            <BrainIcon />
+            {t("index.review_card.title")}
+          </h2>
           </header>
           <p className="lex-card-desc">{t("index.review_card.description")}</p>
           <footer>

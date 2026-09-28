@@ -58,12 +58,10 @@ describe("Layout", () => {
 
     // Bottom nav should be visible on mobile
     expect(container.querySelectorAll(".bottom-nav-item")).toHaveLength(5);
-    expect(screen.getByText("🏠")).toBeInTheDocument();
-    expect(screen.getByText("🌍")).toBeInTheDocument();
-    expect(screen.getByText("🧠")).toBeInTheDocument();
-    expect(screen.getByText("📖")).toBeInTheDocument();
-    // Settings link with title
-    expect(screen.getByRole("link", { name: "⚙ Settings" })).toBeInTheDocument();
+    // Each item carries an inline SVG icon instead of an emoji
+    expect(container.querySelectorAll(".bottom-nav-icon svg")).toHaveLength(5);
+    // Labels are plain text now, so the accessible name has no icon prefix
+    expect(screen.getByRole("link", { name: "Settings" })).toBeInTheDocument();
   });
 
   it("renders desktop nav on desktop", () => {

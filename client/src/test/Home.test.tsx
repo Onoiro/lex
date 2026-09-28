@@ -27,7 +27,7 @@ describe("Home", () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getByText("🌍 Translator")).toBeInTheDocument();
+    expect(screen.getByText("Translator")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Translate a word" })).toHaveAttribute("href", "/add");
   });
 
@@ -38,7 +38,7 @@ describe("Home", () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getByText("🧠 Training")).toBeInTheDocument();
+    expect(screen.getByText("Training")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Start review" })).toHaveAttribute("href", "/review");
   });
 
@@ -51,7 +51,7 @@ describe("Home", () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getByText("🌍 Переводчик")).toBeInTheDocument();
-    expect(screen.getByText("🧠 Тренировка")).toBeInTheDocument();
+    expect(screen.getByText("Переводчик")).toBeInTheDocument();
+    expect(screen.getByText("Тренировка")).toBeInTheDocument();
   });
 });

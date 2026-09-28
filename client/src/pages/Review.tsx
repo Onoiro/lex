@@ -10,6 +10,7 @@ import { synthesizeSpeech, stopTts } from "@/services/ttsApi";
 import { computeDayAccuracy, computeDayAvgTime } from "@/domain/dailyStats";
 import { updateResponseTime, formatTime } from "@/domain/stats";
 import { Mascot } from "@/components/Mascot";
+import { SoundOnIcon, SoundOffIcon } from "@/components/icons";
 import type { MascotEmotion } from "@/components/Mascot";
 import type { DailyStats } from "@/types/dailyStats";
 import type { Word, ReviewDirection, LanguageSettings } from "@/types";
@@ -652,8 +653,8 @@ export function Review() {
         </div>
         <div className="lex-timer-row-inner">
           {settings?.tts_enabled && isOffline && (
-            <span data-testid="tts-offline-warning" className="lex-hint">
-              🔇 {t("review.tts_offline")}
+            <span data-testid="tts-offline-warning" className="lex-hint lex-inline">
+              <SoundOffIcon size={16} /> {t("review.tts_offline")}
             </span>
           )}
           <span className="lex-timer" style={{ color: timerColor }}>
@@ -671,7 +672,7 @@ export function Review() {
                 if (!next) stopTts();
               }}
             >
-              {ttsOverride ? "🔊" : "🔇"}
+              {ttsOverride ? <SoundOnIcon /> : <SoundOffIcon />}
             </button>
           )}
         </div>

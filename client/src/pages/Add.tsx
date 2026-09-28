@@ -16,6 +16,12 @@ import { LANG_LIST_TTL_MS } from "@/types";
 import type { LanguageInfo } from "@/services/translateApi";
 import { OfflineIndicator } from "@/components/OfflineIndicator";
 import { Mascot } from "@/components/Mascot";
+import {
+  SwapIcon,
+  CloseIcon,
+  SoundOnIcon,
+  HourglassIcon,
+} from "@/components/icons";
 import type { LanguageSettings } from "@/types";
 
 type MessageType = "success" | "error_duplicate" | "error_translation" | "error_network" | "error_quota" | null;
@@ -505,7 +511,7 @@ export function Add() {
             onClick={handleSwapLanguages}
             title={t("add.swap_languages")}
           >
-            ⇄
+            <SwapIcon />
           </button>
           <select
             value={settings?.target_lang ?? "ru"}
@@ -550,7 +556,7 @@ export function Add() {
                 title={t("add.clear_fields")}
                 aria-label={t("add.clear_fields")}
               >
-                ✕
+                <CloseIcon />
               </button>
             )}
             {word.trim() && (
@@ -562,7 +568,7 @@ export function Add() {
                 disabled={ttsLoading === "word"}
                 title={t("tts.listen_word")}
               >
-                {ttsLoading === "word" ? "⏳" : "🔊"}
+                {ttsLoading === "word" ? <HourglassIcon /> : <SoundOnIcon />}
               </button>
             )}
           </div>
@@ -587,7 +593,7 @@ export function Add() {
             {translating && (
               <span className="lex-field-status">
                 <Mascot emotion="thinking" size="inline" animated={false} />
-                ⏳
+                <HourglassIcon size={16} />
               </span>
             )}
             {!translating && translation.trim() && (
@@ -599,7 +605,7 @@ export function Add() {
                 disabled={ttsLoading === "translation"}
                 title={t("tts.listen_translation")}
               >
-                {ttsLoading === "translation" ? "⏳" : "🔊"}
+                {ttsLoading === "translation" ? <HourglassIcon /> : <SoundOnIcon />}
               </button>
             )}
           </div>

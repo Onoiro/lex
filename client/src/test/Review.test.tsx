@@ -971,14 +971,15 @@ describe("Review", () => {
       expect(screen.getByTestId("tts-toggle")).toBeInTheDocument();
     });
 
+    // The toggle is an SVG icon now, so its state is exposed via aria-label
     const toggle = screen.getByTestId("tts-toggle");
-    expect(toggle.textContent).toBe("🔊");
+    expect(toggle).toHaveAttribute("aria-label", "Sound on");
 
     await user.click(toggle);
-    expect(toggle.textContent).toBe("🔇");
+    expect(toggle).toHaveAttribute("aria-label", "Sound off");
 
     await user.click(toggle);
-    expect(toggle.textContent).toBe("🔊");
+    expect(toggle).toHaveAttribute("aria-label", "Sound on");
   });
 
   // --- Daily stats ---

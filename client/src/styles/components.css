@@ -632,6 +632,41 @@
   color: var(--pico-del-color);
 }
 
+/* Heading with a leading icon (Home cards, Settings sections) */
+.lex-icon-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Icon sitting inline with a short text (offline banner, TTS warning) */
+.lex-inline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+}
+
+/* Search field with the magnifier pinned inside on the left */
+.lex-search-wrap {
+  position: relative;
+  margin-bottom: 1rem;
+}
+
+.lex-search-wrap .lex-search {
+  margin-bottom: 0;
+  padding-left: 2.25rem;
+}
+
+.lex-search-icon {
+  position: absolute;
+  left: 0.6rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--pico-muted-color);
+  pointer-events: none;
+}
+
 /* Desktop table */
 .lex-table-wrap {
   padding: 0;

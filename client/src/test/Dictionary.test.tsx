@@ -22,7 +22,7 @@ describe("Dictionary", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText("Dictionary is empty 🍃")).toBeInTheDocument();
+      expect(screen.getByText("Dictionary is empty")).toBeInTheDocument();
     });
 
     // Empty-state mascot in the heading, empty state below
@@ -78,7 +78,7 @@ describe("Dictionary", () => {
       expect(screen.getByText("hello")).toBeInTheDocument();
     });
 
-    await user.type(screen.getByPlaceholderText("🔍"), "hello");
+    await user.type(screen.getByPlaceholderText("Search words..."), "hello");
 
     await waitFor(() => {
       expect(screen.getByText("hello")).toBeInTheDocument();

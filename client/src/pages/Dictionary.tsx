@@ -8,6 +8,15 @@ import { MAX_IMPORT_FILE_SIZE, MAX_IMPORT_ENTRIES } from "@/domain/validators";
 import { sortWords, loadSortState, saveSortState, nextSortDir } from "@/domain/dictionarySort";
 import type { SortBy, SortDir } from "@/domain/dictionarySort";
 import { Mascot } from "@/components/Mascot";
+import {
+  PencilIcon,
+  TrashIcon,
+  ExportIcon,
+  ImportIcon,
+  SearchIcon,
+  ArrowUpIcon,
+  ArrowDownIcon,
+} from "@/components/icons";
 import type { Word } from "@/types";
 
 const MOBILE_BREAKPOINT = 768;
@@ -61,8 +70,8 @@ export function Dictionary() {
   };
 
   const sortIndicator = (column: SortBy) => {
-    if (sortBy !== column) return "";
-    return sortDir === "asc" ? " ▲" : " ▼";
+    if (sortBy !== column) return null;
+    return sortDir === "asc" ? <ArrowUpIcon size={14} /> : <ArrowDownIcon size={14} />;
   };
 
   const handleDelete = async (id: number, word: string) => {
@@ -156,14 +165,14 @@ export function Dictionary() {
 
       <div className="lex-toolbar">
         <button type="button" className="outline" onClick={() => void handleExport()}>
-          📤 {t("dictionary.export")}
+          <ExportIcon /> {t("dictionary.export")}
         </button>
         <button
           type="button"
           className="outline"
           onClick={() => fileInputRef.current?.click()}
         >
-          📥 {t("dictionary.import")}
+          <ImportIcon /> {t("dictionary.import")}
         </button>
         <input
           ref={fileInputRef}
@@ -178,13 +187,16 @@ export function Dictionary() {
         <p className="lex-hint">{importMsg}</p>
       )}
 
-      <input
-        type="search"
-        placeholder="🔍"
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        className="lex-search"
-      />
+      <div className="lex-search-wrap">
+        <SearchIcon className="lex-search-icon" />
+        <input
+          type="search"
+          placeholder={t("dictionary.search_placeholder")}
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="lex-search"
+        />
+      </div>
 
       <div className="lex-sort-row">
         <select
@@ -206,7 +218,7 @@ export function Dictionary() {
           className="outline"
           onClick={() => setSortDir((d) => (d === "asc" ? "desc" : "asc"))}
         >
-          {sortDir === "asc" ? "↑" : "↓"}
+          {sortDir === "asc" ? <ArrowUpIcon /> : <ArrowDownIcon />}
         </button>
       </div>
 
@@ -236,7 +248,7 @@ export function Dictionary() {
                       className="lex-icon-btn"
                       title={t("dictionary.col_edit")}
                     >
-                      ✏️
+                      <PencilIcon />
                     </Link>
                     <button
                       type="button"
@@ -244,7 +256,7 @@ export function Dictionary() {
                       onClick={() => handleDelete(w.id!, w.word)}
                       title={t("dictionary.col_delete")}
                     >
-                      🗑️
+                      <TrashIcon />
                     </button>
                   </div>
                 </div>
@@ -333,7 +345,7 @@ export function Dictionary() {
                         onClick={() => handleDelete(w.id!, w.word)}
                         title={t("dictionary.col_delete")}
                       >
-                        🗑️
+                        <TrashIcon />
                       </button>
                     </td>
                     <td className="lex-cell-center">
@@ -342,7 +354,7 @@ export function Dictionary() {
                         className="lex-icon-btn"
                         title={t("dictionary.col_edit")}
                       >
-                        ✏️
+                        <PencilIcon />
                       </Link>
                     </td>
                   </tr>

@@ -1,6 +1,13 @@
 import { useState, useEffect } from "react";
 import { NavLink, Link } from "react-router-dom";
 import { useLocale } from "@/i18n";
+import {
+  HomeIcon,
+  GlobeIcon,
+  BrainIcon,
+  BookIcon,
+  GearIcon,
+} from "@/components/icons";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -20,11 +27,16 @@ export function Layout({ children }: LayoutProps) {
   }, []);
 
   const navItems = [
-    { to: "/", label: t("nav.home_label"), icon: "🏠" },
-    { to: "/add", label: t("nav.translate"), icon: "🌍" },
-    { to: "/review", label: t("nav.review"), icon: "🧠" },
-    { to: "/dictionary", label: t("nav.dictionary"), icon: "📖" },
-    { to: "/settings", label: t("nav.settings"), icon: "⚙", title: t("nav.settings.title") },
+    { to: "/", label: t("nav.home_label"), Icon: HomeIcon },
+    { to: "/add", label: t("nav.translate"), Icon: GlobeIcon },
+    { to: "/review", label: t("nav.review"), Icon: BrainIcon },
+    { to: "/dictionary", label: t("nav.dictionary"), Icon: BookIcon },
+    {
+      to: "/settings",
+      label: t("nav.settings"),
+      Icon: GearIcon,
+      title: t("nav.settings.title"),
+    },
   ];
 
   // Desktop already has a brand link to "/", skip it in the nav items
@@ -64,22 +76,7 @@ export function Layout({ children }: LayoutProps) {
 
       {/* Bottom nav — mobile only */}
       {isMobile && (
-        <nav
-          className="bottom-nav"
-          style={{
-            position: "fixed",
-            left: 0,
-            bottom: 0,
-            right: 0,
-            margin: 0,
-            borderTop: "1px solid var(--pico-muted-border-color)",
-            background: "var(--pico-background-color)",
-            zIndex: 100,
-            display: "flex",
-            justifyContent: "space-around",
-            padding: "0.25rem 0",
-          }}
-        >
+        <nav className="bottom-nav">
           {navItems.map((item) => (
             <NavLink
               key={item.to}
@@ -89,7 +86,9 @@ export function Layout({ children }: LayoutProps) {
                 `bottom-nav-item${isActive ? " active" : ""}`
               }
             >
-              <span className="bottom-nav-icon">{item.icon}</span>
+              <span className="bottom-nav-icon">
+                <item.Icon />
+              </span>
               <span className="bottom-nav-label">{item.label}</span>
             </NavLink>
           ))}
