@@ -617,9 +617,10 @@ nav strong {
   background-color: var(--pico-card-background-color);
   border: 1px solid var(--pico-card-border-color);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  /* Long words: shrink on narrow screens and wrap instead of overflowing */
-  overflow-wrap: anywhere;
-  hyphens: auto;
+  /* Long words: break mid-word only when a single word cannot fit
+     the line; on phones the card is too narrow for that, so
+     `anywhere` + hyphens kick in below */
+  overflow-wrap: break-word;
 }
 
 .flip-card-back {
@@ -712,6 +713,14 @@ nav strong {
     /* .mascot has `margin: 0 auto`, and auto margins win over
        align-items in flexbox — drop them to keep the mascot at the edge */
     margin: 0;
+  }
+
+  /* Review card: on narrow screens a long word cannot fit the
+     line, so break it anywhere and hyphenate */
+  .flip-card-front,
+  .flip-card-back {
+    overflow-wrap: anywhere;
+    hyphens: auto;
   }
 }
 
