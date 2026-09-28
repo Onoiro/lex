@@ -186,7 +186,9 @@
 
 .page-hero .lex-hint,
 .home-hero .lex-hint {
-  margin: 0;
+  /* Pico zeroes paragraph margins inside hgroup — give the subtitle a
+     small breathing gap under the heading */
+  margin: 0.75rem 0 0;
 }
 
 /* ── Home ───────────────────────────────────────────── */
@@ -397,11 +399,25 @@
 }
 
 .lex-lang-bar select {
+  /* Both selects must share the card width instead of pushing the row
+     past the viewport: long language names get ellipsized. Without
+     min-width: 0 a flex item refuses to shrink below its content and
+     the whole page overflows horizontally (which also drags the fixed
+     bottom nav off screen). */
+  flex: 1 1 0;
+  min-width: 0;
   width: auto;
   margin: 0;
   padding: 0.25rem 1.75rem 0.25rem 0.5rem;
   font-size: var(--lex-text-sm);
   cursor: pointer;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.lex-lang-bar > button {
+  flex: 0 0 auto;
 }
 
 /* Textareas that grow with their content (see autoResize in Add.tsx) */
@@ -508,6 +524,14 @@
   margin: 0;
 }
 
+/* On mobile the bottom nav floats over the content, so the sticky
+   Save bar has to stop above it instead of hiding underneath. */
+@media (max-width: 767px) {
+  .lex-save-bar {
+    bottom: calc(4.25rem + env(safe-area-inset-bottom));
+  }
+}
+
 /* Cancel (when editing) is narrower than Save */
 .lex-save-bar > button:first-child {
   flex: 1;
@@ -561,6 +585,7 @@
 
 .lex-sort-row select {
   flex: 1;
+  min-width: 0;
   margin: 0;
   font-size: var(--lex-text-sm);
 }

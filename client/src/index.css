@@ -139,10 +139,10 @@ nav strong {
     margin: 0 1rem 0 0;
   }
 
-  .home-hero hgroup p {
+  .home-hero hgroup p.lex-hint {
     clear: left;
-    /* Pico zeroes paragraph margins inside hgroup, and `clear` alone
-       leaves the description too close to the heading */
+    /* With the mascot floated left the description needs a larger gap
+       than on desktop (matches .home-hero .lex-hint specificity) */
     margin-top: 1.25rem;
   }
 
