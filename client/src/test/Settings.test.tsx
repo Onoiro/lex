@@ -78,7 +78,7 @@ describe("Settings", () => {
     await user.click(screen.getByRole("button", { name: "Save" }));
 
     await waitFor(() => {
-      expect(screen.getByText("Language settings updated.")).toBeInTheDocument();
+      expect(screen.getByText("Settings saved.")).toBeInTheDocument();
     });
   });
 

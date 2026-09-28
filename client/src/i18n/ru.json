@@ -148,7 +148,7 @@
   "settings.target_lang": "Целевой язык (на который переводим)",
   "settings.save": "Сохранить",
   "settings.auto_detect": "Автоопределение",
-  "settings.lang_updated": "Настройки языков обновлены.",
+  "settings.saved": "Настройки сохранены.",
   "settings.app_language": "Язык приложения",
   "settings.choose_app_language": "Выберите язык интерфейса",
   "settings.translate": "Перевод",

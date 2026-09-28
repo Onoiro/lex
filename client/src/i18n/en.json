@@ -148,7 +148,7 @@
   "settings.target_lang": "Target language (translate to)",
   "settings.save": "Save",
   "settings.auto_detect": "Auto-detect",
-  "settings.lang_updated": "Language settings updated.",
+  "settings.saved": "Settings saved.",
   "settings.app_language": "App language",
   "settings.choose_app_language": "Choose interface language",
   "settings.translate": "Translation",

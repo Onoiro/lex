@@ -186,7 +186,7 @@ export function Settings() {
             marginBottom: "1rem",
           }}
         >
-          {t("settings.lang_updated")}
+          {t("settings.saved")}
         </article>
       )}
 
