@@ -87,7 +87,7 @@ Lex is a translator and vocabulary trainer. Your dictionary, spaced repetition, 
 ### Client (`client/`)
 - React 19, TypeScript (strict), Vite 7
 - Dexie.js (IndexedDB) for local storage
-- Pico CSS for styling
+- Pico CSS + Lex design tokens for styling
 - vite-plugin-pwa for offline support
 - Capacitor 8 for Android
 - Tauri 2 for Desktop

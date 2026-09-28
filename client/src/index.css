@@ -14,6 +14,44 @@
    --pico-contrast-inverse = text on contrast buttons
 */
 
+/* Design tokens — Lex visual layer on top of Pico.
+   Radius scale: sm = chips/badges, md = form fields and main buttons,
+   lg = cards, pill = search fields and bottom nav.
+   Rule: never hardcode a radius in a component, always use these tokens. */
+:root {
+  --pico-border-radius: 0.5rem;
+  --pico-outline-width: 0.125rem;
+  --lex-radius-sm: 0.375rem;
+  --lex-radius-md: 0.75rem;
+  --lex-radius-lg: 1rem;
+  --lex-radius-pill: 999px;
+  --lex-shadow-1: 0 1px 2px rgba(15, 23, 42, 0.06), 0 1px 3px rgba(15, 23, 42, 0.1);
+  --lex-shadow-2: 0 2px 6px rgba(15, 23, 42, 0.08), 0 8px 24px rgba(15, 23, 42, 0.1);
+  --lex-press: translateY(1px);
+}
+
+article {
+  border-radius: var(--lex-radius-lg);
+}
+
+/* Main actions read as soft 12px blocks, outline/secondary keep the
+   smaller base radius so compact controls stay visually light */
+:is(button, [role="button"], [type="submit"]):not(.outline):not(.secondary) {
+  border-radius: var(--lex-radius-md);
+}
+
+:is(button, [role="button"], [type="submit"], .bottom-nav-item):active {
+  transform: var(--lex-press);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  :is(button, [role="button"], [type="submit"]) {
+    transition: background-color var(--pico-transition),
+      border-color var(--pico-transition), color var(--pico-transition),
+      box-shadow var(--pico-transition), transform 0.08s ease-out;
+  }
+}
+
 /* ── Ocean ──────────────────────────────────────────── */
 :root[data-skin="ocean"][data-theme="light"] {
   --pico-background-color: #f0f7fa;
@@ -55,6 +93,10 @@
   --pico-contrast-inverse: #ffffff;
   --pico-ins-color: #0ea5e9;
   --pico-del-color: #ef4444;
+  --pico-card-sectioning-background-color: #f5fafc;
+  --pico-form-element-background-color: #fbfdfe;
+  --pico-form-element-border-color: #cfe2ec;
+  --pico-box-shadow: var(--lex-shadow-1);
 }
 
 :root[data-skin="ocean"][data-theme="dark"] {
@@ -97,6 +139,10 @@
   --pico-contrast-inverse: #0a1929;
   --pico-ins-color: #06b6d4;
   --pico-del-color: #f87171;
+  --pico-card-sectioning-background-color: #16293f;
+  --pico-form-element-background-color: #0e2138;
+  --pico-form-element-border-color: #24415c;
+  --pico-box-shadow: none;
 }
 
 /* ── Forest ─────────────────────────────────────────── */
@@ -140,6 +186,10 @@
   --pico-contrast-inverse: #ffffff;
   --pico-ins-color: #16a34a;
   --pico-del-color: #ef4444;
+  --pico-card-sectioning-background-color: #f6faf5;
+  --pico-form-element-background-color: #fcfdfb;
+  --pico-form-element-border-color: #cfe6cf;
+  --pico-box-shadow: var(--lex-shadow-1);
 }
 
 :root[data-skin="forest"][data-theme="dark"] {
@@ -182,6 +232,10 @@
   --pico-contrast-inverse: #0d1a0d;
   --pico-ins-color: #22c55e;
   --pico-del-color: #f87171;
+  --pico-card-sectioning-background-color: #1b2f1b;
+  --pico-form-element-background-color: #122012;
+  --pico-form-element-border-color: #2a452a;
+  --pico-box-shadow: none;
 }
 
 /* ── Sunset ─────────────────────────────────────────── */
@@ -225,6 +279,10 @@
   --pico-contrast-inverse: #ffffff;
   --pico-ins-color: #f97316;
   --pico-del-color: #ef4444;
+  --pico-card-sectioning-background-color: #fdf8f4;
+  --pico-form-element-background-color: #fefcfb;
+  --pico-form-element-border-color: #ecdcc9;
+  --pico-box-shadow: var(--lex-shadow-1);
 }
 
 :root[data-skin="sunset"][data-theme="dark"] {
@@ -267,6 +325,10 @@
   --pico-contrast-inverse: #1a0f0a;
   --pico-ins-color: #fb923c;
   --pico-del-color: #f87171;
+  --pico-card-sectioning-background-color: #33201a;
+  --pico-form-element-background-color: #241409;
+  --pico-form-element-border-color: #45302a;
+  --pico-box-shadow: none;
 }
 
 /* ── Midnight ───────────────────────────────────────── */
@@ -310,6 +372,10 @@
   --pico-contrast-inverse: #ffffff;
   --pico-ins-color: #7c3aed;
   --pico-del-color: #ef4444;
+  --pico-card-sectioning-background-color: #f8f6fc;
+  --pico-form-element-background-color: #fcfbfe;
+  --pico-form-element-border-color: #dcd4ec;
+  --pico-box-shadow: var(--lex-shadow-1);
 }
 
 :root[data-skin="midnight"][data-theme="dark"] {
@@ -352,6 +418,10 @@
   --pico-contrast-inverse: #0d0a1a;
   --pico-ins-color: #a855f7;
   --pico-del-color: #f87171;
+  --pico-card-sectioning-background-color: #1e1836;
+  --pico-form-element-background-color: #120e22;
+  --pico-form-element-border-color: #2f2450;
+  --pico-box-shadow: none;
 }
 
 /* ── Rose ───────────────────────────────────────────── */
@@ -395,6 +465,10 @@
   --pico-contrast-inverse: #ffffff;
   --pico-ins-color: #e11d48;
   --pico-del-color: #ef4444;
+  --pico-card-sectioning-background-color: #fdf7f9;
+  --pico-form-element-background-color: #fefcfd;
+  --pico-form-element-border-color: #ecd2d9;
+  --pico-box-shadow: var(--lex-shadow-1);
 }
 
 :root[data-skin="rose"][data-theme="dark"] {
@@ -437,6 +511,10 @@
   --pico-contrast-inverse: #1a0a12;
   --pico-ins-color: #f43f5e;
   --pico-del-color: #f87171;
+  --pico-card-sectioning-background-color: #33161f;
+  --pico-form-element-background-color: #220d14;
+  --pico-form-element-border-color: #42242e;
+  --pico-box-shadow: none;
 }
 
 /* ── Mono ───────────────────────────────────────────── */
@@ -480,6 +558,10 @@
   --pico-contrast-inverse: #ffffff;
   --pico-ins-color: #333333;
   --pico-del-color: #ef4444;
+  --pico-card-sectioning-background-color: #f0f0f0;
+  --pico-form-element-background-color: #fcfcfc;
+  --pico-form-element-border-color: #d8d8d8;
+  --pico-box-shadow: var(--lex-shadow-1);
 }
 
 :root[data-skin="mono"][data-theme="dark"] {
@@ -522,6 +604,10 @@
   --pico-contrast-inverse: #000000;
   --pico-ins-color: #aaaaaa;
   --pico-del-color: #f87171;
+  --pico-card-sectioning-background-color: #242424;
+  --pico-form-element-background-color: #141414;
+  --pico-form-element-border-color: #333333;
+  --pico-box-shadow: none;
 }
 
 /* Layout: sticky footer, full-height body */
@@ -613,7 +699,7 @@ nav strong {
   justify-content: center;
   padding: 2rem 1rem;
   min-height: 220px;
-  border-radius: var(--pico-border-radius);
+  border-radius: var(--lex-radius-lg);
   background-color: var(--pico-card-background-color);
   border: 1px solid var(--pico-card-border-color);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);

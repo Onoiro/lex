@@ -5,7 +5,7 @@ Lex — local-first приложение-переводчик и помощни�
 
 **Демо:** [lex.2-way.ru](https://lex.2-way.ru)
 
-**Текущая версия:** 1.27.0
+**Текущая версия:** 1.27.1
 
 ## Архитектура
 
@@ -172,6 +172,7 @@ make d-run    # docker compose up -d
 - **Линтинг:** `npx eslint .` — 0 ошибок. Предупреждения — некритичные (react-refresh, react-hooks/exhaustive-deps).
 - **Комментарии:** на простом английском, понятном non-native speakers.
 - **Стиль:** Pico CSS (без классов), Material Design принципы.
+- **Дизайн-токены:** визуальный слой Lex поверх Pico объявлен в начале client/src/index.css (блок :root перед скинами): --lex-radius-sm/md/lg/pill (6/12/16px/pill), --lex-shadow-1/2, --lex-press. Базовые Pico-токены переопределены: --pico-border-radius: 0.5rem, --pico-outline-width: 0.125rem. Правило: радиусы и тени только через токены, хардкод border-radius/box-shadow в компонентах запрещён. Карточки (article, flip-card) — lg, основные кнопки — md (12px, не pill — решение пользователя), outline/secondary — базовый радиус. Каждый из 12 блоков скинов задаёт --pico-card-sectioning-background-color, --pico-form-element-background-color, --pico-form-element-border-color, --pico-box-shadow (в dark — none); новый скин обязан определять все четыре. Press-фидбек (:active → --lex-press) и переходы — только под prefers-reduced-motion: no-preference.
 - **i18n:** все UI-строки через `t()` из `@/i18n`. Переводы в `en.json` и `ru.json`.
 - **Маскот:** декоративный попугай (`components/Mascot.tsx`, `aria-hidden`, без текстов). Ассеты: `client/public/mascot/*.webp` — 14 эмоций/сцен (base, happy, sad, hint, thinking, sleeping, tired, celebrate, empty, training, reading, mail, translating, sliders), ~30 КБ каждая, в precache SW. Три размера: hero (140px), inline (48px), micro (32px). Анимация — CSS bounce при смене эмоции (перезапуск через `key={emotion}`), уважает `prefers-reduced-motion`; в тёмной теме — лёгкий drop-shadow для читаемости силуэта. Правило дозированности: не более одного маскота в поле зрения. Паттерн «маскот рядом с заголовком» (класс `page-hero`, как `.home-hero` на главной): маскот слева от заголовка — Home (hero base), Dictionary (hero reading, пустое состояние — отдельный hero empty), Add (hero translating); маскот справа от заголовка (образ «смотрит влево») — Review (hero training на старте), Settings (hero sliders). Settings: в details-разделах «Лимиты» (inline tired) и «Feedback» (inline mail) — класс `section-hero`: маскот слева, текст справа на одном уровне. Остальной маппинг: Home — hero base; Add — thinking при автопереводе, tired в сообщении о лимите; Review — micro над карточкой (thinking → hint → happy/sad), sleeping на паузе, celebrate на done, empty в пустом состоянии; OfflineIndicator — inline sleeping; UpdateScreen — hero tired.
 - **PWA:** vite-plugin-pwa генерирует SW. Runtime cache для `/translate`, `/languages` и `/dictionary` (NetworkFirst).
