@@ -429,14 +429,14 @@ export function Review() {
   // --- Render ---
 
   if (phase === "loading") {
-    return <div style={{ textAlign: "center", padding: "3rem" }}>...</div>;
+    return <div className="lex-loading">...</div>;
   }
 
   if (phase === "empty") {
     return (
-      <article style={{ textAlign: "center" }}>
+      <article className="lex-card lex-center">
         <Mascot emotion="empty" size="hero" />
-        <p style={{ fontSize: "1.2rem", marginTop: "1rem" }}>{t("review.empty", { message: "" })}</p>
+        <p className="lex-result-title">{t("review.empty", { message: "" })}</p>
         <Link to="/" role="button" className="outline">{t("review.home")}</Link>
       </article>
     );
@@ -446,11 +446,11 @@ export function Review() {
     const todayAccuracy = todayStats ? computeDayAccuracy(todayStats) : null;
 
     return (
-      <article style={{ textAlign: "center", padding: "2rem" }}>
+      <article className="lex-card lex-center">
         <Mascot emotion="celebrate" size="hero" />
-        <p style={{ fontSize: "1.2rem", marginTop: "1rem" }}>{t("review.done", { message: "" })}</p>
+        <p className="lex-result-title">{t("review.done", { message: "" })}</p>
         {todayStats && todayStats.reviewed > 0 && (
-          <p style={{ color: "var(--pico-muted-color)", fontSize: "0.95rem" }}>
+          <p className="lex-hint">
             {t("review.today_total", { count: todayStats.reviewed })}
             {todayAccuracy !== null &&
               " · " + t("review.today_accuracy", { pct: todayAccuracy })}
@@ -468,40 +468,28 @@ export function Review() {
       todayStats !== null && (todayStats.reviewed > 0 || todayStats.new_words > 0);
 
     return (
-      <div style={{ padding: "3rem 1rem" }}>
+      <div className="lex-start">
         <div className="page-hero">
-          <hgroup style={{ textAlign: "left", marginBottom: 0 }}>
+          <hgroup>
             <h2>{t("review.heading")}</h2>
-            <p style={{ color: "var(--pico-muted-color)" }}>
+            <p className="lex-hint">
               {t("review.queue", { total_due: queueSize })}
             </p>
           </hgroup>
           <Mascot emotion="training" size="hero" />
         </div>
-        <div style={{ textAlign: "center", marginTop: "2rem" }}>
-          <button
-            type="button"
-            onClick={handleStart}
-            style={{ fontSize: "1.5rem", padding: "1rem 3rem" }}
-          >
+        <div className="lex-start-actions">
+          <button type="button" className="lex-cta" onClick={handleStart}>
             {t("review.start")}
           </button>
         </div>
 
         {hasToday && (
-          <div
-            data-testid="today-block"
-            style={{
-              marginTop: "2rem",
-              color: "var(--pico-muted-color)",
-              fontSize: "0.95rem",
-              lineHeight: 1.8,
-            }}
-          >
-            <div style={{ fontWeight: "bold", color: "var(--pico-color)" }}>
+          <div data-testid="today-block" className="lex-stat lex-mt-2">
+            <div className="lex-stat-heading">
               {t("review.today_heading")}
               {streak > 1 && (
-                <span data-testid="streak-badge" style={{ marginLeft: "0.5rem" }}>
+                <span data-testid="streak-badge" className="lex-chip lex-ml-1">
                   🔥 {t("review.today_streak", { count: streak })}
                 </span>
               )}
@@ -521,20 +509,19 @@ export function Review() {
         )}
 
         {history.length > 0 && (
-          <div style={{ marginTop: "2rem", maxWidth: "400px", margin: "2rem auto 0" }}>
+          <div className="lex-collapsible">
             <button
               type="button"
               className="outline"
               data-testid="history-toggle"
               onClick={() => setShowHistory((v) => !v)}
-              style={{ width: "100%" }}
             >
               {showHistory
                 ? t("review.history_hide")
                 : t("review.history_show")}
             </button>
             {showHistory && (
-              <table data-testid="history-table" style={{ marginTop: "1rem", fontSize: "0.85rem" }}>
+              <table data-testid="history-table" className="lex-history-table">
                 <thead>
                   <tr>
                     <th>{t("review.history_col_date")}</th>
@@ -561,35 +548,23 @@ export function Review() {
           </div>
         )}
 
-        <div style={{ maxWidth: "400px", margin: "2rem auto 0" }}>
+        <div className="lex-collapsible">
           <button
             type="button"
             className="outline"
             data-testid="how-it-works-toggle"
             onClick={() => setShowHowItWorks((v) => !v)}
-            style={{ width: "100%" }}
           >
             {t("review.how_it_works")}
           </button>
           {showHowItWorks && (
-            <div
-              data-testid="how-it-works-block"
-              style={{
-                marginTop: "1rem",
-                textAlign: "left",
-                fontSize: "0.9rem",
-                color: "var(--pico-muted-color)",
-                lineHeight: 1.7,
-              }}
-            >
-              <p style={{ fontWeight: "bold", color: "var(--pico-color)", marginBottom: "0.5rem" }}>
-                {t("review.how_it_works_title")}
-              </p>
-              <p style={{ marginBottom: "0.5rem" }}>{t("review.how_it_works_correct")}</p>
-              <p style={{ marginBottom: "0.5rem" }}>{t("review.how_it_works_wrong")}</p>
-              <p style={{ marginBottom: "0.5rem" }}>{t("review.how_it_works_slow")}</p>
-              <p style={{ marginBottom: "0.5rem" }}>{t("review.how_it_works_hint")}</p>
-              <p style={{ marginBottom: 0 }}>{t("review.how_it_works_summary")}</p>
+            <div data-testid="how-it-works-block" className="lex-help">
+              <p className="lex-help-heading">{t("review.how_it_works_title")}</p>
+              <p>{t("review.how_it_works_correct")}</p>
+              <p>{t("review.how_it_works_wrong")}</p>
+              <p>{t("review.how_it_works_slow")}</p>
+              <p>{t("review.how_it_works_hint")}</p>
+              <p>{t("review.how_it_works_summary")}</p>
             </div>
           )}
         </div>
@@ -599,13 +574,13 @@ export function Review() {
 
   if (phase === "paused") {
     return (
-      <div style={{ textAlign: "center", padding: "3rem 1rem", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "60vh" }}>
+      <div className="lex-session lex-session--tall">
         <Mascot emotion="sleeping" size="hero" />
-        <h2 style={{ marginTop: "1rem" }}>{t("review.paused")}</h2>
+        <h2 className="lex-mt-1">{t("review.paused")}</h2>
 
         {session.total > 0 && (
-          <div style={{ marginTop: "2rem", color: "var(--pico-muted-color)", fontSize: "0.95rem", lineHeight: 1.8 }}>
-            <div style={{ fontWeight: "bold", marginBottom: "0.5rem", color: "var(--pico-color)" }}>
+          <div className="lex-stat lex-mt-2">
+            <div className="lex-stat-heading">
               {t("review.session_total", { total: session.total })}
             </div>
             <div>
@@ -624,7 +599,7 @@ export function Review() {
               <div>{t("review.session_best_time", { time: formatTime(bestTime) })}</div>
             )}
             {todayStats && todayStats.reviewed > 0 && (
-              <div style={{ marginTop: "0.5rem" }}>
+              <div>
                 {t("review.today_total", { count: todayStats.reviewed })}
               </div>
             )}
@@ -633,17 +608,16 @@ export function Review() {
 
         <button
           type="button"
+          className="lex-cta lex-mt-2"
           onClick={handleResume}
-          style={{ fontSize: "1.5rem", padding: "1rem 3rem", marginTop: "2rem" }}
         >
           {t("review.resume")}
         </button>
         <button
           type="button"
-          className="outline"
+          className="outline lex-btn-wide lex-mt-1"
           data-testid="finish-btn"
           onClick={handleFinish}
-          style={{ width: "100%", maxWidth: "400px", marginTop: "0.75rem" }}
         >
           {t("review.finish")}
         </button>
@@ -668,49 +642,38 @@ export function Review() {
   const pct = total > 0 ? Math.round((word.know_count / total) * 100) : null;
 
   return (
-    <article style={{ display: "flex", flexDirection: "column" }}>
+    <article className="lex-card lex-card--column">
       {/* Timer + TTS toggle — always visible above the card.
           The mascot sits at the left screen edge while the timer
           stays centered, so the row is split into two layers. */}
-      <div style={{ position: "relative", padding: "1rem 1rem 0.5rem" }}>
-        <div style={{ position: "absolute", left: "1rem", top: "50%", transform: "translateY(-50%)" }}>
+      <div className="lex-timer-row">
+        <div className="lex-timer-row-mascot">
           <Mascot emotion={mascotEmotion} size="micro" />
         </div>
-        <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "0.75rem" }}>
+        <div className="lex-timer-row-inner">
           {settings?.tts_enabled && isOffline && (
-          <span
-            data-testid="tts-offline-warning"
-            style={{ color: "var(--pico-muted-color)", fontSize: "0.85rem" }}
-          >
-            🔇 {t("review.tts_offline")}
+            <span data-testid="tts-offline-warning" className="lex-hint">
+              🔇 {t("review.tts_offline")}
+            </span>
+          )}
+          <span className="lex-timer" style={{ color: timerColor }}>
+            {formatTime(elapsed)}
           </span>
-        )}
-        <span
-          style={{
-            color: timerColor,
-            fontSize: "0.95rem",
-            fontWeight: "bold",
-            fontVariantNumeric: "tabular-nums",
-          }}
-        >
-          {formatTime(elapsed)}
-        </span>
-        {settings?.tts_enabled && (
-          <button
-            type="button"
-            className="outline"
-            data-testid="tts-toggle"
-            aria-label={ttsOverride ? t("review.tts_on") : t("review.tts_off")}
-            onClick={() => {
-              const next = !ttsOverride;
-              setTtsOverride(next);
-              if (!next) stopTts();
-            }}
-            style={{ fontSize: "1rem", padding: "0.15rem 0.5rem", lineHeight: 1, minWidth: "2rem" }}
-          >
-            {ttsOverride ? "🔊" : "🔇"}
-          </button>
-        )}
+          {settings?.tts_enabled && (
+            <button
+              type="button"
+              className="outline lex-icon-btn"
+              data-testid="tts-toggle"
+              aria-label={ttsOverride ? t("review.tts_on") : t("review.tts_off")}
+              onClick={() => {
+                const next = !ttsOverride;
+                setTtsOverride(next);
+                if (!next) stopTts();
+              }}
+            >
+              {ttsOverride ? "🔊" : "🔇"}
+            </button>
+          )}
         </div>
       </div>
 
@@ -724,7 +687,7 @@ export function Review() {
                 {promptLangLabel}
               </span>
             )}
-            <small style={{ display: "block", color: "var(--pico-muted-color)", marginBottom: "0.5rem" }}>
+            <small className="lex-hint lex-card-caption">
               {answerLangName
                 ? t("review.remember_to", { lang: answerLangName })
                 : t("review.remember")}
@@ -732,12 +695,12 @@ export function Review() {
             <h2
               data-testid="word-text"
               lang={word.word_lang && word.word_lang !== "auto" ? word.word_lang : undefined}
-              style={{ fontSize: "clamp(1.4rem, 9vw, 2.5rem)", margin: 0 }}
+              className="lex-word-title"
             >
               {displayWord}
             </h2>
             {total > 0 && (
-              <div style={{ marginTop: "1rem", color: "var(--pico-muted-color)", fontSize: "0.85rem" }}>
+              <div className="lex-hint lex-mt-1">
                 {t("review.stats_known", { count: word.know_count })}{" "}
                 {t("review.stats_forgotten", { count: word.forgot_count })}
                 {pct !== null && " " + t("review.stats_pct", { pct })}
@@ -746,7 +709,7 @@ export function Review() {
             {word.note && !answered && !showHint && (
               <button
                 type="button"
-                className="outline"
+                className="outline lex-btn-mini lex-mt-1"
                 data-testid="hint-btn"
                 onClick={() => {
                   // Freeze the timer: only time spent before the hint counts
@@ -755,13 +718,12 @@ export function Review() {
                   setShowHint(true);
                   setMascotEmotion("hint");
                 }}
-                style={{ marginTop: "1rem", fontSize: "0.85rem", padding: "0.25rem 0.75rem" }}
               >
                 {t("review.show_hint")}
               </button>
             )}
             {showHint && word.note && (
-              <div data-testid="hint-text" style={{ marginTop: "1rem", fontSize: "0.95rem", color: "var(--pico-muted-color)", fontStyle: "italic" }}>
+              <div data-testid="hint-text" className="lex-hint lex-hint-text">
                 {t("review.hint")} {word.note}
               </div>
             )}
@@ -770,10 +732,7 @@ export function Review() {
           {/* Back: translation (rendered only when flipped) */}
           <div className="flip-card-back">
             {showTranslation && (
-              <p
-                data-testid="translation-text"
-                style={{ fontSize: "clamp(1.2rem, 8vw, 2rem)", fontWeight: "bold", margin: 0, color: "var(--pico-color)" }}
-              >
+              <p data-testid="translation-text" className="lex-word-translation">
                 {displayTranslation}
               </p>
             )}
@@ -782,9 +741,9 @@ export function Review() {
       </div>
 
       {/* Buttons — below the card, always visible */}
-      <div style={{ textAlign: "center", padding: "1.5rem 1rem 0" }}>
+      <div className="lex-card-actions">
         {!answered ? (
-          <div className="grid" style={{ width: "100%", maxWidth: "400px", margin: "0 auto" }}>
+          <div className="grid">
             <button
               type="button"
               className="outline secondary"
@@ -797,12 +756,11 @@ export function Review() {
             </button>
           </div>
         ) : (
-          <div style={{ width: "100%", maxWidth: "400px", margin: "0 auto" }}>
+          <div>
             {!showTranslation && (
               <button
                 type="button"
                 className="outline"
-                style={{ width: "100%", marginBottom: "0.75rem" }}
                 onClick={() => {
                   setShowTranslation(true);
                   const transLang = direction === "en_ru" ? (word.translation_lang || "ru") : (word.word_lang || "en");
@@ -812,12 +770,7 @@ export function Review() {
                 {t("review.show_translation")}
               </button>
             )}
-            <button
-              type="button"
-              className="outline"
-              style={{ width: "100%" }}
-              onClick={handleNext}
-            >
+            <button type="button" className="outline" onClick={handleNext}>
               {t("review.next_word")}
             </button>
           </div>
@@ -825,8 +778,8 @@ export function Review() {
       </div>
 
       {/* Footer: stop button */}
-      <footer style={{ textAlign: "center", paddingBottom: "1rem", marginTop: "1rem" }}>
-        <button type="button" className="outline secondary" style={{ width: "100%", maxWidth: "400px" }} onClick={handleStop}>
+      <footer className="lex-card-actions lex-card-actions--footer">
+        <button type="button" className="outline secondary" onClick={handleStop}>
           {t("review.stop")}
         </button>
       </footer>

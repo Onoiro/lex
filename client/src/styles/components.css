@@ -1,0 +1,867 @@
+/* Lex component classes — the small set of surfaces that pages reuse.
+   Rule: a style that is not dynamic (computed at runtime) belongs here,
+   not in an inline `style` attribute. Inline styles stay only for values
+   React computes at render time (timer color, mascot size, ...). */
+
+/* ── Card ─────────────────────────────────────────────
+   Pico paints header/footer of an <article> with a sectioning
+   background, which reads as grey bands inside a colored card.
+   .lex-card keeps the card flat and lets the shadow carry the depth. */
+.lex-card {
+  padding: 1rem 1.25rem;
+  margin: 0;
+  box-shadow: var(--lex-shadow-1);
+  border-color: var(--pico-card-border-color);
+}
+
+.lex-card > header,
+.lex-card > footer {
+  background: none;
+  padding: 0;
+}
+
+.lex-card > header {
+  margin-bottom: 0.75rem;
+}
+
+.lex-card > footer {
+  margin-top: 1rem;
+}
+
+/* ── Alert ────────────────────────────────────────────
+   Colored status banners (saved, quota, offline, feedback). */
+.lex-alert {
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+  font-size: var(--lex-text-sm);
+  text-align: center;
+  border: none;
+  box-shadow: var(--lex-shadow-1);
+}
+
+.lex-alert--success {
+  background: var(--pico-ins-color);
+  color: var(--pico-primary-inverse);
+}
+
+.lex-alert--error {
+  background: var(--pico-del-color);
+  color: var(--pico-primary-inverse);
+}
+
+/* Banner with an icon or mascot next to the text */
+.lex-alert--row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  text-align: left;
+}
+
+.lex-alert a {
+  color: inherit;
+  font-weight: 700;
+  text-decoration: underline;
+}
+
+/* ── Chip ─────────────────────────────────────────────
+   Small status badge: quota line, card language, streak. */
+.lex-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.1rem 0.5rem;
+  border-radius: var(--lex-radius-sm);
+  font-size: var(--lex-text-xs);
+  line-height: 1.6;
+  color: var(--pico-muted-color);
+  background: color-mix(in srgb, var(--pico-color) 7%, transparent);
+}
+
+/* ── Stat line ────────────────────────────────────────
+   Metric rows on the Review start / pause screens. */
+.lex-stat {
+  color: var(--pico-muted-color);
+  font-size: var(--lex-text-sm);
+  line-height: 1.8;
+}
+
+.lex-stat > strong,
+.lex-stat-heading {
+  display: block;
+  color: var(--pico-color);
+  font-weight: 600;
+}
+
+.lex-stat-heading {
+  margin-bottom: 0.5rem;
+}
+
+/* Spacing helpers — the few places where Pico's own rhythm is not enough
+   (elements after a heading, last child in a block). Kept to four so the
+   markup stays readable without turning into a utility framework. */
+.lex-mt-1 {
+  margin-top: 1rem;
+}
+
+.lex-mt-2 {
+  margin-top: 2rem;
+}
+
+.lex-mb-0 {
+  margin-bottom: 0;
+}
+
+.lex-ml-1 {
+  margin-left: 0.5rem;
+}
+
+/* Full-width action capped to the card width (Review footer buttons) */
+.lex-btn-wide {
+  width: 100%;
+  max-width: 400px;
+}
+
+/* Free-text areas the user may drag taller (feedback message) */
+.lex-resize-y {
+  resize: vertical;
+}
+
+/* Card laid out as a vertical stack (Review training screen) */
+.lex-card--column {
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Icon button ──────────────────────────────────────
+   Borderless square button holding a single SVG icon. */
+.lex-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  width: 2.25rem;
+  height: 2.25rem;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--pico-muted-color);
+  border-radius: var(--lex-radius-sm);
+  font-size: var(--lex-text-base);
+  line-height: 1;
+  cursor: pointer;
+  /* Also used on <a> (dictionary edit link) — keep it icon-like */
+  text-decoration: none;
+}
+
+.lex-icon-btn:hover {
+  background: color-mix(in srgb, var(--pico-color) 8%, transparent);
+  color: var(--pico-color);
+}
+
+.lex-icon-btn--primary {
+  color: var(--pico-primary);
+}
+
+/* Buttons that sit inside a text row (edit/delete in the dictionary) */
+.lex-icon-btn--danger {
+  color: var(--pico-del-color);
+}
+
+/* ── Muted hint text ────────────────────────────────── */
+.lex-hint {
+  display: block;
+  color: var(--pico-muted-color);
+  font-size: var(--lex-text-sm);
+}
+
+/* ── Page hero heading ────────────────────────────────
+   The hgroup next to the hero mascot: left aligned, no Pico bottom gap. */
+.page-hero hgroup,
+.home-hero hgroup {
+  text-align: left;
+  margin-bottom: 0;
+}
+
+.page-hero .lex-hint,
+.home-hero .lex-hint {
+  margin: 0;
+}
+
+/* ── Home ───────────────────────────────────────────── */
+
+/* Second line of the two-line brand heading */
+.home-title-tail {
+  display: block;
+  font-size: var(--lex-text-xl);
+  font-weight: 500;
+  color: var(--pico-muted-color);
+}
+
+.lex-card-title {
+  margin-bottom: 0.5rem;
+  font-size: var(--lex-text-xl);
+}
+
+.lex-card-desc {
+  font-size: var(--lex-text-sm);
+  color: var(--pico-muted-color);
+  min-height: 4rem;
+}
+
+.lex-card-cta {
+  width: 100%;
+  text-align: center;
+}
+
+/* ── Centered text blocks (Review screens, legal pages) ── */
+.lex-center {
+  text-align: center;
+}
+
+/* Big line under the mascot on the empty / done screens */
+.lex-result-title {
+  font-size: var(--lex-text-lg);
+  margin-top: 1rem;
+}
+
+.lex-page-title {
+  text-align: center;
+}
+
+.lex-page-subtitle {
+  text-align: center;
+  color: var(--pico-muted-color);
+  margin-bottom: 2rem;
+}
+
+/* Legal pages (Privacy, Terms): one rhythm for every section */
+.lex-legal-section {
+  margin-bottom: 1.5rem;
+}
+
+/* ── Review ─────────────────────────────────────────── */
+
+/* Loading placeholder */
+.lex-loading {
+  text-align: center;
+  padding: 3rem;
+}
+
+/* Start / pause screens: centered column with the mascot on top */
+.lex-session {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 2rem 1rem;
+}
+
+/* Review start screen: hero on the left, actions centered below */
+.lex-start {
+  padding: 2rem 1rem;
+}
+
+.lex-start-actions {
+  text-align: center;
+  margin-top: 2rem;
+}
+
+.lex-session--tall {
+  min-height: 60vh;
+}
+
+/* The big "Start" / "Resume" call to action */
+.lex-cta {
+  font-size: var(--lex-text-lg);
+  padding: 0.75rem 2.5rem;
+}
+
+/* Collapsible blocks on the Review start screen (history, help) */
+.lex-collapsible {
+  width: 100%;
+  max-width: 400px;
+  margin: 2rem auto 0;
+}
+
+.lex-collapsible > button {
+  width: 100%;
+}
+
+.lex-help {
+  margin-top: 1rem;
+  text-align: left;
+  font-size: var(--lex-text-sm);
+  color: var(--pico-muted-color);
+  line-height: 1.7;
+}
+
+.lex-help p {
+  margin-bottom: 0.5rem;
+}
+
+.lex-help p:last-child {
+  margin-bottom: 0;
+}
+
+.lex-help-heading {
+  color: var(--pico-color);
+  font-weight: 600;
+}
+
+.lex-history-table {
+  margin-top: 1rem;
+  font-size: var(--lex-text-xs);
+}
+
+/* Row above the flip card: mascot at the edge, timer centered */
+.lex-timer-row {
+  position: relative;
+  padding: 1rem 1rem 0.5rem;
+}
+
+.lex-timer-row-mascot {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.lex-timer-row-inner {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.lex-timer {
+  font-size: var(--lex-text-sm);
+  font-weight: bold;
+  font-variant-numeric: tabular-nums;
+}
+
+.lex-word-title {
+  font-size: clamp(1.4rem, 9vw, 2.5rem);
+  margin: 0;
+}
+
+/* Caption above the word on the flip card */
+.lex-card-caption {
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+/* Note shown after "Hint" is pressed */
+.lex-hint-text {
+  margin-top: 1rem;
+  font-style: italic;
+}
+
+.lex-word-translation {
+  font-size: clamp(1.2rem, 8vw, 2rem);
+  font-weight: bold;
+  margin: 0;
+  color: var(--pico-color);
+}
+
+.lex-card-actions {
+  text-align: center;
+  padding: 1.5rem 1rem 0;
+}
+
+.lex-card-actions > * {
+  width: 100%;
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+/* Stop button row at the very bottom of the training card */
+.lex-card-actions--footer {
+  padding-bottom: 1rem;
+  margin-top: 1rem;
+}
+
+/* ── Add page ───────────────────────────────────────── */
+
+/* Language picker row above the inputs */
+.lex-lang-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+  font-size: var(--lex-text-sm);
+  color: var(--pico-muted-color);
+}
+
+.lex-lang-bar select {
+  width: auto;
+  margin: 0;
+  padding: 0.25rem 1.75rem 0.25rem 0.5rem;
+  font-size: var(--lex-text-sm);
+  cursor: pointer;
+}
+
+/* Textareas that grow with their content (see autoResize in Add.tsx) */
+.lex-field {
+  width: 100%;
+  box-sizing: border-box;
+  margin-bottom: 0.5rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-y: hidden;
+  resize: vertical;
+}
+
+.lex-field--word {
+  font-size: var(--lex-text-lg);
+  margin-bottom: 1rem;
+  padding-right: 4.5rem;
+}
+
+.lex-field--note {
+  font-size: var(--lex-text-sm);
+  margin-bottom: 1rem;
+}
+
+/* Wrapper for a field with absolutely positioned buttons inside */
+.lex-field-wrap {
+  position: relative;
+}
+
+.lex-field-btn {
+  position: absolute;
+  top: 0.4rem;
+  right: 0.5rem;
+}
+
+.lex-field-btn--second {
+  right: 2.75rem;
+}
+
+.lex-field-status {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: var(--lex-text-sm);
+  color: var(--pico-muted-color);
+}
+
+.lex-field-caption {
+  display: block;
+  margin-bottom: 1rem;
+  color: var(--pico-muted-color);
+  font-size: var(--lex-text-xs);
+}
+
+.lex-field-caption--error {
+  color: var(--pico-del-color);
+}
+
+/* Note label row with the "load examples" button on the right */
+.lex-note-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.25rem;
+}
+
+.lex-note-row label {
+  margin: 0;
+  font-size: var(--lex-text-sm);
+  color: var(--pico-muted-color);
+}
+
+.lex-btn-mini {
+  width: auto;
+  margin: 0;
+  padding: 0.15rem 0.5rem;
+  font-size: var(--lex-text-xs);
+  line-height: 1.6;
+}
+
+/* Destructive action (reset all data) — uses the skin's error color
+   instead of Pico's default contrast background */
+.lex-btn--danger {
+  background: var(--pico-del-color);
+  border-color: var(--pico-del-color);
+}
+
+/* Save row pinned to the bottom of the viewport while typing */
+.lex-save-bar {
+  position: sticky;
+  bottom: 0;
+  margin-top: auto;
+  padding-top: 1rem;
+  background: var(--pico-background-color);
+  border-top: 1px solid var(--pico-muted-border-color);
+  display: flex;
+  gap: 0.5rem;
+}
+
+.lex-save-bar > button {
+  margin: 0;
+}
+
+/* Cancel (when editing) is narrower than Save */
+.lex-save-bar > button:first-child {
+  flex: 1;
+}
+
+.lex-save-bar > button:last-child {
+  flex: 2;
+}
+
+/* Textarea with an absolutely positioned button inside */
+.lex-field--with-btn {
+  padding-right: 2.5rem;
+}
+
+/* Caption that sits directly above another element */
+.lex-field-caption--tight {
+  margin-bottom: 0.25rem;
+}
+
+/* The Add/Edit form card keeps space above the bottom nav */
+.lex-add-card {
+  margin-bottom: 3rem;
+}
+
+/* ── Dictionary ─────────────────────────────────────── */
+
+.lex-toolbar {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.lex-toolbar > button {
+  width: auto;
+  margin: 0;
+  padding: 0.4rem 0.9rem;
+  font-size: var(--lex-text-sm);
+}
+
+.lex-hidden-input {
+  display: none;
+}
+
+.lex-sort-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.lex-sort-row select {
+  flex: 1;
+  margin: 0;
+  font-size: var(--lex-text-sm);
+}
+
+.lex-sort-row button {
+  width: auto;
+  flex-shrink: 0;
+  margin: 0;
+  padding: 0.4rem 0.75rem;
+  font-size: var(--lex-text-sm);
+}
+
+/* Mobile word list */
+.lex-word-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.lex-word-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.lex-word-main {
+  min-width: 0;
+  flex: 1;
+}
+
+.lex-word-title-text {
+  font-size: var(--lex-text-base);
+  word-break: break-word;
+}
+
+.lex-word-translation-text {
+  word-break: break-word;
+}
+
+.lex-word-note {
+  display: block;
+  margin-top: 0.25rem;
+  color: var(--pico-muted-color);
+  font-size: var(--lex-text-xs);
+  word-break: break-word;
+}
+
+.lex-word-actions {
+  display: flex;
+  gap: 0.25rem;
+  flex-shrink: 0;
+}
+
+.lex-word-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  margin-top: 0.5rem;
+  font-size: var(--lex-text-xs);
+  color: var(--pico-muted-color);
+}
+
+.lex-known {
+  color: var(--pico-ins-color);
+}
+
+.lex-forgot {
+  color: var(--pico-del-color);
+}
+
+/* Desktop table */
+.lex-table-wrap {
+  padding: 0;
+  overflow-x: auto;
+}
+
+/* Search field above the word list */
+.lex-search {
+  margin-bottom: 1rem;
+}
+
+/* Sort direction explanation under the sort row */
+.lex-hint--xs {
+  font-size: var(--lex-text-xs);
+}
+
+/* Heading of the "no words yet" state */
+.lex-empty-title {
+  margin-top: 1rem;
+}
+
+/* Column widths live here so the header markup stays declarative.
+   Order: word, translation, note, known/forgot, time, rank, %, delete, edit. */
+.lex-table-wrap th:nth-child(1) { width: 20%; }
+.lex-table-wrap th:nth-child(2) { width: 20%; }
+.lex-table-wrap th:nth-child(3) { width: 15%; }
+.lex-table-wrap th:nth-child(4) { width: 8%; }
+.lex-table-wrap th:nth-child(5) { width: 10%; }
+.lex-table-wrap th:nth-child(6) { width: 8%; }
+.lex-table-wrap th:nth-child(7) { width: 6%; }
+.lex-table-wrap th:nth-child(8) { width: 6%; }
+.lex-table-wrap th:nth-child(9) { width: 6%; }
+
+.lex-table-wrap table {
+  margin: 0;
+  font-size: var(--lex-text-sm);
+}
+
+.lex-table-wrap th,
+.lex-table-wrap td {
+  padding: 0.6rem 0.75rem;
+}
+
+.lex-th-sortable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.lex-cell-note {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--pico-muted-color);
+}
+
+.lex-cell-center {
+  text-align: center;
+  color: var(--pico-muted-color);
+}
+
+/* ── Settings ───────────────────────────────────────── */
+
+.lex-section {
+  margin-bottom: 1.5rem;
+}
+
+.lex-section > h3 {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  font-size: var(--lex-text-lg);
+}
+
+.lex-details {
+  margin-top: 2rem;
+}
+
+.lex-details > summary {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+}
+
+/* Content of an opened details block gets breathing room from the summary */
+.lex-details > article {
+  margin-top: 1rem;
+}
+
+.lex-details--danger {
+  border-color: var(--pico-del-color);
+}
+
+.lex-details--danger > summary {
+  color: var(--pico-del-color);
+}
+
+.lex-muted {
+  color: var(--pico-muted-color);
+}
+
+.lex-switch-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Skin preview swatches */
+.lex-swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.lex-swatch {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  margin: 0;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid var(--pico-muted-border-color);
+  cursor: pointer;
+}
+
+.lex-swatch[aria-pressed="true"] {
+  border: 3px solid var(--pico-primary);
+}
+
+.lex-swatch-dot {
+  display: block;
+  width: 1rem;
+  height: 1rem;
+  border-radius: 50%;
+}
+
+.lex-footer-note {
+  margin-top: 2rem;
+  text-align: center;
+  font-size: var(--lex-text-sm);
+  color: var(--pico-muted-color);
+}
+
+.lex-legal-nav {
+  margin-top: 0.5rem;
+  text-align: center;
+  font-size: var(--lex-text-sm);
+}
+
+.lex-legal-nav a {
+  color: var(--pico-muted-color);
+}
+
+/* ── Bottom navigation (floating pill) ────────────────
+   Mobile only. Sits above the content with a safe-area gap so the
+   home indicator / gesture bar never covers an item. */
+.bottom-nav {
+  position: fixed;
+  left: 0.75rem;
+  right: 0.75rem;
+  bottom: calc(0.75rem + env(safe-area-inset-bottom));
+  z-index: 100;
+  display: flex;
+  justify-content: space-around;
+  margin: 0;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--pico-card-border-color);
+  border-radius: var(--lex-radius-pill);
+  background: var(--pico-card-background-color);
+  box-shadow: var(--lex-shadow-2);
+}
+
+/* Older Android WebViews have no backdrop-filter — the opaque card
+   background above is already readable, blur is only a bonus. */
+@supports (backdrop-filter: blur(1px)) {
+  .bottom-nav {
+    background: color-mix(
+      in srgb,
+      var(--pico-card-background-color) 88%,
+      transparent
+    );
+    backdrop-filter: blur(12px);
+  }
+}
+
+.bottom-nav-item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15rem;
+  flex: 1;
+  min-width: 0;
+  padding: 0.35rem 0.5rem;
+  border-radius: var(--lex-radius-pill);
+  text-decoration: none;
+  color: var(--pico-muted-color);
+  font-size: var(--lex-text-xs);
+}
+
+.bottom-nav-item:hover {
+  color: var(--pico-color);
+}
+
+/* Active item: a soft pill behind icon + label, not just a color swap */
+.bottom-nav-item.active {
+  color: var(--pico-primary);
+  background: color-mix(in srgb, var(--pico-primary) 14%, transparent);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .bottom-nav-item {
+    transition: color 0.15s ease, background-color 0.15s ease;
+  }
+}
+
+.bottom-nav-icon {
+  display: inline-flex;
+  line-height: 1;
+}
+
+.bottom-nav-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 5rem;
+}

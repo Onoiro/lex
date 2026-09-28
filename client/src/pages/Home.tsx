@@ -58,63 +58,37 @@ export function Home() {
     <>
       <div className="home-hero">
         <Mascot emotion="base" size="hero" />
-        <hgroup style={{ textAlign: "left", marginBottom: 0 }}>
+        <hgroup>
           <h1>
             {t("index.title")}
-            <small
-              style={{
-                display: "block",
-                fontSize: "1.4rem",
-                fontWeight: 500,
-                color: "var(--pico-muted-color)",
-              }}
-            >
-              {t("index.title_tail")}
-            </small>
+            <small className="home-title-tail">{t("index.title_tail")}</small>
           </h1>
-          <p style={{ fontSize: "0.9rem", color: "var(--pico-muted-color)" }}>
+          <p className="lex-hint">
             {t("index.subtitle_detail", { count: langCount ?? "..." })}
           </p>
         </hgroup>
       </div>
 
       <div className="grid">
-        <article>
+        <article className="lex-card">
           <header>
-            <h2 style={{ marginBottom: "0.5rem", fontSize: "1.5rem" }}>
-              {t("index.translate_card.title")}
-            </h2>
+            <h2 className="lex-card-title">{t("index.translate_card.title")}</h2>
           </header>
-          <p style={{ fontSize: "0.9rem", color: "var(--pico-muted-color)", minHeight: "4rem" }}>
-            {t("index.translate_card.description")}
-          </p>
+          <p className="lex-card-desc">{t("index.translate_card.description")}</p>
           <footer>
-            <Link
-              to="/add"
-              role="button"
-              className="outline"
-              style={{ width: "100%", textAlign: "center" }}
-            >
+            <Link to="/add" role="button" className="outline lex-card-cta">
               {t("index.translate_card.button")}
             </Link>
           </footer>
         </article>
 
-        <article>
+        <article className="lex-card">
           <header>
-            <h2 style={{ marginBottom: "0.5rem", fontSize: "1.5rem" }}>
-              {t("index.review_card.title")}
-            </h2>
+            <h2 className="lex-card-title">{t("index.review_card.title")}</h2>
           </header>
-          <p style={{ fontSize: "0.9rem", color: "var(--pico-muted-color)", minHeight: "4rem" }}>
-            {t("index.review_card.description")}
-          </p>
+          <p className="lex-card-desc">{t("index.review_card.description")}</p>
           <footer>
-            <Link
-              to="/review"
-              role="button"
-              style={{ width: "100%", textAlign: "center" }}
-            >
+            <Link to="/review" role="button" className="lex-card-cta">
               {t("index.review_card.button")}
             </Link>
           </footer>

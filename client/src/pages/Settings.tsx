@@ -171,28 +171,19 @@ export function Settings() {
   return (
     <>
       <div className="page-hero">
-        <hgroup style={{ textAlign: "left", marginBottom: 0 }}>
-          <h2 style={{ marginBottom: 0 }}>{t("settings.heading")}</h2>
+        <hgroup>
+          <h2 className="lex-mb-0">{t("settings.heading")}</h2>
         </hgroup>
         <Mascot emotion="sliders" size="hero" />
       </div>
 
       {saved && (
-        <article
-          style={{
-            background: "var(--pico-ins-color)",
-            color: "var(--pico-primary-inverse)",
-            padding: "1rem",
-            marginBottom: "1rem",
-          }}
-        >
-          {t("settings.saved")}
-        </article>
+        <article className="lex-alert lex-alert--success">{t("settings.saved")}</article>
       )}
 
       <form onSubmit={handleSave}>
-        <section style={{ marginBottom: "1.5rem" }}>
-          <h3 style={{ marginBottom: "1rem", fontSize: "1.1rem" }}>🌐 {t("settings.app_language")}</h3>
+        <section className="lex-section">
+          <h3>🌐 {t("settings.app_language")}</h3>
           <label htmlFor="locale">{t("settings.choose_app_language")}</label>
           <select
             id="locale"
@@ -208,9 +199,9 @@ export function Settings() {
           </select>
         </section>
 
-        <section style={{ marginBottom: "1.5rem" }}>
-          <h3 style={{ marginBottom: "1rem", fontSize: "1.1rem" }}>🌍 {t("settings.translate")}</h3>
-          <p style={{ marginBottom: "1rem", color: "var(--pico-muted-color)" }}>{t("settings.description")}</p>
+        <section className="lex-section">
+          <h3>🌍 {t("settings.translate")}</h3>
+          <p className="lex-hint">{t("settings.description")}</p>
           <label htmlFor="source_lang">{t("settings.source_lang")}</label>
           <select
             id="source_lang"
@@ -226,7 +217,7 @@ export function Settings() {
             ))}
           </select>
 
-          <label htmlFor="target_lang" style={{ marginTop: "1rem" }}>
+          <label htmlFor="target_lang">
             {t("settings.target_lang")}
           </label>
           <select
@@ -243,32 +234,31 @@ export function Settings() {
           </select>
 
           {sameLangWarning && (
-            <small style={{ color: "var(--pico-del-color)", display: "block", marginTop: "0.5rem" }}>
+            <small className="lex-field-caption lex-field-caption--error">
               {sameLangWarning}
             </small>
           )}
         </section>
 
-        <section style={{ marginBottom: "1.5rem" }}>
-          <h3 style={{ marginBottom: "1rem", fontSize: "1.1rem" }}>🔊 {t("settings.tts")}</h3>
-          <label htmlFor="tts_enabled">
+        <section className="lex-section">
+          <h3>🔊 {t("settings.tts")}</h3>
+          <label htmlFor="tts_enabled" className="lex-switch-label">
             <input
               type="checkbox"
               id="tts_enabled"
               role="switch"
               checked={ttsEnabled}
               onChange={(e) => setTtsEnabled(e.target.checked)}
-              style={{ marginRight: "0.5rem" }}
             />
             {t("settings.tts_review")}
           </label>
-          <small style={{ display: "block", marginTop: "0.5rem", color: "var(--pico-muted-color)" }}>
+          <small className="lex-hint lex-mt-1">
             {t("settings.tts_description")}
           </small>
         </section>
 
-        <section style={{ marginBottom: "1.5rem" }}>
-          <h3 style={{ marginBottom: "1rem", fontSize: "1.1rem" }}>🎨 {t("settings.theme")}</h3>
+        <section className="lex-section">
+          <h3>🎨 {t("settings.theme")}</h3>
           <label htmlFor="theme">{t("settings.theme_choose")}</label>
           <select
             id="theme"
@@ -281,7 +271,7 @@ export function Settings() {
             <option value="auto">{t("settings.theme_auto")}</option>
           </select>
 
-          <label htmlFor="skin" style={{ marginTop: "1rem" }}>{t("settings.skin_choose")}</label>
+          <label htmlFor="skin">{t("settings.skin_choose")}</label>
           <select
             id="skin"
             value={skin}
@@ -298,7 +288,7 @@ export function Settings() {
           </select>
 
           {/* Live preview swatches for each skin */}
-          <div style={{ marginTop: "0.75rem", display: "flex", flexWrap: "wrap", gap: "0.75rem" }}>
+          <div className="lex-swatches">
             {([
               { value: "default", bg: "#fff", fg: "#1095c1" },
               { value: "ocean", bg: "#f0f7fa", fg: "#0ea5e9" },
@@ -311,30 +301,13 @@ export function Settings() {
               <button
                 key={s.value}
                 type="button"
+                className="lex-swatch"
                 onClick={() => setSkin(s.value)}
                 aria-label={t(`settings.skin_${s.value}`)}
-                style={{
-                  width: "2.5rem",
-                  height: "2.5rem",
-                  borderRadius: "50%",
-                  border: skin === s.value ? "3px solid var(--pico-primary)" : "1px solid var(--pico-muted-border-color)",
-                  background: s.bg,
-                  cursor: "pointer",
-                  padding: 0,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
+                aria-pressed={skin === s.value}
+                style={{ background: s.bg }}
               >
-                <span
-                  style={{
-                    width: "1rem",
-                    height: "1rem",
-                    borderRadius: "50%",
-                    background: s.fg,
-                    display: "block",
-                  }}
-                />
+                <span className="lex-swatch-dot" style={{ background: s.fg }} />
               </button>
             ))}
           </div>
@@ -344,38 +317,19 @@ export function Settings() {
       </form>
 
       {resetDone && (
-        <article
-          style={{
-            background: "var(--pico-ins-color)",
-            color: "var(--pico-primary-inverse)",
-            padding: "1rem",
-            marginBottom: "1rem",
-          }}
-        >
-          {t("settings.reset_done")}
-        </article>
+        <article className="lex-alert lex-alert--success">{t("settings.reset_done")}</article>
       )}
 
-      <details
-        style={{
-          marginTop: "2rem",
-        }}
-      >
-        <summary
-          style={{
-            fontWeight: 600,
-          }}
-        >
-          📊 {t("settings.limits")}
-        </summary>
-        <article style={{ marginTop: "1rem" }}>
+      <details className="lex-details">
+        <summary>📊 {t("settings.limits")}</summary>
+        <article>
           <div className="section-hero">
             <Mascot emotion="tired" size="inline" animated={false} />
             <div>
               {quota && (
                 <p
                   data-testid="limits-today"
-                  style={{ color: "var(--pico-muted-color)", marginBottom: "1rem" }}
+                  className="lex-muted"
                 >
                   {t("settings.limits_today", {
                     translate_used: quota.translate.used,
@@ -385,66 +339,42 @@ export function Settings() {
                   })}
                 </p>
               )}
-              <p style={{ color: "var(--pico-muted-color)", marginBottom: "1rem" }}>
+              <p className="lex-muted">
                 {t("settings.limits_intro")}
               </p>
             </div>
           </div>
-          <ul style={{ color: "var(--pico-muted-color)", marginBottom: "1rem" }}>
+          <ul className="lex-muted">
             <li>{t("settings.limits_length", { limit: MAX_TEXT_LENGTH })}</li>
             <li>{t("settings.limits_translate_quota", { limit: quota?.translate.limit ?? DAILY_CHAR_LIMIT })}</li>
             <li>{t("settings.limits_tts_quota", { limit: quota?.tts.limit ?? DAILY_CHAR_LIMIT })}</li>
             <li>{t("settings.limits_reset")}</li>
             <li>{t("settings.limits_cache")}</li>
           </ul>
-          <p style={{ color: "var(--pico-muted-color)", marginBottom: 0 }}>
+          <p className="lex-muted lex-mb-0">
             {t("settings.limits_why")}
           </p>
         </article>
       </details>
 
-      <details
-        style={{
-          marginTop: "2rem",
-        }}
-      >
-        <summary
-          style={{
-            fontWeight: 600,
-          }}
-        >
-          💬 {t("settings.feedback")}
-        </summary>
-        <article style={{ marginTop: "1rem" }}>
+      <details className="lex-details">
+        <summary>💬 {t("settings.feedback")}</summary>
+        <article>
           <div className="section-hero">
             <Mascot emotion="mail" size="inline" animated={false} />
-            <p style={{ color: "var(--pico-muted-color)", marginBottom: 0 }}>
+            <p className="lex-muted lex-mb-0">
               {t("settings.feedback_description")}
             </p>
           </div>
 
           {feedbackStatus === "success" && (
-            <article
-              style={{
-                background: "var(--pico-ins-color)",
-                color: "var(--pico-primary-inverse)",
-                padding: "1rem",
-                marginBottom: "1rem",
-              }}
-            >
+            <article className="lex-alert lex-alert--success">
               {t("settings.feedback_success")}
             </article>
           )}
 
           {feedbackStatus === "error" && (
-            <article
-              style={{
-                background: "var(--pico-del-color)",
-                color: "var(--pico-primary-inverse)",
-                padding: "1rem",
-                marginBottom: "1rem",
-              }}
-            >
+            <article className="lex-alert lex-alert--error">
               {t("settings.feedback_error")}
               {feedbackError && ` (${feedbackError})`}
             </article>
@@ -462,7 +392,7 @@ export function Settings() {
             <option value="other">{t("settings.feedback_other")}</option>
           </select>
 
-          <label htmlFor="feedback_message" style={{ marginTop: "1rem" }}>
+          <label htmlFor="feedback_message" className="lex-mt-1">
             {t("settings.feedback_message")}
           </label>
           <textarea
@@ -472,15 +402,15 @@ export function Settings() {
             placeholder={t("settings.feedback_message_placeholder")}
             rows={4}
             disabled={feedbackStatus === "sending"}
-            style={{ resize: "vertical" }}
+            className="lex-resize-y"
           />
           {feedbackMessage.length > 0 && feedbackMessage.length < 10 && (
-            <small style={{ color: "var(--pico-del-color)", display: "block", marginTop: "0.25rem" }}>
+            <small className="lex-field-caption lex-field-caption--error">
               {t("settings.feedback_too_short")}
             </small>
           )}
 
-          <label htmlFor="feedback_contact" style={{ marginTop: "1rem" }}>
+          <label htmlFor="feedback_contact" className="lex-mt-1">
             {t("settings.feedback_contact")}
           </label>
           <input
@@ -496,41 +426,25 @@ export function Settings() {
             type="button"
             onClick={() => void handleFeedback()}
             disabled={feedbackStatus === "sending" || feedbackMessage.trim().length < 10}
-            style={{ marginTop: "1rem" }}
+            className="lex-mt-1"
           >
             {feedbackStatus === "sending" ? t("settings.feedback_sending") : t("settings.feedback_send")}
           </button>
         </article>
       </details>
 
-      <details
-        style={{
-          marginTop: "2rem",
-          borderColor: "var(--pico-del-color)",
-        }}
-      >
-        <summary
-          style={{
-            color: "var(--pico-del-color)",
-            fontWeight: 600,
-          }}
-        >
-          ⚠️ {t("settings.danger_zone")}
-        </summary>
-        <article style={{ marginTop: "1rem" }}>
-          <h3 style={{ fontSize: "1.1rem", marginBottom: "0.5rem" }}>
+      <details className="lex-details lex-details--danger">
+        <summary>⚠️ {t("settings.danger_zone")}</summary>
+        <article>
+          <h3>
             {t("settings.reset_title")}
           </h3>
-          <p style={{ color: "var(--pico-muted-color)", marginBottom: "1rem" }}>
+          <p className="lex-muted">
             {t("settings.reset_description")}
           </p>
           <button
             type="button"
-            className="contrast"
-            style={{
-              background: "var(--pico-del-color)",
-              borderColor: "var(--pico-del-color)",
-            }}
+            className="contrast lex-btn--danger"
             onClick={() => void handleReset()}
           >
             {t("settings.reset_btn")}
@@ -538,17 +452,11 @@ export function Settings() {
         </article>
       </details>
 
-      <p style={{ marginTop: "2rem", fontSize: "0.85rem", color: "var(--pico-muted-color)", textAlign: "center" }}>
-        {t("settings.app_version", { version })}
-      </p>
-      <nav style={{ marginTop: "0.5rem", textAlign: "center", fontSize: "0.85rem" }}>
-        <Link to="/privacy" style={{ color: "var(--pico-muted-color)" }}>
-          {t("settings.privacy_policy")}
-        </Link>
+      <p className="lex-footer-note">{t("settings.app_version", { version })}</p>
+      <nav className="lex-legal-nav">
+        <Link to="/privacy">{t("settings.privacy_policy")}</Link>
         {" · "}
-        <Link to="/terms" style={{ color: "var(--pico-muted-color)" }}>
-          {t("settings.terms_of_use")}
-        </Link>
+        <Link to="/terms">{t("settings.terms_of_use")}</Link>
       </nav>
     </>
   );

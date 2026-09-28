@@ -448,18 +448,13 @@ export function Add() {
       <OfflineIndicator />
       <div className="page-hero">
         <Mascot emotion="translating" size="hero" />
-        <hgroup style={{ textAlign: "left", marginBottom: 0 }}>
+        <hgroup>
           <h1>{editing ? t("add.edit_heading") : t("add.heading")}</h1>
           {/* Daily quota indicator (hidden when quota is unknown) */}
           {quota && (
             <small
               data-testid="quota-indicator"
-              style={{
-                display: "block",
-                color: "var(--pico-muted-color)",
-                fontSize: "0.75rem",
-                marginTop: "0.25rem",
-              }}
+              className="lex-field-caption lex-mb-0"
             >
               {t("quota.translate_line", { used: quota.translate.used, limit: quota.translate.limit })}
               {" · "}
@@ -470,38 +465,17 @@ export function Add() {
       </div>
 
       {langsChanged && (
-        <article
-          style={{
-            background: "var(--pico-ins-color)",
-            color: "var(--pico-primary-inverse)",
-            padding: "0.5rem 1rem",
-            marginBottom: "1rem",
-            fontSize: "0.85rem",
-            textAlign: "center",
-          }}
-        >
+        <article className="lex-alert lex-alert--success">
           {t("add.lang_changed_hint")}{" "}
-          <Link to="/settings" style={{ color: "var(--pico-primary-inverse)", fontWeight: 700, textDecoration: "underline" }}>
-            {t("add.lang_changed_settings_link")}
-          </Link>
+          <Link to="/settings">{t("add.lang_changed_settings_link")}</Link>
         </article>
       )}
 
       {message && (
         <article
-          style={{
-            background:
-              message.type === "success"
-                ? "var(--pico-ins-color)"
-                : "var(--pico-del-color)",
-            color: "var(--pico-primary-inverse)",
-            padding: "0.75rem 1rem",
-            marginBottom: "1rem",
-            fontSize: "0.9rem",
-            display: "flex",
-            alignItems: "center",
-            gap: "0.75rem",
-          }}
+          className={`lex-alert lex-alert--row ${
+            message.type === "success" ? "lex-alert--success" : "lex-alert--error"
+          }`}
         >
           {message.type === "error_quota" && (
             <Mascot emotion="tired" size="inline" animated={false} />
@@ -510,23 +484,12 @@ export function Add() {
         </article>
       )}
 
-      <article style={{ marginBottom: "3rem" }}>
+      <article className="lex-card lex-add-card">
         {/* Language bar */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: "0.5rem",
-            marginBottom: "1.25rem",
-            fontSize: "0.95rem",
-            color: "var(--pico-muted-color)",
-          }}
-        >
+        <div className="lex-lang-bar">
           <select
             value={settings?.source_lang ?? "auto"}
             onChange={(e) => handleSourceLangChange(e.target.value)}
-            style={{ padding: "0.25rem 0.5rem", fontSize: "0.85rem", cursor: "pointer" }}
             title={t("add.source_lang")}
           >
             <option value="auto">{t("add.auto_detect")}</option>
@@ -538,8 +501,7 @@ export function Add() {
           </select>
           <button
             type="button"
-            className="secondary"
-            style={{ padding: "0.25rem 0.35rem", fontSize: "0.85rem", cursor: "pointer", lineHeight: 1 }}
+            className="secondary lex-icon-btn"
             onClick={handleSwapLanguages}
             title={t("add.swap_languages")}
           >
@@ -548,7 +510,6 @@ export function Add() {
           <select
             value={settings?.target_lang ?? "ru"}
             onChange={(e) => handleTargetLangChange(e.target.value)}
-            style={{ padding: "0.25rem 0.5rem", fontSize: "0.85rem", cursor: "pointer" }}
             title={t("add.target_lang")}
           >
             {langCodes.map((code) => (
@@ -559,9 +520,9 @@ export function Add() {
           </select>
         </div>
 
-        <form onSubmit={handleSave} style={{ marginBottom: 0 }}>
+        <form onSubmit={handleSave} className="lex-mb-0">
           {/* Word input */}
-          <div style={{ position: "relative" }}>
+          <div className="lex-field-wrap">
             <textarea
               ref={wordRef}
               id="word"
@@ -578,38 +539,16 @@ export function Add() {
               placeholder={t("add.word_placeholder_new")}
               autoComplete="off"
               rows={2}
-              style={{
-                width: "100%",
-                fontSize: "1.1rem",
-                marginBottom: "1rem",
-                boxSizing: "border-box",
-                whiteSpace: "pre-wrap",
-                wordBreak: "break-word",
-                overflowY: "hidden",
-                resize: "vertical",
-                paddingRight: "2.5rem",
-              }}
+              className="lex-field lex-field--word"
             />
             {word.trim() && (
               <button
                 type="button"
-                className="outline"
+                className="lex-icon-btn lex-field-btn"
                 data-testid="clear-fields-btn"
                 onClick={handleClear}
                 title={t("add.clear_fields")}
                 aria-label={t("add.clear_fields")}
-                style={{
-                  position: "absolute",
-                  right: "0.5rem",
-                  top: "0.4rem",
-                  padding: "0.25rem 0.5rem",
-                  fontSize: "1rem",
-                  lineHeight: 1,
-                  cursor: "pointer",
-                  border: "none",
-                  background: "none",
-                  color: "var(--pico-muted-color)",
-                }}
               >
                 ✕
               </button>
@@ -617,23 +556,11 @@ export function Add() {
             {word.trim() && (
               <button
                 type="button"
-                className="outline"
+                className="lex-icon-btn lex-icon-btn--primary lex-field-btn lex-field-btn--second"
                 data-testid="tts-word-btn"
                 onClick={handlePlayWord}
                 disabled={ttsLoading === "word"}
                 title={t("tts.listen_word")}
-                style={{
-                  position: "absolute",
-                  right: "2.2rem",
-                  top: "0.4rem",
-                  padding: "0.25rem 0.5rem",
-                  fontSize: "1rem",
-                  lineHeight: 1,
-                  cursor: "pointer",
-                  border: "none",
-                  background: "none",
-                  color: "var(--pico-primary)",
-                }}
               >
                 {ttsLoading === "word" ? "⏳" : "🔊"}
               </button>
@@ -641,7 +568,7 @@ export function Add() {
           </div>
 
           {/* Translation output */}
-          <div style={{ position: "relative" }}>
+          <div className="lex-field-wrap">
             <textarea
               ref={translationRef}
               id="translation"
@@ -655,30 +582,10 @@ export function Add() {
               required
               placeholder={t("add.translation_placeholder_new")}
               rows={2}
-              style={{
-                width: "100%",
-                whiteSpace: "pre-wrap",
-                wordBreak: "break-word",
-                boxSizing: "border-box",
-                overflowY: "hidden",
-                resize: "vertical",
-                marginBottom: "0.5rem",
-                paddingRight: "2.5rem",
-              }}
+              className="lex-field lex-field--with-btn"
             />
             {translating && (
-              <span
-                style={{
-                  position: "absolute",
-                  right: "0.5rem",
-                  top: "0.5rem",
-                  fontSize: "0.85rem",
-                  color: "var(--pico-muted-color)",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "0.25rem",
-                }}
-              >
+              <span className="lex-field-status">
                 <Mascot emotion="thinking" size="inline" animated={false} />
                 ⏳
               </span>
@@ -686,23 +593,11 @@ export function Add() {
             {!translating && translation.trim() && (
               <button
                 type="button"
-                className="outline"
+                className="lex-icon-btn lex-icon-btn--primary lex-field-btn"
                 data-testid="tts-translation-btn"
                 onClick={handlePlayTranslation}
                 disabled={ttsLoading === "translation"}
                 title={t("tts.listen_translation")}
-                style={{
-                  position: "absolute",
-                  right: "0.5rem",
-                  top: "0.4rem",
-                  padding: "0.25rem 0.5rem",
-                  fontSize: "1rem",
-                  lineHeight: 1,
-                  cursor: "pointer",
-                  border: "none",
-                  background: "none",
-                  color: "var(--pico-primary)",
-                }}
               >
                 {ttsLoading === "translation" ? "⏳" : "🔊"}
               </button>
@@ -711,14 +606,7 @@ export function Add() {
 
           {/* Language codes */}
           {translation && (
-            <small
-              style={{
-                display: "block",
-                marginBottom: "1rem",
-                color: "var(--pico-muted-color)",
-                fontSize: "0.8rem",
-              }}
-            >
+            <small className="lex-field-caption">
               {(settings?.source_lang === "auto" ? detectedLang : settings?.source_lang) ?? "auto"} → {settings?.target_lang}
             </small>
           )}
@@ -727,37 +615,29 @@ export function Add() {
           {wordTooLong && (
             <small
               data-testid="too-long-warning"
-              style={{
-                display: "block",
-                marginBottom: "1rem",
-                color: "var(--pico-del-color)",
-                fontSize: "0.8rem",
-              }}
+              className="lex-field-caption lex-field-caption--error"
             >
               {t("add.error_too_long", { limit: MAX_TEXT_LENGTH })}
             </small>
           )}
 
           {/* Note input */}
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.25rem" }}>
-            <label htmlFor="note" style={{ fontSize: "0.85rem", color: "var(--pico-muted-color)" }}>
-              {t("add.note_label")}
-            </label>
+          <div className="lex-note-row">
+            <label htmlFor="note">{t("add.note_label")}</label>
             {word.trim() && translation.trim() && (
               <button
                 type="button"
-                className="outline"
+                className="outline lex-btn-mini"
                 data-testid="load-examples-btn"
                 onClick={handleLoadExamples}
                 disabled={examplesLoading}
-                style={{ fontSize: "0.75rem", padding: "0.15rem 0.5rem", lineHeight: 1 }}
               >
                 {examplesLoading ? t("add.loading_examples") : t("add.load_examples")}
               </button>
             )}
           </div>
           {examplesError && (
-            <small style={{ display: "block", marginBottom: "0.25rem", color: "var(--pico-muted-color)", fontSize: "0.8rem" }}>
+            <small className="lex-field-caption lex-field-caption--tight">
               {t("add.no_examples")}
             </small>
           )}
@@ -771,42 +651,21 @@ export function Add() {
             }}
             placeholder={t("add.note_placeholder")}
             rows={2}
-            style={{
-              width: "100%",
-              fontSize: "0.95rem",
-              marginBottom: "1rem",
-              boxSizing: "border-box",
-              whiteSpace: "pre-wrap",
-              wordBreak: "break-word",
-              overflowY: "hidden",
-              resize: "vertical",
-            }}
+            className="lex-field lex-field--note"
           />
 
           {/* Save button - sticky bottom */}
-          <footer
-            style={{
-              position: "sticky",
-              bottom: "0",
-              marginTop: "auto",
-              paddingTop: "1rem",
-              background: "var(--pico-background-color)",
-              borderTop: "1px solid var(--pico-muted-border-color)",
-              display: "flex",
-              gap: "0.5rem",
-            }}
-          >
+          <footer className="lex-save-bar">
             {editing && (
               <button
                 type="button"
                 className="secondary"
                 onClick={() => navigate("/dictionary")}
-                style={{ flex: 1 }}
               >
                 {t("add.cancel_btn")}
               </button>
             )}
-            <button type="submit" style={{ flex: 2 }}>
+            <button type="submit">
               {editing ? t("add.save_edit_btn") : t("add.save_btn")}
             </button>
           </footer>
