@@ -4,6 +4,9 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Capacitor } from "@capacitor/core";
 import { StatusBar, Style } from "@capacitor/status-bar";
 import { SplashScreen } from "@capacitor/splash-screen";
+// Self-hosted variable font: no Google Fonts request, works fully offline.
+// Loaded before Pico so its --pico-font-family override in tokens.css resolves.
+import "@fontsource-variable/manrope/wght.css";
 import "@picocss/pico/css/pico.min.css";
 import "./index.css";
 import { Layout } from "@/components/Layout";
