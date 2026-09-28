@@ -4,14 +4,14 @@
 
 - [x] **Фаза 0 — токены и радиусы** (закоммичено 44d34f0, v1.27.1, versionCode 72)
 - [x] **Фикс текста сохранения настроек** (`settings.lang_updated` → `settings.saved`, «Настройки сохранены.») — закоммичено d7c1d6b, v1.27.2, versionCode 73
-- [ ] **1.1** Структура стилей: `styles/tokens.css` + `styles/components.css` + токены типографики
-- [ ] **1.2** Классы `.lex-*` вместо inline-стилей (цель: 221 → ≤ 40)
-- [ ] **1.3** Self-hosted шрифт Manrope + precache woff2
-- [ ] **1.4** SVG-иконки вместо эмодзи (`components/icons.tsx`)
-- [ ] **1.5** Floating bottom-nav + safe-area
-- [ ] **1.6** Покосопутные: i18n OfflineIndicator, viewport (pinch-zoom), theme-color/статус-бар
-- [ ] **1.7** Проверка (lint/test/build + офлайн + визуально)
-- [ ] **1.8** Документация + semver minor 1.27.2 → 1.28.0 (versionCode 74)
+- [x] **1.1** Структура стилей: `styles/tokens.css` + `styles/components.css` + токены типографики (4677a34)
+- [x] **1.2** Классы `.lex-*` вместо inline-стилей (цель: 221 → ≤ 40) (4677a34, inline: 222 → 4 динамических)
+- [x] **1.3** Self-hosted шрифт Manrope + precache woff2 (531f114)
+- [x] **1.4** SVG-иконки вместо эмодзи (`components/icons.tsx`) (a3496d9, 25 иконок)
+- [x] **1.5** Floating bottom-nav + safe-area (a3496d9 + класс .bottom-nav)
+- [x] **1.6** Покосопутные: i18n OfflineIndicator, viewport (pinch-zoom), theme-color/статус-бар (c90045b, offline.banner)
+- [x] **1.7** Проверка (lint/test/build + офлайн + визуально) (351 vitest + 281 pytest + build; precache 35 записей с woff2)
+- [x] **1.8** Документация + semver minor 1.27.2 → 1.28.0 (versionCode 74) (173a1f8, v1.28.0, versionCode 74)
 
 ## Принятые решения пользователя
 
