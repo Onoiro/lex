@@ -3,7 +3,7 @@
 ## Статус выполнения
 
 - [x] **Фаза 0 — токены и радиусы** (закоммичено 44d34f0, v1.27.1, versionCode 72)
-- [x] **Фикс текста сохранения настроек** (`settings.lang_updated` → `settings.saved`, «Настройки сохранены.»)
+- [x] **Фикс текста сохранения настроек** (`settings.lang_updated` → `settings.saved`, «Настройки сохранены.») — закоммичено d7c1d6b, v1.27.2, versionCode 73
 - [ ] **1.1** Структура стилей: `styles/tokens.css` + `styles/components.css` + токены типографики
 - [ ] **1.2** Классы `.lex-*` вместо inline-стилей (цель: 221 → ≤ 40)
 - [ ] **1.3** Self-hosted шрифт Manrope + precache woff2
@@ -11,7 +11,7 @@
 - [ ] **1.5** Floating bottom-nav + safe-area
 - [ ] **1.6** Покосопутные: i18n OfflineIndicator, viewport (pinch-zoom), theme-color/статус-бар
 - [ ] **1.7** Проверка (lint/test/build + офлайн + визуально)
-- [ ] **1.8** Документация + semver minor 1.27.1 → 1.28.0 (versionCode 73)
+- [ ] **1.8** Документация + semver minor 1.27.2 → 1.28.0 (versionCode 74)
 
 ## Принятые решения пользователя
 
@@ -328,7 +328,7 @@ Settings (49) → Add (29) → Home (9) → Privacy/Terms (26) → Layout/Offlin
 - `README.md`: Technologies → добавить self-hosted шрифт; «Pico CSS for styling» →
   «Pico CSS + Lex design tokens and `.lex-*` component classes».
 - Навык `docs-update` в конце.
-- semver: **minor** 1.27.1 → **1.28.0**, versionCode 72 → **73** (новый шрифт,
+- semver: **minor** 1.27.2 → **1.28.0**, versionCode 73 → **74** (новый шрифт,
   иконки, классы — видимое изменение продукта без ломающих API). 4 файла + `uv lock`.
 - Ветка: `ui-modernization` (или `ui-modernization-1`, если Фазу 0 коммитим отдельно).
 
@@ -360,4 +360,4 @@ Settings (49) → Add (29) → Home (9) → Privacy/Terms (26) → Layout/Offlin
 2. Pill у основных кнопок — ок, или держим скругление 12px (мягче, но не «капсула»)?
 3. Разрешаем ли убрать запрет pinch-zoom (`user-scalable=0`) и синхронизировать
    `theme-color`/статус-бар со скином (шаг 1.6)?
-4. Коммитим Фазу 0 отдельным релизом 1.27.1 или идём одним minor 1.28.0?
+4. ~~Коммитим Фазу 0 отдельным релизом?~~ **Закрыто:** Фаза 0 = 1.27.1 (44d34f0), фикс текста настроек = 1.27.2 (d7c1d6b), Фаза 1 = 1.28.0.
