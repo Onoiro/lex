@@ -89,6 +89,7 @@ Lex is a translator and vocabulary trainer. Your dictionary, spaced repetition, 
 - Dexie.js (IndexedDB) for local storage
 - Pico CSS + Lex design tokens (styles/tokens.css, styles/components.css)
 - Self-hosted Manrope variable font, inline SVG icons (no icon packages)
+- App icons, favicons and splash screens generated from the mascot artwork
 - vite-plugin-pwa for offline support
 - Capacitor 8 for Android
 - Tauri 2 for Desktop
@@ -294,6 +295,7 @@ All commands are run via `make`. Run `make help` to see the full list.
 │   ├── capacitor.config.ts    # Android config
 │   ├── src-tauri/             # Desktop (Tauri 2)
 │   ├── android/               # Capacitor Android project
+│   ├── public/                # Favicons, PWA icons, mascot assets
 │   └── vite.config.ts         # Vite + PWA plugin + dev proxy
 ├── proxy/                     # Translate proxy (FastAPI, port 8004)
 │   ├── main.py                # /translate, /languages, /tts, /quota, /dictionary, /feedback, /cache/stats, /tts/cache/stats, /dictionary/cache/stats

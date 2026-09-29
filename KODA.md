@@ -5,7 +5,7 @@ Lex — local-first приложение-переводчик и помощни�
 
 **Демо:** [lex.2-way.ru](https://lex.2-way.ru)
 
-**Текущая версия:** 1.28.0
+**Текущая версия:** 1.28.1
 
 ## Архитектура
 
@@ -121,7 +121,7 @@ make d-run    # docker compose up -d
 │   ├── capacitor.config.ts    # Android config (ru.lex.app)
 │   ├── src-tauri/             # Desktop (Tauri 2, Rust)
 │   ├── android/               # Capacitor Android project
-│   ├── public/                # PWA icons, favicon
+│   ├── public/                # Favicons, PWA-иконки, ассеты маскота
 │   ├── vite.config.ts         # Vite + PWA plugin
 │   ├── eslint.config.js
 │   └── package.json
@@ -181,6 +181,7 @@ make d-run    # docker compose up -d
 - **Дизайн-токены:** визуальный слой Lex поверх Pico объявлен в `client/src/styles/tokens.css` (блок :root перед скинами): --lex-radius-sm/md/lg/pill (6/12/16px/pill), --lex-shadow-1/2, --lex-press. Базовые Pico-токены переопределены: --pico-border-radius: 0.5rem, --pico-outline-width: 0.125rem. Правило: радиусы и тени только через токены, хардкод border-radius/box-shadow в компонентах запрещён. Карточки (article, flip-card) — lg, основные кнопки — md (12px, не pill — решение пользователя), outline/secondary — базовый радиус. Каждый из 12 блоков скинов задаёт --pico-card-sectioning-background-color, --pico-form-element-background-color, --pico-form-element-border-color, --pico-box-shadow (в dark — none); новый скин обязан определять все четыре. Press-фидбек (:active → --lex-press) и переходы — только под prefers-reduced-motion: no-preference.
 - **i18n:** все UI-строки через `t()` из `@/i18n`. Переводы в `en.json` и `ru.json`.
 - **Маскот:** декоративный попугай (`components/Mascot.tsx`, `aria-hidden`, без текстов). Ассеты: `client/public/mascot/*.webp` — 14 эмоций/сцен (base, happy, sad, hint, thinking, sleeping, tired, celebrate, empty, training, reading, mail, translating, sliders), ~30 КБ каждая, в precache SW. Три размера: hero (140px), inline (48px), micro (32px). Анимация — CSS bounce при смене эмоции (перезапуск через `key={emotion}`), уважает `prefers-reduced-motion`; в тёмной теме — лёгкий drop-shadow для читаемости силуэта. Правило дозированности: не более одного маскота в поле зрения. Паттерн «маскот рядом с заголовком» (класс `page-hero`, как `.home-hero` на главной): маскот слева от заголовка — Home (hero base), Dictionary (hero reading, пустое состояние — отдельный hero empty), Add (hero translating); маскот справа от заголовка (образ «смотрит влево») — Review (hero training на старте), Settings (hero sliders). Settings: в details-разделах «Лимиты» (inline tired) и «Feedback» (inline mail) — класс `section-hero`: маскот слева, текст справа на одном уровне. Остальной маппинг: Home — hero base; Add — thinking при автопереводе, tired в сообщении о лимите; Review — micro над карточкой (thinking → hint → happy/sad), sleeping на паузе, celebrate на done, empty в пустом состоянии; OfflineIndicator — inline sleeping; UpdateScreen — hero tired.
+- **Иконки приложения:** все иконки и заставки — из арта маскота (попугай). Веб/PWA (`client/public/`): `favicon.ico` (16/24/32/48), `favicon-16x16.png`, `favicon-32x32.png`, `favicon-48x48.png`, `android-chrome-192x192.png` / `android-chrome-512x512.png` (прозрачные, `purpose: any`), `maskable-512x512.png` (белый фон, маскот в safe zone 70%), `apple-touch-icon.png` (180px, белый фон — iOS не поддерживает прозрачность). SVG-фавикона нет (PNG-набор достаточен). Android-лаунчер: `mipmap-*/ic_launcher.png` и `ic_launcher_round.png` (непрозрачные, белый фон), `ic_launcher_foreground.png` (прозрачный, маскот ≤60% — safe circle adaptive-иконки), цвет фона `ic_launcher_background` = `#FFFFFF`. Заставка Android: `drawable*/splash.png` (11 файлов по плотностям/ориентациям) — маскот по центру на белом. Desktop (Tauri): `client/src-tauri/icons/` сгенерированы `npx tauri icon` из 1024px PNG. Манифест PWA генерирует vite-plugin-pwa из `vite.config.ts` (отдельный `site.webmanifest` не нужен).
 - **PWA:** vite-plugin-pwa генерирует SW. Runtime cache для `/translate`, `/languages` и `/dictionary` (NetworkFirst).
 - **TTS:** `ttsApi.ts` — персистентный кеш аудио через Cache API (`lex-tts-audio`, ключи `tts:{lang}:{text}`, LRU-лимит ~50 МБ). Офлайн: пропускает запрос при `navigator.onLine === false`, ранее прослушанные слова озвучиваются из кеша. Ошибки лимитов (квота, длина) пробрасываются через опциональный callback `onError`.
 - **Лимиты на клиенте:** `translateApi.ts` бросает `LimitError` с кодами `text_too_long` / `daily_quota_exceeded`. Add.tsx: при исчерпании дневной квоты автоперевод останавливается до конца дня (флаг в state, без спама 429), при вводе >500 символов — предупреждение и отказ от автоперевода. В Настройках — сворачиваемый раздел «Лимиты использования» (перед Feedback).
