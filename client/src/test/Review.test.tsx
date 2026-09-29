@@ -28,8 +28,16 @@ describe("Review", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText(/🎉/)).toBeInTheDocument();
+      expect(screen.getByText("Nothing to train yet")).toBeInTheDocument();
     });
+
+    expect(
+      screen.getByText("Add your first word to the dictionary — it will show up here."),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Translate a word" })).toHaveAttribute(
+      "href",
+      "/add",
+    );
   });
 
   it("renders start screen with queue count", async () => {
@@ -1308,7 +1316,7 @@ describe("Review", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByTestId("mascot")).toHaveAttribute("src", "/mascot/empty.webp");
+      expect(screen.getByTestId("mascot")).toHaveAttribute("src", "/mascot/sleeping.webp");
     });
 
     empty.unmount();

@@ -17,7 +17,7 @@ Lex is a translator and vocabulary trainer. Your dictionary, spaced repetition, 
 - **Translate words** - Auto-translate from 100+ languages via Yandex Translate API (through proxy)
 - **Spaced repetition (SM-2)** - Words you forget more often appear more frequently in reviews
 - **Daily stats** - Review results and new words are saved per day: today's progress, day streak, and 14-day history on the Review page
-- **Mascot** - A decorative parrot reacts to what happens: celebrates correct answers, mourns forgotten ones, sleeps when offline or paused, gets tired when limits are hit
+- **Mascot** - A decorative parrot reacts to what happens: celebrates correct answers, mourns forgotten ones, sleeps when offline, paused or when there are no words to train yet, gets tired when limits are hit
 - **Response time tracking** - Best/average times, live timer with color thresholds
 - **Auto-answer & pause** - Auto-records "Forgot" after 10s, pauses after 3 consecutive auto-answers or 30s inactivity
 - **TTS** - Text-to-speech for words and translations via Yandex SpeechKit
@@ -220,6 +220,7 @@ Requires Rust + system libraries (see [Tauri prerequisites](https://tauri.app/st
 4. Timer: green (record), orange (5s), red (10s). Auto-answer after 10s.
 5. Training pauses after 3 consecutive auto-answers or 30s inactivity.
 6. Before training: today's stats (reviews, accuracy, new words, day streak), a collapsible 14-day history, and a "How does it work?" help block explaining the algorithm in plain language. Every answer is saved into daily stats immediately.
+7. With an empty dictionary the page shows a hint and a **Translate a word** button leading to the Translate page.
 
 ### Dictionary
 

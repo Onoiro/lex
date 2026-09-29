@@ -436,9 +436,10 @@ export function Review() {
   if (phase === "empty") {
     return (
       <article className="lex-card lex-center">
-        <Mascot emotion="empty" size="hero" />
-        <p className="lex-result-title">{t("review.empty", { message: "" })}</p>
-        <Link to="/" role="button" className="outline">{t("review.home")}</Link>
+        <Mascot emotion="sleeping" size="hero" />
+        <h2 className="lex-empty-title">{t("review.empty_title")}</h2>
+        <p className="lex-hint">{t("review.empty_hint")}</p>
+        <Link to="/add" role="button">{t("review.empty_cta")}</Link>
       </article>
     );
   }
@@ -449,7 +450,7 @@ export function Review() {
     return (
       <article className="lex-card lex-center">
         <Mascot emotion="celebrate" size="hero" />
-        <p className="lex-result-title">{t("review.done", { message: "" })}</p>
+        <p className="lex-result-title">{t("review.done")}</p>
         {todayStats && todayStats.reviewed > 0 && (
           <p className="lex-hint">
             {t("review.today_total", { count: todayStats.reviewed })}
