@@ -5,7 +5,7 @@ Lex — local-first приложение-переводчик и помощни�
 
 **Демо:** [lex.2-way.ru](https://lex.2-way.ru)
 
-**Текущая версия:** 1.28.2
+**Текущая версия:** 1.28.3
 
 ## Архитектура
 
@@ -103,6 +103,16 @@ make d-build  # docker compose build
 make d-run    # docker compose up -d
 ```
 
+### Деплой (production)
+```bash
+git pull origin master
+make deploy   # npm ci + build клиента, затем пересборка контейнера proxy
+```
+
+`make deploy` прерывается ДО остановки работающего контейнера, если сборка клиента упала или `client/dist/index.html` не обновился (проверка по timestamp-метке `/tmp/lex-deploy-stamp`). Это ловит «тихие» убийства сборки (например, OOM-killer на сервере с 2 ГБ RAM) — иначе деплой выглядит успешным, а nginx продолжает отдавать старый бандл.
+
+Nginx-конфиг на сервере — `/etc/nginx/conf.d/lex.2-way.ru.conf`, эталон в репозитории — `nginx.example` (в `.gitignore`, переносится на сервер вручную). Конфиг задаёт: `Cache-Control: no-cache` для `sw.js`, `registerSW.js`, `index.html`, `manifest.webmanifest`; `public, max-age=31536000, immutable` для хэшированных `/assets/*` и `.woff2`; `max-age=2592000` для `/mascot/`; `max-age=604800` для png/ico/svg; gzip для JS/CSS (в `nginx.conf` `gzip_types` закомментирован — переопределяется в server-блоке); `listen 443 ssl http2`. MIME-типы `application/manifest+json` и `font/woff2` задаются локально (`types {}`), т.к. в `mime.types` nginx 1.18 их нет.
+
 ## Структура проекта
 ```
 .
@@ -161,6 +171,7 @@ make d-run    # docker compose up -d
 │   └── test_report.py
 ├── pyproject.toml             # Python project config (uv, ruff)
 ├── Makefile                   # Build/run scripts
+├── nginx.example              # Эталон конфига nginx (в .gitignore, переносится на сервер вручную)
 ├── docker-compose.yml         # Docker (proxy)
 └── .env                       # YANDEX_API_KEY, TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID
 ```
@@ -231,4 +242,4 @@ make d-run    # docker compose up -d
 - График активности за 14 дней на странице Повтор (данные dailyStats уже есть)
 
 ---
-**Последнее обновление:** 29 сентября 2026
+**Последнее обновление:** 30 сентября 2026

@@ -174,6 +174,10 @@ make deploy          # builds client + rebuilds proxy Docker container
 
 Nginx serves `client/dist/` as static files and proxies `/translate`, `/languages` to the Docker container on port 8004.
 
+`make deploy` aborts before touching the running container if the client build fails or if `client/dist/index.html` was not refreshed by the build. This catches silent build kills (for example, the OOM killer on a small server) that would otherwise leave the old bundle in place while the deploy looks successful.
+
+A reference nginx config lives in `nginx.example` (gitignored, copy it to the server manually). It sets `Cache-Control: no-cache` for `sw.js`, `registerSW.js`, `index.html` and the web manifest, long-lived immutable caching for hashed `/assets/*`, enables gzip for JS/CSS and HTTP/2.
+
 ### Docker (proxy only)
 
 ```bash
@@ -267,12 +271,12 @@ All commands are run via `make`. Run `make help` to see the full list.
 | `make client-lint` | Lint client code (eslint) |
 | `make client-typecheck` | Type-check client (tsc) |
 | `make proxy-lint` | Lint proxy code (ruff) |
-| `make proxy-test` | Run proxy tests (pytest, 232 tests) |
+| `make proxy-test` | Run proxy tests (pytest, 281 tests) |
 | `make check` | Run all checks (client + proxy) |
 | `make android-build` | Build Android APK |
 | `make tauri-dev` | Start Tauri desktop dev mode |
 | `make tauri-build` | Build desktop installers |
-| `make deploy` | Deploy: build client + rebuild proxy container |
+| `make deploy` | Deploy: build client + rebuild proxy container (aborts if the build did not refresh `client/dist`) |
 | `make d-build` | Build Docker image |
 | `make d-run` | Start Docker container |
 | `make d-rebuild` | Rebuild and restart Docker container |
@@ -317,6 +321,7 @@ All commands are run via `make`. Run `make help` to see the full list.
 ├── tests/                     # Proxy tests (pytest)
 ├── pyproject.toml             # Python config (uv, ruff)
 ├── Makefile                   # All build/run/deploy commands
+├── nginx.example              # Reference nginx config (gitignored, copy to server)
 └── docker-compose.yml         # Docker (proxy only)
 ```
 

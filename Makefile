@@ -110,7 +110,11 @@ d-rebuild: ## Rebuild and restart Docker container
 # ======================================================================
 
 deploy: ## Deploy: build client + rebuild & restart proxy container + prune unused images
+	@rm -f /tmp/lex-deploy-stamp && touch /tmp/lex-deploy-stamp
 	cd client && npm ci && npm run build
+	@test -f client/dist/index.html || { echo "ERROR: client/dist/index.html is missing — deploy aborted"; exit 1; }
+	@test client/dist/index.html -nt /tmp/lex-deploy-stamp || { echo "ERROR: client/dist was not refreshed by the build (killed by OOM?) — deploy aborted"; exit 1; }
+	@rm -f /tmp/lex-deploy-stamp
 	docker compose down
 	docker compose up -d --build
 	docker image prune -f
