@@ -184,7 +184,7 @@ Nginx serves `client/dist/` as static files and proxies `/translate`, `/language
 
 `make deploy` aborts before touching the running container if the client build fails or if `client/dist/index.html` was not refreshed by the build. This catches silent build kills (for example, the OOM killer on a small server) that would otherwise leave the old bundle in place while the deploy looks successful.
 
-Reference nginx configs live in `nginx.example` (prod) and `nginx-stage.example` (stage) — both gitignored, copy them to the servers manually together with the shared `nginx-lex-locations.inc` snippet. They set `Cache-Control: no-cache` for `sw.js`, `registerSW.js`, `index.html` and the web manifest, long-lived immutable caching for hashed `/assets/*`, enable gzip for JS/CSS and HTTP/2.
+Reference nginx configs live in `nginx.example` (prod) and `nginx-stage.example` (stage) — both gitignored, copy them to the servers manually together with the shared `nginx-lex-upstream.conf` (the `lex_proxy` upstream) and `nginx-lex-locations.inc` (all locations) snippets. The upstream lives in its own file because nginx rejects two `upstream lex_proxy` definitions in the same `http` context, which breaks `nginx -t` as soon as a second domain is added to the same host. The configs set `Cache-Control: no-cache` for `sw.js`, `registerSW.js`, `index.html` and the web manifest, long-lived immutable caching for hashed `/assets/*`, enable gzip for JS/CSS and HTTP/2.
 
 Certificates are issued with `certbot certonly --nginx` (never `standalone` — ports 80/443 are taken by nginx, so renewal would fail silently):
 
@@ -340,6 +340,7 @@ All commands are run via `make`. Run `make help` to see the full list.
 ├── Makefile                   # All build/run/deploy commands
 ├── nginx.example              # Reference nginx config, prod (gitignored, copy to server)
 ├── nginx-stage.example        # Reference nginx config, stage (gitignored, copy to server)
+├── nginx-lex-upstream.conf    # Shared lex_proxy upstream (gitignored)
 ├── nginx-lex-locations.inc    # Shared nginx locations for all server blocks (gitignored)
 └── docker-compose.yml         # Docker (proxy only)
 ```
