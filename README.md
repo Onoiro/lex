@@ -9,7 +9,7 @@
 
 Lex is a translator and vocabulary trainer. Your dictionary, spaced repetition, and settings are stored locally on your device - no account needed, no server required. Internet is only needed for translation via a thin proxy to Yandex Translate API.
 
-**Try it live:** [lex.2-way.ru](https://lex.2-way.ru)
+**Try it live:** [lextr.ru](https://lextr.ru)
 
 ## Features
 
@@ -106,7 +106,7 @@ Layers of protection (see `.env.example` for configuration):
 
 - **App token** — clients send a shared secret in the `X-App-Token` header (baked in at build time via `VITE_APP_TOKEN`). The proxy validates it against `APP_TOKENS` (comma-separated list for rotation). Unset `APP_TOKENS` disables the check (backward compatibility during rollout). Missing/invalid token → `403 {"error": "unauthorized"}`. `GET /` (health check) stays open.
 - **Client version gate** — clients send their app version in the `X-App-Version` header (injected at build time from `package.json`). The proxy compares it against `MIN_APP_VERSION` (semver). Unset `MIN_APP_VERSION` disables the check (same rollout pattern as the app token: deploy proxy → release clients → enable on server). Outdated/missing/unparseable version → `426 {"error": "update_required", "min_version": "..."}`; the client then shows a full-screen "update the app" screen. `GET /` and preflight stay open.
-- **CORS whitelist** — only client app origins are allowed (`ALLOWED_ORIGINS` env var, defaults: `https://lex.2-way.ru`, `https://localhost` (Capacitor Android), `capacitor://localhost` (iOS), `http://tauri.localhost` / `tauri://localhost` (Tauri)). Requests from other origins get no CORS headers, so browsers block them.
+- **CORS whitelist** — only client app origins are allowed (`ALLOWED_ORIGINS` env var, defaults: `https://lextr.ru`, `https://www.lextr.ru`, `https://stage.lextr.ru`, `https://lex.2-way.ru` (alias for pre-migration builds), `https://localhost` (Capacitor Android), `capacitor://localhost` (iOS), `http://tauri.localhost` / `tauri://localhost` (Tauri)). Requests from other origins get no CORS headers, so browsers block them.
 - **Rate limiting** — 30 req/min per endpoint per IP, feedback 3/hour.
 - **Daily quotas** — three levels per endpoint (translation and TTS separately), persistent in SQLite: device quota 500 chars/day (primary, follows the `X-Device-Id` header), IP quota 3000 chars/day (antibot layer, consumed by all requests with a device ID), anon quota 100 chars/day for requests without a device ID. Limits configurable via `DEVICE_DAILY_CHAR_LIMIT` / `IP_DAILY_CHAR_LIMIT` / `ANON_DAILY_CHAR_LIMIT`. Exceeded → `429 {"error": "daily_quota_exceeded"}`.
 - **Quota endpoint** — `GET /quota` returns the remaining daily chars for this client (translate and tts separately): `{"translate": {"used", "limit", "remaining"}, "tts": {...}}`. With a device ID the effective remaining is min(device, IP); without one the anon quota applies. Read-only, protected by the token middleware. The client shows the remaining quota on the Translate page (under the language bar) and as live counters in Settings → Usage limits; cached responses (server `"cached": true` flag / `X-Cached: 1` header, or the client TTS cache) do not decrement the indicator.
@@ -165,6 +165,14 @@ Open http://localhost:5173 - Vite proxies `/translate` and `/languages` to the p
 
 ### Production Deploy
 
+Production and staging live on two different servers:
+
+| Domain | Server | Role |
+|---|---|---|
+| `lextr.ru`, `www.lextr.ru` | prod | Main production domain (PWA, RuStore/AppGallery) |
+| `lex.2-way.ru` | prod | Alias for builds released before the migration (pages redirect to `lextr.ru`, API is served directly) |
+| `stage.lextr.ru` | stage | Staging, `X-Robots-Tag: noindex, nofollow` |
+
 On the server:
 
 ```bash
@@ -172,11 +180,20 @@ git pull origin master
 make deploy          # builds client + rebuilds proxy Docker container
 ```
 
-Nginx serves `client/dist/` as static files and proxies `/translate`, `/languages` to the Docker container on port 8004.
+Nginx serves `client/dist/` as static files and proxies `/translate`, `/languages` to the Docker container on port 8004 (bound to `127.0.0.1` only).
 
 `make deploy` aborts before touching the running container if the client build fails or if `client/dist/index.html` was not refreshed by the build. This catches silent build kills (for example, the OOM killer on a small server) that would otherwise leave the old bundle in place while the deploy looks successful.
 
-A reference nginx config lives in `nginx.example` (gitignored, copy it to the server manually). It sets `Cache-Control: no-cache` for `sw.js`, `registerSW.js`, `index.html` and the web manifest, long-lived immutable caching for hashed `/assets/*`, enables gzip for JS/CSS and HTTP/2.
+Reference nginx configs live in `nginx.example` (prod) and `nginx-stage.example` (stage) — both gitignored, copy them to the servers manually together with the shared `nginx-lex-locations.inc` snippet. They set `Cache-Control: no-cache` for `sw.js`, `registerSW.js`, `index.html` and the web manifest, long-lived immutable caching for hashed `/assets/*`, enable gzip for JS/CSS and HTTP/2.
+
+Certificates are issued with `certbot certonly --nginx` (never `standalone` — ports 80/443 are taken by nginx, so renewal would fail silently):
+
+```bash
+# prod
+certbot certonly --nginx -d lextr.ru -d www.lextr.ru -d lex.2-way.ru
+# stage
+certbot certonly --nginx -d stage.lextr.ru
+```
 
 ### Docker (proxy only)
 
@@ -321,7 +338,9 @@ All commands are run via `make`. Run `make help` to see the full list.
 ├── tests/                     # Proxy tests (pytest)
 ├── pyproject.toml             # Python config (uv, ruff)
 ├── Makefile                   # All build/run/deploy commands
-├── nginx.example              # Reference nginx config (gitignored, copy to server)
+├── nginx.example              # Reference nginx config, prod (gitignored, copy to server)
+├── nginx-stage.example        # Reference nginx config, stage (gitignored, copy to server)
+├── nginx-lex-locations.inc    # Shared nginx locations for all server blocks (gitignored)
 └── docker-compose.yml         # Docker (proxy only)
 ```
 

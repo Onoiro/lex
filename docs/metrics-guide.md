@@ -185,7 +185,7 @@ API без секретного токена, вшитого в APK. Едини�
 ## Как посмотреть метрики руками
 
 ```bash
-curl -H "X-App-Token: <token>" https://lex.2-way.ru/metrics
+curl -H "X-App-Token: <token>" https://lextr.ru/metrics
 ```
 
 Возвращает счётчики за текущий UTC-день (JSON): те же counters + uniques.

@@ -3,9 +3,9 @@
 ## Обзор проекта
 Lex — local-first приложение-переводчик и помощник для запоминания слов. Словарь, spaced repetition (SM-2) и настройки хранятся локально на устройстве (IndexedDB через Dexie.js). Интернет нужен только для перевода через тонкий proxy к Yandex Translate API. Распространение: PWA, Android (RuStore/AppGallery через Capacitor), Desktop (Tauri).
 
-**Демо:** [lex.2-way.ru](https://lex.2-way.ru)
+**Демо:** [lextr.ru](https://lextr.ru)
 
-**Текущая версия:** 1.28.3
+**Текущая версия:** 1.28.4
 
 ## Архитектура
 
@@ -111,7 +111,19 @@ make deploy   # npm ci + build клиента, затем пересборка �
 
 `make deploy` прерывается ДО остановки работающего контейнера, если сборка клиента упала или `client/dist/index.html` не обновился (проверка по timestamp-метке `/tmp/lex-deploy-stamp`). Это ловит «тихие» убийства сборки (например, OOM-killer на сервере с 2 ГБ RAM) — иначе деплой выглядит успешным, а nginx продолжает отдавать старый бандл.
 
-Nginx-конфиг на сервере — `/etc/nginx/conf.d/lex.2-way.ru.conf`, эталон в репозитории — `nginx.example` (в `.gitignore`, переносится на сервер вручную). Конфиг задаёт: `Cache-Control: no-cache` для `sw.js`, `registerSW.js`, `index.html`, `manifest.webmanifest`; `public, max-age=31536000, immutable` для хэшированных `/assets/*` и `.woff2`; `max-age=2592000` для `/mascot/`; `max-age=604800` для png/ico/svg; gzip для JS/CSS (в `nginx.conf` `gzip_types` закомментирован — переопределяется в server-блоке); `listen 443 ssl http2`. MIME-типы `application/manifest+json` и `font/woff2` задаются локально (`types {}`), т.к. в `mime.types` nginx 1.18 их нет.
+**Прод и стейдж — разные серверы:**
+
+| Домен | Сервер | Роль |
+|---|---|---|
+| `lextr.ru`, `www.lextr.ru` | прод (45.155.204.194) | Основной прод-домен (PWA, RuStore/AppGallery) |
+| `lex.2-way.ru` | прод (45.155.204.194) | Алиас для сборок, выпущенных до миграции: страницы редиректятся на `lextr.ru`, API-локации отдаются напрямую (301 на `POST /translate` может превратиться в GET и потерять тело) |
+| `stage.lextr.ru` | стейдж (89.125.130.69) | Стейдж, `X-Robots-Tag: noindex, nofollow` |
+
+Nginx-конфиги: прод — `/etc/nginx/conf.d/lextr.ru.conf`, стейдж — `/etc/nginx/conf.d/stage.lextr.ru.conf`; общий сниппет локаций — `/etc/nginx/conf.d/lex-locations.inc`. Эталоны в репозитории — `nginx.example`, `nginx-stage.example`, `nginx-lex-locations.inc` (все в `.gitignore`, переносятся на серверы вручную). Сниппет подключается через `include` и требует заданных в server-блоке переменных `$lex_robots_tag` (пусто на проде, `noindex, nofollow` на стейдже) и `$lex_redirect_to` (пусто, кроме алиас-домена). Локации задают: `Cache-Control: no-cache` для `sw.js`, `registerSW.js`, `index.html`, `manifest.webmanifest`; `public, max-age=31536000, immutable` для хэшированных `/assets/*` и `.woff2`; `max-age=2592000` для `/mascot/`; `max-age=604800` для png/ico/svg; gzip для JS/CSS (в `nginx.conf` `gzip_types` закомментирован — переопределяется в server-блоке); `listen 443 ssl http2`. MIME-типы `application/manifest+json` и `font/woff2` задаются локально (`types {}`), т.к. в `mime.types` nginx 1.18 их нет (на проде nginx 1.30 — локальные `types {}` не конфликтуют). `X-Robots-Tag` дублируется в каждой локации со своим `add_header`: nginx не наследует `add_header` из server-блока, если локация объявляет свой.
+
+Сертификаты — только `certbot certonly --nginx` (не `standalone`: порты 80/443 заняты nginx, renew молча проваливается). Прод: `-d lextr.ru -d www.lextr.ru -d lex.2-way.ru` (один сертификат на три имени — алиас обязан резолвиться на прод, иначе падает renew всего сертификата). Стейдж: `-d stage.lextr.ru`. После переключения DNS конфиг и сертификат `lex.2-way.ru` со стейджа удалить.
+
+Порт прокси привязан к `127.0.0.1:8004` (в `docker-compose.yml`) — nginx единственная точка входа, наружу прокси не торчит.
 
 ## Структура проекта
 ```
@@ -171,9 +183,11 @@ Nginx-конфиг на сервере — `/etc/nginx/conf.d/lex.2-way.ru.conf`
 │   └── test_report.py
 ├── pyproject.toml             # Python project config (uv, ruff)
 ├── Makefile                   # Build/run scripts
-├── nginx.example              # Эталон конфига nginx (в .gitignore, переносится на сервер вручную)
+├── nginx.example              # Эталон конфига nginx, прод (в .gitignore, переносится на сервер вручную)
+├── nginx-stage.example        # Эталон конфига nginx, стейдж (в .gitignore)
+├── nginx-lex-locations.inc    # Общие локации для всех server-блоков (в .gitignore)
 ├── docker-compose.yml         # Docker (proxy)
-└── .env                       # YANDEX_API_KEY, TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID
+└── .env                       # YANDEX_API_KEY, YANDEX_FOLDER_ID, TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID
 ```
 
 ## Правила разработки
@@ -211,7 +225,7 @@ Nginx-конфиг на сервере — `/etc/nginx/conf.d/lex.2-way.ru.conf`
 - **Индикатор квоты на клиенте:** `services/quotaApi.ts` (`getQuota()`, тип `QuotaInfo`). Страница Перевод (Add.tsx): строка `data-testid="quota-indicator"` под языковой панелью («Перевод: X/500 · Озвучка: Y/500»), загрузка при монтировании, скрыта при ошибке сети; оптимистичный декремент после некэшированного перевода/озвучки (`translateApi` возвращает `cached`, `ttsApi.synthesizeSpeech` возвращает `{played, cached}`); при 429 остаток → 0. Настройки: живые счётчики `data-testid="limits-today"` в разделе «Лимиты использования». Повтор — БЕЗ индикатора (TTS фоновый).
 - **App token (X-App-Token):** все эндпоинты кроме `GET /` (health-check) требуют заголовок `X-App-Token` (класс `AppTokenAuth` в `proxy/security/token_auth.py`). Токены через env `APP_TOKENS` (список через запятую, для ротации). Пустой/не заданный `APP_TOKENS` = проверка выключена (обратная совместимость при выкате). Отсутствие/несовпадение токена → 403 `{"error": "unauthorized"}`. Токен — фильтр от скрипт-киди, не защита от целевой атаки (токен извлекается из APK); настоящая защита — квоты и бюджет.
 - **Version gate (X-App-Version):** клиент шлёт версию приложения (semver) в заголовке `X-App-Version` — инжектится при сборке из `client/package.json` через `define` в `vite.config.ts` и `vitest.config.ts` (`__APP_VERSION__`). Прокси сравнивает с env `MIN_APP_VERSION` (класс `VersionGate` в `proxy/security/version_gate.py`). Пустой/не заданный `MIN_APP_VERSION` = проверка выключена (тот же паттерн выката, что у APP_TOKENS: прокси без проверки → релиз клиента с заголовком → включить проверку на сервере). Устаревшая/отсутствующая/невалидная версия → 426 `{"error": "update_required", "min_version": "..."}`. Клиент: при 426 все 4 сервиса вызывают `notifyUpdateRequired()` из `services/updateGate.ts`, App рендерит полноэкранную заглушку `components/UpdateScreen.tsx` — кнопка «Перезагрузить» (для PWA) + ссылка на магазин/загрузку в зависимости от платформы (Android: `VITE_RUSTORE_URL`, web/desktop: `VITE_DOWNLOAD_URL`; пустые env = ссылка скрыта; i18n-ключи `update.*`). Порядок проверки в middleware: токен → версия.
-- **CORS whitelist:** env `ALLOWED_ORIGINS` (через запятую); если не задан — дефолт: `https://lex.2-way.ru`, `https://localhost` (Capacitor Android), `capacitor://localhost` (iOS), `http://tauri.localhost` (Tauri Win/Linux), `tauri://localhost` (Tauri macOS). Чужие origin не получают CORS-заголовков (браузер блокирует ответ). `allow_headers`: Content-Type, X-App-Token, X-Device-Id. Порядок middleware: токен-мидлварь добавлена первой, CORS — второй (CORS вешает заголовки и на 403-ответы).
+- **CORS whitelist:** env `ALLOWED_ORIGINS` (через запятую); если не задан — дефолт: `https://lextr.ru`, `https://www.lextr.ru`, `https://stage.lextr.ru`, `https://lex.2-way.ru` (алиас для сборок до миграции), `https://localhost` (Capacitor Android), `capacitor://localhost` (iOS), `http://tauri.localhost` (Tauri Win/Linux), `tauri://localhost` (Tauri macOS). Чужие origin не получают CORS-заголовков (браузер блокирует ответ). `allow_headers`: Content-Type, X-App-Token, X-Device-Id. Порядок middleware: токен-мидлварь добавлена первой, CORS — второй (CORS вешает заголовки и на 403-ответы).
 - **Персистентные кэши (SQLite):** все 3 серверных кэша и персистентные квоты хранятся в одной SQLite БД (путь через env `SQLITE_CACHE_PATH`, дефолт `data/cache.db`): переводы (TTL 7 дней, таблица `translations`), TTS-аудио (до 5000 записей, eviction по времени вставки, таблица `tts_audio`), примеры словаря (TTL 30 дней, таблица `dictionary`), квоты (таблица `quota_usage`), метрики (таблицы `metrics_daily`, `metrics_uniques`). База переживает рестарт контейнера — повторный перевод того же слова не тратит квоту и бюджет. Классы в `proxy/services/cache.py`: `SqliteCache` (bytes), `TextCache` (UTF-8 текст), `TranslationCache` (совместимое имя, таблица переводов); `SpeechCache` в `tts.py` — подкласс `SqliteCache`. Соединение открывается лениво (при первом обращении), защищено отдельным локом инициализации; при недоступной БД кэш деградирует до промахов без исключений. В Docker БД лежит в volume `lex-cache` → `/app/data` (см. `docker-compose.yml`), каталог создаётся и передаётся пользователю `lex` в Dockerfile.
 - **Мониторинг и алерты (Telegram):** лёгкая наблюдаемость без внешних зависимостей — счётчики в памяти + дневная персистентность в ту же SQLite БД (`proxy/services/metrics.py`, синглтон `metrics`), алерты и отчёт через уже подключённого Telegram-бота (`TELEGRAM_BOT_TOKEN`/`TELEGRAM_CHAT_ID`, как feedback). Контент запросов НЕ логируется — только длины, коды ответов, счётчики (privacy). Алерты fire-and-forget (`proxy/services/notifier.py`: `notify()` — синхронная дедуп-проверка + фоновая отправка; сбой отправки не влияет на ответы): бюджет ≥ 80% (дедуп на 10%-бакет в день), бюджет исчерпан/503 (1 раз/день), всплески 502/403/426/429 за UTC-часовой бакет (пороги env `ALERT_HOURLY_*`, дедуп на бакет), SQLite-fallback (1 раз/день, хук `_note_db_fallback` в `cache.py`/`quota.py` при `_init_failed`). Личные квоты пользователей (500/день) НЕ алертятся — норма. Ежедневный отчёт (`proxy/services/report.py`): фоновая asyncio-задача в lifespan FastAPI, 00:05 UTC за прошедший UTC-день (траты translate/TTS с ↑/↓ к позавчера, uniques, запросы по эндпоинтам, cache hit rate, ошибки, feedback); не стартует без Telegram-конфигурации. `GET /metrics` (token-protected) — счётчики за сегодня UTC. Пустые `TELEGRAM_*` = алерты и отчёт выключены. Готча: conftest.py чистит `TELEGRAM_*` — иначе локальные тесты с реальным `.env` шлют настоящие алерты.
 - Самодостаточный модуль: все зависимости внутри `proxy/` (services/, security/, languages.py).
@@ -242,4 +256,4 @@ Nginx-конфиг на сервере — `/etc/nginx/conf.d/lex.2-way.ru.conf`
 - График активности за 14 дней на странице Повтор (данные dailyStats уже есть)
 
 ---
-**Последнее обновление:** 30 сентября 2026
+**Последнее обновление:** 1 октября 2026

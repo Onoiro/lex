@@ -202,6 +202,10 @@ app = FastAPI(title="Lex Translate Proxy", version="1.0.0", lifespan=lifespan)
 # (comma-separated). Defaults cover web, Capacitor (Android/iOS) and Tauri
 # (Windows/Linux use http://tauri.localhost, macOS uses tauri://localhost).
 DEFAULT_ALLOWED_ORIGINS = [
+    "https://lextr.ru",
+    "https://www.lextr.ru",
+    "https://stage.lextr.ru",
+    # Alias domain: old builds have VITE_PROXY_URL baked in.
     "https://lex.2-way.ru",
     "https://localhost",
     "capacitor://localhost",

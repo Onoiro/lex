@@ -163,6 +163,9 @@ class TestCorsWhitelist:
 
     def test_all_platform_origins_in_default_list(self):
         for origin in (
+            "https://lextr.ru",
+            "https://www.lextr.ru",
+            "https://stage.lextr.ru",
             "https://lex.2-way.ru",
             "https://localhost",
             "capacitor://localhost",

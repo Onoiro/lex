@@ -80,8 +80,10 @@ Thumbs.db
 *.db-shm
 *.db-wal
 
-# Nginx config (local example, real config is on the server)
+# Nginx configs (local examples, real configs are on the servers)
 nginx.example
+nginx-stage.example
+nginx-lex-locations.inc
 
 # Logs
 *.log
