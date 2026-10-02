@@ -251,6 +251,27 @@ make linux-uninstall  # sudo apt remove lex
 
 To remove a manually installed package: `sudo apt remove lex`. Installing a newer `.deb` replaces the previous version in place — no need to remove it first.
 
+#### Getting the package onto another machine
+
+The `.deb` is a build artifact, not a repository file: `client/src-tauri/target/` is gitignored, so a fresh `git clone` on another machine has no package to install. Build it once and transfer the file:
+
+```bash
+# on the build machine
+scp client/src-tauri/target/release/bundle/deb/Lex_1.28.5_amd64.deb user@other-machine:~/
+
+# on the target machine
+sudo apt install ~/Lex_1.28.5_amd64.deb
+```
+
+Alternatively publish it as a GitHub release and download it directly:
+
+```bash
+wget https://github.com/Onoiro/lex/releases/download/v1.28.5/Lex_1.28.5_amd64.deb
+sudo apt install ./Lex_1.28.5_amd64.deb
+```
+
+The package depends only on `libwebkit2gtk-4.1-0` and `libgtk-3-0`, both present in a default Ubuntu 24.04 desktop install. Building from source on the target machine also works but requires Node.js, Rust and the Tauri system libraries.
+
 #### AppImage
 
 The AppImage is portable — no installation, just make it executable:
