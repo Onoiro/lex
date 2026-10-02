@@ -13,6 +13,11 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: "autoUpdate",
+      // The plugin's injected registerSW.js registers the worker unconditionally,
+      // which breaks APK updates: the WebView keeps serving the old precached
+      // bundle. Registration is done manually in main.tsx instead, where it can
+      // be skipped on native platforms.
+      injectRegister: null,
       includeAssets: [
         "favicon.ico",
         "favicon-16x16.png",

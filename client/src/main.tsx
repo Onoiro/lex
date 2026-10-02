@@ -80,8 +80,10 @@ createRoot(document.getElementById("root")!).render(
   </StrictMode>,
 );
 
-// Register service worker for PWA offline support
-if ("serviceWorker" in navigator) {
+// Register service worker for PWA offline support.
+// Skipped on native platforms: the WebView serves the bundled assets directly,
+// and a stale precache would keep serving the old bundle after an APK update.
+if ("serviceWorker" in navigator && !Capacitor.isNativePlatform()) {
   window.addEventListener("load", () => {
     navigator.serviceWorker.register("/sw.js").catch((err) => {
       console.warn("SW registration failed:", err);

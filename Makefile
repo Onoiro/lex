@@ -1,6 +1,6 @@
 .PHONY: help dev proxy client-dev client-build client-test client-lint client-typecheck \
         proxy-lint proxy-test proxy-test-cov check \
-        android-sync android-build tauri-dev tauri-build \
+        android-sync android-build android-builder android-apk tauri-dev tauri-build \
         linux-install linux-uninstall \
         d-build d-run d-stop d-down d-logs d-rebuild \
         deploy clean
@@ -12,6 +12,14 @@ PROXY_URL ?= https://lextr.ru
 
 # Newest built .deb package (used by linux-install)
 DEB_FILE = $(shell ls -t client/src-tauri/target/release/bundle/deb/Lex_*.deb 2>/dev/null | head -1)
+
+# Android APK build (Docker). The image carries JDK 21 + Android SDK 36;
+# Gradle caches live in .gradle-docker/ on the host so rebuilds are fast.
+ANDROID_BUILDER_IMAGE ?= lex-android-builder
+ANDROID_GRADLE_CACHE ?= $(CURDIR)/.gradle-docker
+# Release keystore lives outside the repository (see keystore.properties).
+ANDROID_KEYSTORE_DIR ?= $(HOME)/lex-keystore
+APK_FILE = client/android/app/build/outputs/apk/release/app-release.apk
 
 help: ## Show available commands
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}'
@@ -76,11 +84,31 @@ check: ## Run all checks (client lint + typecheck + test, proxy lint + test)
 android-sync: client-build ## Sync Capacitor with latest build
 	cd client && npx cap sync android
 
-android-build: ## Build Android APK (release)
+android-build: ## Build Android APK (release) with a local JDK + Android SDK
 	cd client && VITE_PROXY_URL=$(PROXY_URL) npm run build
 	cd client && npx cap sync android
 	@echo "APK: client/android/app/build/outputs/apk/release/"
 	cd client/android && ./gradlew assembleRelease
+
+android-builder: ## Build the Docker image used by android-apk
+	docker build -f docker/android/Dockerfile -t $(ANDROID_BUILDER_IMAGE) docker/android
+
+android-apk: ## Build a signed release APK in Docker (needs app/keystore.properties)
+	@test -f client/android/app/keystore.properties || { echo "ERROR: client/android/app/keystore.properties is missing — create the keystore first (see .koda/plans/android-release.md, step 3)"; exit 1; }
+	cd client && VITE_PROXY_URL=$(PROXY_URL) npm run build
+	cd client && npx cap sync android
+	@mkdir -p $(ANDROID_GRADLE_CACHE)
+	@test -w $(ANDROID_GRADLE_CACHE) || docker run --rm -v $(ANDROID_GRADLE_CACHE):/c $(ANDROID_BUILDER_IMAGE) chown -R $(shell id -u):$(shell id -g) /c
+	docker run --rm \
+		--user $(shell id -u):$(shell id -g) \
+		-e HOME=/tmp/home \
+		-v $(CURDIR)/client:/workspace/client \
+		-v $(ANDROID_GRADLE_CACHE):/gradle-cache \
+		-v $(ANDROID_KEYSTORE_DIR):$(ANDROID_KEYSTORE_DIR):ro \
+		-w /workspace/client/android \
+		$(ANDROID_BUILDER_IMAGE) \
+		./gradlew assembleRelease --no-daemon
+	@echo "APK: $(APK_FILE)"
 
 # ======================================================================
 # Desktop (Tauri)

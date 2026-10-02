@@ -80,6 +80,9 @@ Thumbs.db
 *.db-shm
 *.db-wal
 
+# Android build cache (Docker, see the android-apk target)
+.gradle-docker/
+
 # Nginx configs (local examples, real configs are on the servers)
 nginx.example
 nginx-stage.example
