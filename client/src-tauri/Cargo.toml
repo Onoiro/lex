@@ -1,6 +1,6 @@
 [package]
 name = "lex"
-version = "0.11.7"
+version = "1.28.5"
 description = "Lex — Translator and Vocabulary Trainer"
 authors = ["Andrey Bogatyrev"]
 edition = "2021"

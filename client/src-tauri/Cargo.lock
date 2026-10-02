@@ -1591,7 +1591,7 @@ dependencies = [
 
 [[package]]
 name = "lex"
-version = "0.11.7"
+version = "1.28.5"
 dependencies = [
  "serde",
  "serde_json",

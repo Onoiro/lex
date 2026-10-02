@@ -4,6 +4,11 @@
         d-build d-run d-stop d-down d-logs d-rebuild \
         deploy clean
 
+# Proxy URL baked into native builds. A relative path only works in the browser:
+# Tauri runs on tauri://localhost and Capacitor on https://localhost, so both
+# need the absolute proxy origin. Override with PROXY_URL=... if needed.
+PROXY_URL ?= https://lextr.ru
+
 help: ## Show available commands
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}'
 
@@ -67,7 +72,9 @@ check: ## Run all checks (client lint + typecheck + test, proxy lint + test)
 android-sync: client-build ## Sync Capacitor with latest build
 	cd client && npx cap sync android
 
-android-build: android-sync ## Build Android APK (release)
+android-build: ## Build Android APK (release)
+	cd client && VITE_PROXY_URL=$(PROXY_URL) npm run build
+	cd client && npx cap sync android
 	@echo "APK: client/android/app/build/outputs/apk/release/"
 	cd client/android && ./gradlew assembleRelease
 
@@ -79,8 +86,8 @@ tauri-dev: ## Start Tauri desktop dev mode
 	cd client && npm run tauri:dev
 
 tauri-build: ## Build desktop installers (Windows MSI/NSIS, macOS DMG, Linux deb/AppImage)
+	cd client && VITE_PROXY_URL=$(PROXY_URL) npm run tauri:build
 	@echo "Bundles: client/src-tauri/target/release/bundle/"
-	cd client && npm run tauri:build
 
 # ======================================================================
 # Docker (proxy only)
