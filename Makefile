@@ -1,6 +1,7 @@
 .PHONY: help dev proxy client-dev client-build client-test client-lint client-typecheck \
         proxy-lint proxy-test proxy-test-cov check \
         android-sync android-build tauri-dev tauri-build \
+        linux-install linux-uninstall \
         d-build d-run d-stop d-down d-logs d-rebuild \
         deploy clean
 
@@ -8,6 +9,9 @@
 # Tauri runs on tauri://localhost and Capacitor on https://localhost, so both
 # need the absolute proxy origin. Override with PROXY_URL=... if needed.
 PROXY_URL ?= https://lextr.ru
+
+# Newest built .deb package (used by linux-install)
+DEB_FILE = $(shell ls -t client/src-tauri/target/release/bundle/deb/Lex_*.deb 2>/dev/null | head -1)
 
 help: ## Show available commands
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}'
@@ -88,6 +92,14 @@ tauri-dev: ## Start Tauri desktop dev mode
 tauri-build: ## Build desktop installers (Windows MSI/NSIS, macOS DMG, Linux deb/AppImage)
 	cd client && VITE_PROXY_URL=$(PROXY_URL) npm run tauri:build
 	@echo "Bundles: client/src-tauri/target/release/bundle/"
+
+linux-install: ## Install the newest built .deb system-wide (needs sudo)
+	@test -n "$(DEB_FILE)" || { echo "ERROR: no .deb found — run 'make tauri-build' first"; exit 1; }
+	@echo "Installing $(DEB_FILE)"
+	sudo apt install -y "$(CURDIR)/$(DEB_FILE)"
+
+linux-uninstall: ## Remove the installed Lex package (needs sudo)
+	sudo apt remove -y lex
 
 # ======================================================================
 # Docker (proxy only)

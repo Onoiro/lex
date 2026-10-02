@@ -222,6 +222,47 @@ make tauri-build     # production installers
 
 Requires Rust + system libraries (see [Tauri prerequisites](https://tauri.app/start/prerequisites/)).
 
+Native builds bake in the proxy origin (`PROXY_URL`, default `https://lextr.ru`) as `VITE_PROXY_URL`. A relative path only works in the browser: Tauri runs on `tauri://localhost` and Capacitor on `https://localhost`, so both need an absolute proxy URL. Override it for staging or a local proxy:
+
+```bash
+make tauri-build PROXY_URL=https://stage.lextr.ru
+```
+
+#### Installing on Linux (deb)
+
+The `.deb` package is self-contained: it installs the binary to `/usr/bin/lex`, a desktop entry and icons. On any Debian/Ubuntu machine:
+
+```bash
+sudo apt install ./Lex_1.28.5_amd64.deb   # apt resolves dependencies
+```
+
+`dpkg -i` works too, but does not pull dependencies — follow it with `sudo apt-get install -f` if needed.
+
+From the repository root the same is available as a make target (installs the newest built `.deb`):
+
+```bash
+make tauri-build      # build first
+make linux-install    # sudo apt install of the newest .deb
+make linux-uninstall  # sudo apt remove lex
+```
+
+To remove a manually installed package: `sudo apt remove lex`.
+
+#### AppImage
+
+The AppImage is portable — no installation, just make it executable:
+
+```bash
+chmod +x Lex_1.28.5_amd64.AppImage
+./Lex_1.28.5_amd64.AppImage
+```
+
+AppImage needs FUSE 2. On Ubuntu 24.04 install `libfuse2t64` (`sudo apt install libfuse2t64`); without it run `./Lex_1.28.5_amd64.AppImage --appimage-extract-and-run`.
+
+#### Windows and macOS
+
+MSI/NSIS and DMG installers cannot be cross-compiled from Linux — they require a Windows runner and a Mac with Xcode respectively. Use the PWA or the Linux builds for now; CI-based cross-platform packaging is a future task.
+
 ## Usage
 
 ### Adding Words
@@ -293,6 +334,8 @@ All commands are run via `make`. Run `make help` to see the full list.
 | `make android-build` | Build Android APK |
 | `make tauri-dev` | Start Tauri desktop dev mode |
 | `make tauri-build` | Build desktop installers |
+| `make linux-install` | Install the newest built `.deb` (needs sudo) |
+| `make linux-uninstall` | Remove the installed Lex package (needs sudo) |
 | `make deploy` | Deploy: build client + rebuild proxy container (aborts if the build did not refresh `client/dist`) |
 | `make d-build` | Build Docker image |
 | `make d-run` | Start Docker container |

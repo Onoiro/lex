@@ -58,9 +58,7 @@ description: "Обязательно срабатывает перед кажд�
 
 ## Шаг 4: Обновление версии (если бамп нужен)
 
-Если тип изменения — не `none`, вычисли новую версию и обнови **все** файлы ниже. После изменения `pyproject.toml` — обязательно запусти `uv lock` для синхронизации `uv.lock`.
-
-### Файлы с версией
+Если тип изменения — не `none`, вычисли новую версию и обнови **все** файлы ниже.
 
 ### Файлы с версией
 
@@ -69,11 +67,19 @@ description: "Обязательно срабатывает перед кажд�
 | `pyproject.toml` | `version = "x.y.z"` | Строка в кавычках |
 | `client/package.json` | `"version": "x.y.z"` | JSON-строка |
 | `client/src-tauri/tauri.conf.json` | `"version": "x.y.z"` | JSON-строка |
+| `client/src-tauri/Cargo.toml` | `version = "x.y.z"` | Строка в кавычках (секция `[package]`) |
 | `client/android/app/build.gradle` | `versionCode N` и `versionName "x.y.z"` | versionCode — целое, +1 к предыдущему |
+| `KODA.md` | `**Текущая версия:** x.y.z` | Строка в начале файла |
 
-### uv.lock (автоматически)
+### Lock-файлы (обновляются командами, не вручную)
 
-После обновления `pyproject.toml` — запусти `uv lock` в корне проекта. Это синхронизирует `uv.lock` автоматически. Не редактируй `uv.lock` вручную.
+| Файл | Команда |
+|---|---|
+| `uv.lock` | `uv lock` в корне проекта (после правки `pyproject.toml`) |
+| `client/package-lock.json` | `cd client && npm install --package-lock-only` |
+| `client/src-tauri/Cargo.lock` | `cd client/src-tauri && cargo update -p lex --offline` |
+
+Не редактируй lock-файлы вручную — только командами выше.
 
 ### Правила для versionCode (Android)
 
@@ -86,19 +92,35 @@ description: "Обязательно срабатывает перед кажд�
 Текущая версия `0.11.7`, тип изменения — major:
 - Новая версия: `1.0.0`
 - `pyproject.toml`: `version = "1.0.0"` → затем `uv lock`
-- `client/package.json`: `"version": "1.0.0"`
+- `client/package.json`: `"version": "1.0.0"` → затем `npm install --package-lock-only`
 - `client/src-tauri/tauri.conf.json`: `"version": "1.0.0"`
+- `client/src-tauri/Cargo.toml`: `version = "1.0.0"` → затем `cargo update -p lex --offline`
 - `client/android/app/build.gradle`: `versionCode 12`, `versionName "1.0.0"`
+- `KODA.md`: `**Текущая версия:** 1.0.0`
 
-## Шаг 5: Запуск uv lock
+## Шаг 5: Проверка согласованности
 
-После обновления `pyproject.toml` — выполни `uv lock` в корне проекта. Это автоматически синхронизирует версию в `uv.lock`.
+После обновления всех файлов убедись, что версия одинакова везде. Быстрая проверка одной командой из корня проекта:
 
-## Шаг 6: Проверка согласованности
+```bash
+grep -n '^version' pyproject.toml client/src-tauri/Cargo.toml
+grep -n '"version"' client/package.json client/src-tauri/tauri.conf.json
+grep -n 'versionCode\|versionName' client/android/app/build.gradle
+grep -n 'name = "lex"' -A 1 uv.lock client/src-tauri/Cargo.lock
+head -3 client/package-lock.json
+grep -n 'Текущая версия' KODA.md
+```
 
-После обновления всех файлов, перечитай их и убедись, что версия одинакова везде. Если хотя бы один файл не совпадает — исправь.
+Затем найди забытые вхождения старой версии:
 
-## Шаг 7: Информация в сообщении коммита
+```bash
+grep -rn '1\.28\.4' --include='*.json' --include='*.toml' --include='*.gradle' --include='*.md' --include='*.lock' . \
+  | grep -v node_modules | grep -v '/target/' | grep -v '/dist/' | grep -v '\.koda/'
+```
+
+Если хотя бы один файл не совпадает — исправь.
+
+## Шаг 6: Информация в сообщении коммита
 
 Включи в сообщение коммита (в конце, после основного описания) строку:
 
@@ -120,3 +142,6 @@ Sync version across files: 0.11.7
 - **Только proxy-изменения**: Proxy не имеет отдельной версии, используется `pyproject.toml`. Применяй стандартные правила.
 - **Несколько коммитов подряд**: Каждый коммит анализируется независимо. Если предыдущий коммит уже сделал minor-бамп, а этот — patch-фикс, бампай patch от новой версии.
 - **Pre-release**: Если текущая версия содержит суффикс (например `1.0.0-rc.1`), учитывай его при вычислении новой версии.
+- **Рассинхрон версий — это баг**: `client/src-tauri/Cargo.toml` долго жил на `0.11.7`, пока остальные файлы были на `1.28.x` — из-за этого deb/AppImage собирались с именем старой версии. Всегда проверяй Cargo.toml, а не только `tauri.conf.json`.
+- **Собранные артефакты не переименовываются**: после бампа уже собранные `Lex_x.y.z_amd64.deb` / `.AppImage` остаются со старой версией в имени. Если нужны артефакты с новой версией — пересобрать (`make tauri-build`).
+- **Правки Makefile**: инструмент `replace` вставляет пробелы вместо табов — после любой правки Makefile проверь `grep -nP '^ +\S' Makefile` (должны быть только строки `.PHONY`-списка) и `make -n <цель>`.
