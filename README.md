@@ -230,7 +230,9 @@ make tauri-build PROXY_URL=https://stage.lextr.ru
 
 #### Installing on Linux (deb)
 
-The `.deb` package is self-contained: it installs the binary to `/usr/bin/lex`, a desktop entry and icons. It is produced at `client/src-tauri/target/release/bundle/deb/`. On any Debian/Ubuntu machine:
+**Requirements:** glibc 2.39 or newer — Ubuntu 24.04+, Debian 13+, Fedora 40+. The binary is linked against the glibc of the build machine, so older distributions fail with `GLIBC_2.39 not found` (Ubuntu 22.04) or cannot resolve `libwebkit2gtk-4.1-0` at all (Ubuntu 20.04, which only ships webkit2gtk 4.0). See "Building for older distributions" below.
+
+The `.deb` package is self-contained: it installs the binary to `/usr/bin/lex`, a desktop entry and icons. It is produced at `client/src-tauri/target/release/bundle/deb/`. On a supported Debian/Ubuntu machine:
 
 ```bash
 cd client/src-tauri/target/release/bundle/deb
@@ -263,14 +265,31 @@ scp client/src-tauri/target/release/bundle/deb/Lex_1.28.5_amd64.deb user@other-m
 sudo apt install ~/Lex_1.28.5_amd64.deb
 ```
 
-Alternatively publish it as a GitHub release and download it directly:
+Alternatively download it from a GitHub release:
 
 ```bash
 wget https://github.com/Onoiro/lex/releases/download/v1.28.5/Lex_1.28.5_amd64.deb
 sudo apt install ./Lex_1.28.5_amd64.deb
 ```
 
-The package depends only on `libwebkit2gtk-4.1-0` and `libgtk-3-0`, both present in a default Ubuntu 24.04 desktop install. Building from source on the target machine also works but requires Node.js, Rust and the Tauri system libraries.
+The package depends only on `libwebkit2gtk-4.1-0` and `libgtk-3-0`, both present in a default Ubuntu 24.04 desktop install.
+
+#### Building for older distributions
+
+A build made on Ubuntu 24.04 does not run on Ubuntu 22.04 or older, because the binary requires the glibc of the build host. To support older systems, build inside a container of the oldest target distribution (Ubuntu 22.04 is the practical floor — it is the first release with `libwebkit2gtk-4.1`):
+
+```bash
+docker run --rm -v "$PWD:/src" -w /src ubuntu:22.04 bash -c '
+  apt-get update && apt-get install -y curl build-essential libwebkit2gtk-4.1-dev \
+    libgtk-3-dev librsvg2-dev patchelf file
+  curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && apt-get install -y nodejs
+  curl -fsSL https://sh.rustup.rs | sh -s -- -y
+  . "$HOME/.cargo/env"
+  cd client && npm ci && VITE_PROXY_URL=https://lextr.ru npm run tauri:build
+'
+```
+
+The resulting bundles land in `client/src-tauri/target/release/bundle/` and require glibc 2.35, so they run on Ubuntu 22.04+ and Debian 12+.
 
 #### AppImage
 
