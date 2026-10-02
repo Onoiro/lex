@@ -230,15 +230,18 @@ make tauri-build PROXY_URL=https://stage.lextr.ru
 
 #### Installing on Linux (deb)
 
-The `.deb` package is self-contained: it installs the binary to `/usr/bin/lex`, a desktop entry and icons. On any Debian/Ubuntu machine:
+The `.deb` package is self-contained: it installs the binary to `/usr/bin/lex`, a desktop entry and icons. It is produced at `client/src-tauri/target/release/bundle/deb/`. On any Debian/Ubuntu machine:
 
 ```bash
+cd client/src-tauri/target/release/bundle/deb
 sudo apt install ./Lex_1.28.5_amd64.deb   # apt resolves dependencies
 ```
 
+The `./` prefix (or an absolute path) is required: `apt` treats a bare relative path as a package name and fails with `E: Unsupported file ... given on commandline` when the file is not in the current directory.
+
 `dpkg -i` works too, but does not pull dependencies — follow it with `sudo apt-get install -f` if needed.
 
-From the repository root the same is available as a make target (installs the newest built `.deb`):
+From the repository root the same is available as a make target (installs the newest built `.deb` by absolute path, so it works from any directory):
 
 ```bash
 make tauri-build      # build first
@@ -246,7 +249,7 @@ make linux-install    # sudo apt install of the newest .deb
 make linux-uninstall  # sudo apt remove lex
 ```
 
-To remove a manually installed package: `sudo apt remove lex`.
+To remove a manually installed package: `sudo apt remove lex`. Installing a newer `.deb` replaces the previous version in place — no need to remove it first.
 
 #### AppImage
 
