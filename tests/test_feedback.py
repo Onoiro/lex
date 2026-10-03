@@ -93,6 +93,34 @@ class TestSendSync:
         result = _send_sync("bug", "App crashes on startup", "")
         assert result is False
 
+    @patch("proxy.services.feedback.BOT_TOKEN", "test-token")
+    @patch("proxy.services.feedback.CHAT_ID", "123456")
+    @patch("proxy.services.feedback.httpx.Client")
+    def test_no_proxy_by_default(self, mock_client_cls, monkeypatch):
+        monkeypatch.delenv("TELEGRAM_PROXY", raising=False)
+        mock_client = MagicMock()
+        mock_client.__enter__ = MagicMock(return_value=mock_client)
+        mock_client.__exit__ = MagicMock(return_value=False)
+        mock_client.post = MagicMock(return_value=MagicMock(status_code=200))
+        mock_client_cls.return_value = mock_client
+
+        _send_sync("bug", "App crashes on startup", "")
+        assert mock_client_cls.call_args.kwargs["proxy"] is None
+
+    @patch("proxy.services.feedback.BOT_TOKEN", "test-token")
+    @patch("proxy.services.feedback.CHAT_ID", "123456")
+    @patch("proxy.services.feedback.httpx.Client")
+    def test_proxy_passed_to_client(self, mock_client_cls, monkeypatch):
+        monkeypatch.setenv("TELEGRAM_PROXY", "http://proxy.example:3128")
+        mock_client = MagicMock()
+        mock_client.__enter__ = MagicMock(return_value=mock_client)
+        mock_client.__exit__ = MagicMock(return_value=False)
+        mock_client.post = MagicMock(return_value=MagicMock(status_code=200))
+        mock_client_cls.return_value = mock_client
+
+        _send_sync("bug", "App crashes on startup", "")
+        assert mock_client_cls.call_args.kwargs["proxy"] == "http://proxy.example:3128"
+
 
 class TestSendFeedbackAsync:
     """Tests for async send_feedback function."""

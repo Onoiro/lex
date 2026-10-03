@@ -140,6 +140,8 @@ Lightweight observability without external dependencies (no Sentry/Grafana): in-
 
 Empty `TELEGRAM_BOT_TOKEN` / `TELEGRAM_CHAT_ID` disables all alerts and the daily report (the proxy keeps working normally).
 
+On hosts where `api.telegram.org` is blocked (for example, some Russian cloud providers), set `TELEGRAM_PROXY` to an HTTP proxy that can reach Telegram. It is used by feedback, alerts and the daily report; empty means a direct connection.
+
 ## Quick Start
 
 ### Prerequisites
@@ -211,6 +213,10 @@ make d-down          # stop and remove
 make android-build   # builds client, syncs Capacitor, assembles release APK
 # APK: client/android/app/build/outputs/apk/release/
 ```
+
+For a signed release APK built in Docker (JDK + Android SDK in a container) use `make android-apk`; it needs `client/android/app/keystore.properties`. `make android-apk-debug` builds a debug APK instead - WebView debugging is enabled there, so the app can be inspected via `chrome://inspect`.
+
+The app is locked to portrait orientation. `android:windowSoftInputMode="adjustResize"` keeps the Save button visible when the keyboard opens, and the layout respects the status bar via `--safe-area-inset-top` (injected by Capacitor SystemBars) with an `env(safe-area-inset-top)` fallback for the browser.
 
 ### Desktop (Tauri)
 

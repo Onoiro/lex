@@ -1,11 +1,18 @@
 """Tests for the Telegram notifier (dedup, cooldown, fire-and-forget)."""
 
 import asyncio
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
 from proxy.services import notifier
+
+
+def _response(status_code: int) -> MagicMock:
+    """Minimal httpx.Response stand-in."""
+    response = MagicMock()
+    response.status_code = status_code
+    return response
 
 
 @pytest.fixture(autouse=True)
@@ -33,6 +40,31 @@ class TestIsConfigured:
         monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "token")
         monkeypatch.delenv("TELEGRAM_CHAT_ID", raising=False)
         assert notifier.is_configured() is False
+
+
+class TestSendSync:
+    """_send_sync reads env at call time and honours TELEGRAM_PROXY."""
+
+    def test_no_token_returns_false(self):
+        assert notifier._send_sync("text") is False
+
+    def test_no_proxy_by_default(self, configured, monkeypatch):
+        monkeypatch.delenv("TELEGRAM_PROXY", raising=False)
+        with patch.object(notifier.httpx, "Client") as client_cls:
+            client_cls.return_value.__enter__.return_value.post.return_value = (
+                _response(200)
+            )
+            assert notifier._send_sync("text") is True
+            assert client_cls.call_args.kwargs["proxy"] is None
+
+    def test_proxy_passed_to_client(self, configured, monkeypatch):
+        monkeypatch.setenv("TELEGRAM_PROXY", "http://proxy.example:3128")
+        with patch.object(notifier.httpx, "Client") as client_cls:
+            client_cls.return_value.__enter__.return_value.post.return_value = (
+                _response(200)
+            )
+            assert notifier._send_sync("text") is True
+            assert client_cls.call_args.kwargs["proxy"] == "http://proxy.example:3128"
 
 
 class TestSendAlert:

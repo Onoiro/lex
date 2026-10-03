@@ -18,6 +18,7 @@ describe("Review", () => {
 
   afterEach(() => {
     vi.useRealTimers();
+    vi.restoreAllMocks();
   });
 
   it("renders empty state when no words", async () => {
@@ -55,6 +56,37 @@ describe("Review", () => {
     });
 
     expect(screen.getByRole("button", { name: "Start training" })).toBeInTheDocument();
+  });
+
+  it("shows the offline TTS warning on the start screen", async () => {
+    await addWord("hello", "привет");
+    vi.spyOn(navigator, "onLine", "get").mockReturnValue(false);
+
+    render(
+      <MemoryRouter>
+        <Review />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("tts-offline-warning-start")).toBeInTheDocument();
+    });
+  });
+
+  it("hides the offline TTS warning when online", async () => {
+    await addWord("hello", "привет");
+    vi.spyOn(navigator, "onLine", "get").mockReturnValue(true);
+
+    render(
+      <MemoryRouter>
+        <Review />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Start training" })).toBeInTheDocument();
+    });
+    expect(screen.queryByTestId("tts-offline-warning-start")).not.toBeInTheDocument();
   });
 
   it("starts training and shows word", async () => {

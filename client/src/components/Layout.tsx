@@ -28,12 +28,18 @@ export function Layout({ children }: LayoutProps) {
 
   const navItems = [
     { to: "/", label: t("nav.home_label"), Icon: HomeIcon },
-    { to: "/add", label: t("nav.translate"), Icon: GlobeIcon },
+    {
+      to: "/add",
+      label: t("nav.translate"),
+      shortLabel: t("nav.translate_short"),
+      Icon: GlobeIcon,
+    },
     { to: "/review", label: t("nav.review"), Icon: BrainIcon },
     { to: "/dictionary", label: t("nav.dictionary"), Icon: BookIcon },
     {
       to: "/settings",
       label: t("nav.settings"),
+      shortLabel: t("nav.settings_short"),
       Icon: GearIcon,
       title: t("nav.settings.title"),
     },
@@ -89,7 +95,9 @@ export function Layout({ children }: LayoutProps) {
               <span className="bottom-nav-icon">
                 <item.Icon />
               </span>
-              <span className="bottom-nav-label">{item.label}</span>
+              <span className="bottom-nav-label">
+                {item.shortLabel ?? item.label}
+              </span>
             </NavLink>
           ))}
         </nav>

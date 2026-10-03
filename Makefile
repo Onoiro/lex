@@ -20,6 +20,7 @@ ANDROID_GRADLE_CACHE ?= $(CURDIR)/.gradle-docker
 # Release keystore lives outside the repository (see keystore.properties).
 ANDROID_KEYSTORE_DIR ?= $(HOME)/lex-keystore
 APK_FILE = client/android/app/build/outputs/apk/release/app-release.apk
+APK_DEBUG_FILE = client/android/app/build/outputs/apk/debug/app-debug.apk
 
 help: ## Show available commands
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}'
@@ -109,6 +110,21 @@ android-apk: ## Build a signed release APK in Docker (needs app/keystore.propert
 		$(ANDROID_BUILDER_IMAGE) \
 		./gradlew assembleRelease --no-daemon
 	@echo "APK: $(APK_FILE)"
+
+android-apk-debug: ## Build a debug APK in Docker (WebView debugging on, no keystore)
+	cd client && VITE_PROXY_URL=$(PROXY_URL) npm run build
+	cd client && npx cap sync android
+	@mkdir -p $(ANDROID_GRADLE_CACHE)
+	@test -w $(ANDROID_GRADLE_CACHE) || docker run --rm -v $(ANDROID_GRADLE_CACHE):/c $(ANDROID_BUILDER_IMAGE) chown -R $(shell id -u):$(shell id -g) /c
+	docker run --rm \
+		--user $(shell id -u):$(shell id -g) \
+		-e HOME=/tmp/home \
+		-v $(CURDIR)/client:/workspace/client \
+		-v $(ANDROID_GRADLE_CACHE):/gradle-cache \
+		-w /workspace/client/android \
+		$(ANDROID_BUILDER_IMAGE) \
+		./gradlew assembleDebug --no-daemon
+	@echo "APK: $(APK_DEBUG_FILE)"
 
 # ======================================================================
 # Desktop (Tauri)

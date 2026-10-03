@@ -27,4 +27,5 @@ def clear_env_vars(monkeypatch):
     monkeypatch.delenv("YANDEX_FOLDER_ID", raising=False)
     monkeypatch.delenv("TELEGRAM_BOT_TOKEN", raising=False)
     monkeypatch.delenv("TELEGRAM_CHAT_ID", raising=False)
+    monkeypatch.delenv("TELEGRAM_PROXY", raising=False)
     yield

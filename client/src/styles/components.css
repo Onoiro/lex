@@ -920,8 +920,14 @@
 }
 
 .bottom-nav-label {
+  /* A span is inline by default, and overflow/width do not apply to
+     inline boxes — the label then spills over the neighbouring item.
+     Block + full width keeps every label inside its own item. */
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  text-align: center;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 5rem;
 }

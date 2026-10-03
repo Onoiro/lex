@@ -22,6 +22,15 @@ def is_configured() -> bool:
     return bool(os.getenv("TELEGRAM_BOT_TOKEN") and os.getenv("TELEGRAM_CHAT_ID"))
 
 
+def _proxy_url() -> str | None:
+    """HTTP proxy for the Telegram API (empty = direct connection).
+
+    Needed on hosts where api.telegram.org is blocked (e.g. the production
+    server): point TELEGRAM_PROXY at a proxy running elsewhere.
+    """
+    return os.getenv("TELEGRAM_PROXY") or None
+
+
 def _send_sync(text: str) -> bool:
     """Send a message via Telegram Bot API (sync). Returns True on success."""
     token = os.getenv("TELEGRAM_BOT_TOKEN", "")
@@ -29,7 +38,7 @@ def _send_sync(text: str) -> bool:
     if not token or not chat_id:
         return False
     try:
-        with httpx.Client(timeout=10.0) as client:
+        with httpx.Client(timeout=10.0, proxy=_proxy_url()) as client:
             response = client.post(
                 TELEGRAM_API_URL.format(token=token),
                 json={"chat_id": chat_id, "text": text},

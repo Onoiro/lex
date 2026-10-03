@@ -101,4 +101,26 @@ describe("Layout", () => {
     expect(screen.getByText("Повтор")).toBeInTheDocument();
     expect(screen.getByText("Словарь")).toBeInTheDocument();
   });
+
+  it("uses short Russian labels in the mobile bottom nav", () => {
+    setLocale("ru");
+    Object.defineProperty(window, "innerWidth", {
+      writable: true,
+      configurable: true,
+      value: MOBILE_WIDTH,
+    });
+
+    render(
+      <MemoryRouter>
+        <Layout>
+          <div />
+        </Layout>
+      </MemoryRouter>,
+    );
+
+    // Long labels do not fit a bottom-nav item on a 360px screen
+    expect(screen.getByRole("link", { name: "Перевод" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Ещё" })).toBeInTheDocument();
+    expect(screen.queryByText("Переводчик")).not.toBeInTheDocument();
+  });
 });

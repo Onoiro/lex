@@ -486,6 +486,15 @@ export function Review() {
           </button>
         </div>
 
+        {settings?.tts_enabled && isOffline && (
+          <p
+            data-testid="tts-offline-warning-start"
+            className="lex-hint lex-inline"
+          >
+            <SoundOffIcon size={16} /> {t("review.tts_offline")}
+          </p>
+        )}
+
         {hasToday && (
           <div data-testid="today-block" className="lex-stat lex-mt-2">
             <div className="lex-stat-heading">
