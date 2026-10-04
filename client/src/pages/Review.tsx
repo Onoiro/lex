@@ -471,6 +471,17 @@ export function Review() {
 
     return (
       <div className="lex-start">
+        {settings?.tts_enabled && isOffline && (
+          <article
+            data-testid="tts-offline-warning-start"
+            className="lex-alert lex-alert--error lex-alert--row"
+          >
+            <Mascot emotion="sleeping" size="inline" animated={false} />
+            <span className="lex-inline">
+              <SoundOffIcon size={16} /> {t("review.tts_offline")}
+            </span>
+          </article>
+        )}
         <div className="page-hero">
           <hgroup>
             <h2>{t("review.heading")}</h2>
@@ -485,15 +496,6 @@ export function Review() {
             {t("review.start")}
           </button>
         </div>
-
-        {settings?.tts_enabled && isOffline && (
-          <p
-            data-testid="tts-offline-warning-start"
-            className="lex-hint lex-inline"
-          >
-            <SoundOffIcon size={16} /> {t("review.tts_offline")}
-          </p>
-        )}
 
         {hasToday && (
           <div data-testid="today-block" className="lex-stat lex-mt-2">
@@ -662,11 +664,6 @@ export function Review() {
           <Mascot emotion={mascotEmotion} size="micro" />
         </div>
         <div className="lex-timer-row-inner">
-          {settings?.tts_enabled && isOffline && (
-            <span data-testid="tts-offline-warning" className="lex-hint lex-inline">
-              <SoundOffIcon size={16} /> {t("review.tts_offline")}
-            </span>
-          )}
           <span className="lex-timer" style={{ color: timerColor }}>
             {formatTime(elapsed)}
           </span>

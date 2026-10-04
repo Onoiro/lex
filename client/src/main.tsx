@@ -21,6 +21,7 @@ import { useInitLocale } from "@/i18n";
 import { applyTheme } from "@/services/theme";
 import { getSettings } from "@/data/settingsRepository";
 import { initTtsUnlock } from "@/services/ttsApi";
+import { initKeyboardInset } from "@/services/keyboardInset";
 import {
   isUpdateRequired,
   onUpdateRequired,
@@ -102,3 +103,6 @@ void (async () => {
 
 // Unlock audio playback on mobile browsers (iOS/Android require user gesture)
 initTtsUnlock();
+
+// Lift sticky UI above the on-screen keyboard (Android 15+ ignores adjustResize)
+initKeyboardInset();

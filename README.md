@@ -216,7 +216,7 @@ make android-build   # builds client, syncs Capacitor, assembles release APK
 
 For a signed release APK built in Docker (JDK + Android SDK in a container) use `make android-apk`; it needs `client/android/app/keystore.properties`. `make android-apk-debug` builds a debug APK instead - WebView debugging is enabled there, so the app can be inspected via `chrome://inspect`.
 
-The app is locked to portrait orientation. `android:windowSoftInputMode="adjustResize"` keeps the Save button visible when the keyboard opens, and the layout respects the status bar via `--safe-area-inset-top` (injected by Capacitor SystemBars) with an `env(safe-area-inset-top)` fallback for the browser.
+The app is locked to portrait orientation. The layout keeps clear of the system bars: `StatusBar.overlaysWebView` is `false`, so the WebView sits below the status bar on Android < 15, while on Android 15+ (forced edge-to-edge) the `--safe-area-inset-top` variable injected by Capacitor SystemBars takes over. `android:windowSoftInputMode="adjustResize"` handles the keyboard on Android < 15; on Android 15+ the viewport is not resized, so `services/keyboardInset.ts` tracks `visualViewport` and exposes the keyboard height as `--lex-keyboard-inset`, which lifts the sticky Save bar and the bottom nav above the keyboard. `ACCESS_NETWORK_STATE` is required for `navigator.onLine` to work inside the WebView (without it the app always reports "online"). The system Back button walks the web history and falls back to `moveTaskToBack` instead of closing the app (`MainActivity.onBackPressed`).
 
 ### Desktop (Tauri)
 
@@ -374,7 +374,7 @@ All commands are run via `make`. Run `make help` to see the full list.
 | `make proxy` | Start translate proxy (port 8004) |
 | `make client-dev` | Start client dev server (port 5173) |
 | `make client-build` | Build client for production |
-| `make client-test` | Run client tests (vitest, 351 tests) |
+| `make client-test` | Run client tests (vitest, 358 tests) |
 | `make client-lint` | Lint client code (eslint) |
 | `make client-typecheck` | Type-check client (tsc) |
 | `make proxy-lint` | Lint proxy code (ruff) |

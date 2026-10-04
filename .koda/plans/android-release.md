@@ -217,6 +217,21 @@ assembleRelease`. В шаге 9 остаётся только документа
 > `.home-hero`; П-2 — предупреждение `review.tts_offline` на стартовом экране Review;
 > П-7 — цель `make android-apk-debug`. Осталось: smoke-тест на устройстве (шаг 9 плана).
 
+> **Статус (2026-10-04, v1.29.2):** повторный smoke-тест показал, что П-1, П-2, П-3
+> остались, и выявил новую проблему П-8 (кнопка «Назад» закрывала приложение).
+> Настоящие причины оказались другими:
+> - **П-1** — `StatusBar.overlaysWebView` по умолчанию `true` (WebView под статус-баром),
+>   а `SystemBars` инжектит ненулевой `--safe-area-inset-top` только на Android 15+ /
+>   WebView ≥ 140. Исправлено: `overlaysWebView: false` в `capacitor.config.ts`.
+> - **П-2** — в манифесте не было `ACCESS_NETWORK_STATE`, поэтому `navigator.onLine`
+>   в WebView всегда `true`. Плюс предупреждение перенесено на стартовый экран Review
+>   красной плашкой и убрано с карточки тренировки (решение пользователя).
+> - **П-3** — на Android 15+ edge-to-edge принудительный, `adjustResize` игнорируется.
+>   Исправлено через `visualViewport` → `--lex-keyboard-inset` (`services/keyboardInset.ts`).
+> - **П-8** — `MainActivity.onBackPressed()`: `goBack()` при непустой истории, иначе
+>   `moveTaskToBack(true)`.
+> Подробности — в `.koda/plans/android-device-fixes.md`, раздел «Раунд 2».
+
 ### П-1. Нет отступа от верхней части экрана (контент обрезан)
 **Симптом:** контент приложения упирается в верхнюю кромку экрана, местами обрезан.
 **Причина (гипотеза, высокая уверенность):** в `client/index.html` включён

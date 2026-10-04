@@ -525,10 +525,14 @@
 }
 
 /* On mobile the bottom nav floats over the content, so the sticky
-   Save bar has to stop above it instead of hiding underneath. */
+   Save bar has to stop above it instead of hiding underneath.
+   --lex-keyboard-inset is set by services/keyboardInset.ts and is 0
+   when the keyboard is closed. */
 @media (max-width: 767px) {
   .lex-save-bar {
-    bottom: calc(4.25rem + env(safe-area-inset-bottom));
+    bottom: calc(
+      4.25rem + env(safe-area-inset-bottom) + var(--lex-keyboard-inset, 0px)
+    );
   }
 }
 
@@ -857,7 +861,11 @@
   position: fixed;
   left: 0.75rem;
   right: 0.75rem;
-  bottom: calc(0.75rem + env(safe-area-inset-bottom));
+  /* --lex-keyboard-inset keeps the nav above the on-screen keyboard on
+     platforms that do not resize the viewport (Android 15+) */
+  bottom: calc(
+    0.75rem + env(safe-area-inset-bottom) + var(--lex-keyboard-inset, 0px)
+  );
   z-index: 100;
   display: flex;
   justify-content: space-around;

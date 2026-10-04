@@ -22,9 +22,12 @@ main {
   /* Keep content clear of the status bar (Capacitor SystemBars injects
      --safe-area-inset-top; env() covers the browser/PWA case) */
   padding-top: var(--safe-area-inset-top, env(safe-area-inset-top, 0px));
-  /* Room for the floating bottom nav plus the device safe area */
+  /* Room for the floating bottom nav plus the device safe area.
+     --lex-keyboard-inset (services/keyboardInset.ts) adds the keyboard
+     height on platforms that do not resize the viewport (Android 15+). */
   padding-bottom: calc(
-    5.5rem + var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px))
+    5.5rem + var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)) +
+      var(--lex-keyboard-inset, 0px)
   );
 }
 
