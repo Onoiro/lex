@@ -318,7 +318,8 @@
   font-size: var(--lex-text-xs);
 }
 
-/* Row above the flip card: mascot at the edge, timer centered */
+/* Row above the flip card: mascot at the edge, timer centered,
+   speech quota + TTS toggle pinned to the right */
 .lex-timer-row {
   position: relative;
   padding: 1rem 1rem 0.5rem;
@@ -336,6 +337,34 @@
   justify-content: center;
   align-items: center;
   gap: 0.75rem;
+}
+
+.lex-timer-row-right {
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Remaining speech quota (used/limit) next to the TTS toggle */
+.lex-quota-counter {
+  font-size: var(--lex-text-xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--pico-muted-color);
+}
+
+/* Compact one-line hint about speech availability (offline / quota) */
+.lex-tts-warning {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  margin: 0 1rem 0.5rem;
+  font-size: var(--lex-text-xs);
+  color: var(--pico-del-color);
 }
 
 .lex-timer {

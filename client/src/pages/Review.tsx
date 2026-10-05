@@ -7,6 +7,8 @@ import { getSettings } from "@/data/settingsRepository";
 import { recordAnswer, getTodayStats, getRecentDays, getStreak } from "@/data/dailyStatsRepository";
 import { applyReviewResult, pickWeightedWord, pickRandomDirection } from "@/domain/srs";
 import { synthesizeSpeech, stopTts } from "@/services/ttsApi";
+import { getQuota } from "@/services/quotaApi";
+import type { QuotaInfo } from "@/services/quotaApi";
 import { computeDayAccuracy, computeDayAvgTime } from "@/domain/dailyStats";
 import { updateResponseTime, formatTime } from "@/domain/stats";
 import { Mascot } from "@/components/Mascot";
@@ -54,6 +56,12 @@ export function Review() {
   const [settings, setSettings] = useState<LanguageSettings | null>(null);
   const [ttsOverride, setTtsOverride] = useState(true);
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
+  const [ttsQuota, setTtsQuota] = useState<QuotaInfo["tts"] | null>(null);
+  // Source of truth for the quota: the state is only a render mirror, so
+  // decrements that happen before the first fetch are not lost.
+  const ttsQuotaRef = useRef<QuotaInfo["tts"] | null>(null);
+  const pendingTtsCharsRef = useRef(0);
+  const [ttsQuotaExhausted, setTtsQuotaExhausted] = useState(false);
   const [todayStats, setTodayStats] = useState<DailyStats | null>(null);
   const [streak, setStreak] = useState(0);
   const [history, setHistory] = useState<DailyStats[]>([]);
@@ -135,6 +143,44 @@ export function Review() {
     }
   }, []);
 
+  // Remaining speech quota for the counter above the card. Hidden on failure.
+  const loadTtsQuota = useCallback(async () => {
+    try {
+      const q = await getQuota();
+      // Apply any decrements that happened while the request was in flight
+      const pending = pendingTtsCharsRef.current;
+      pendingTtsCharsRef.current = 0;
+      const remaining = Math.max(0, q.tts.remaining - pending);
+      const next = { ...q.tts, remaining, used: q.tts.limit - remaining };
+      ttsQuotaRef.current = next;
+      setTtsQuota(next);
+    } catch {
+      // Network error — the counter stays hidden
+    }
+  }, []);
+
+  const applyTtsSpend = useCallback((chars: number) => {
+    const current = ttsQuotaRef.current;
+    if (!current) {
+      // Quota not loaded yet — remember the spend for the next fetch
+      pendingTtsCharsRef.current += chars;
+      return;
+    }
+    const remaining = Math.max(0, current.remaining - chars);
+    const next = { ...current, remaining, used: current.limit - remaining };
+    ttsQuotaRef.current = next;
+    setTtsQuota(next);
+  }, []);
+
+  const markTtsQuotaExhausted = useCallback(() => {
+    setTtsQuotaExhausted(true);
+    const current = ttsQuotaRef.current;
+    if (!current) return;
+    const next = { ...current, remaining: 0, used: current.limit };
+    ttsQuotaRef.current = next;
+    setTtsQuota(next);
+  }, []);
+
   const loadWords = useCallback(async () => {
     const s = await getSettings();
     setSettings(s);
@@ -160,6 +206,11 @@ export function Review() {
       stopTts();
     };
   }, [loadWords, clearAllTimers]);
+
+  // Refresh the speech quota when a training session starts or resumes
+  useEffect(() => {
+    if (phase === "training") void loadTtsQuota();
+  }, [phase, loadTtsQuota]);
 
   const pickNextView = useCallback((): WordView | null => {
     const words = allWordsRef.current;
@@ -194,8 +245,18 @@ export function Review() {
     if (!s?.tts_enabled) return;
     if (!ttsOverrideRef.current) return;
     stopTts();
-    void synthesizeSpeech(text, lang);
-  }, []);
+    void synthesizeSpeech(text, lang, (code) => {
+      if (code === "daily_quota_exceeded") {
+        // Zero the counter so the "limit reached" hint appears immediately
+        markTtsQuotaExhausted();
+      }
+    }).then((result) => {
+      // Optimistic decrement: server cache hits don't consume quota
+      if (result.played && !result.cached) {
+        applyTtsSpend(text.trim().length);
+      }
+    });
+  }, [applyTtsSpend, markTtsQuotaExhausted]);
 
   const stopTimer = useCallback((): number => {
     if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
@@ -667,7 +728,14 @@ export function Review() {
           <span className="lex-timer" style={{ color: timerColor }}>
             {formatTime(elapsed)}
           </span>
-          {settings?.tts_enabled && (
+        </div>
+        {settings?.tts_enabled && (
+          <div className="lex-timer-row-right">
+            {ttsQuota && ttsQuota.remaining > 0 && (
+              <span data-testid="tts-quota-counter" className="lex-quota-counter">
+                {ttsQuota.used}/{ttsQuota.limit}
+              </span>
+            )}
             <button
               type="button"
               className="outline lex-icon-btn"
@@ -681,9 +749,23 @@ export function Review() {
             >
               {ttsOverride ? <SoundOnIcon /> : <SoundOffIcon />}
             </button>
-          )}
-        </div>
+          </div>
+        )}
       </div>
+
+      {/* Speech availability hints: offline first, then the exhausted quota.
+          Kept inside the card (not over the flip card) so they never
+          overlap the mascot. */}
+      {settings?.tts_enabled && isOffline && (
+        <p data-testid="tts-offline-warning" className="lex-tts-warning">
+          <SoundOffIcon size={14} /> {t("review.tts_offline_short")}
+        </p>
+      )}
+      {settings?.tts_enabled && !isOffline && (ttsQuotaExhausted || ttsQuota?.remaining === 0) && (
+        <p data-testid="tts-quota-warning" className="lex-tts-warning">
+          <SoundOffIcon size={14} /> {t("review.tts_quota_exceeded")}
+        </p>
+      )}
 
       {/* Flip card */}
       <div className="flip-card">

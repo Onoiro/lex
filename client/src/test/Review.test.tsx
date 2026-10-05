@@ -8,12 +8,34 @@ import { db } from "@/data/db";
 import { addWord, getAllWords } from "@/data/wordRepository";
 import { emptyDailyStats } from "@/types/dailyStats";
 
+vi.mock("@/services/quotaApi", () => ({
+  getQuota: vi.fn().mockResolvedValue({
+    translate: { used: 0, limit: 500, remaining: 500 },
+    tts: { used: 0, limit: 500, remaining: 500 },
+  }),
+}));
+
+vi.mock("@/services/ttsApi", () => ({
+  synthesizeSpeech: vi.fn().mockResolvedValue({ played: true, cached: false }),
+  stopTts: vi.fn(),
+  clearTtsCache: vi.fn(),
+  initTtsUnlock: vi.fn(),
+}));
+
+import { getQuota } from "@/services/quotaApi";
+import { synthesizeSpeech } from "@/services/ttsApi";
+
 describe("Review", () => {
   beforeEach(async () => {
     setLocale("en");
     await db.words.clear();
     await db.settings.clear();
     await db.dailyStats.clear();
+    vi.mocked(getQuota).mockResolvedValue({
+      translate: { used: 0, limit: 500, remaining: 500 },
+      tts: { used: 0, limit: 500, remaining: 500 },
+    });
+    vi.mocked(synthesizeSpeech).mockResolvedValue({ played: true, cached: false });
   });
 
   afterEach(() => {
@@ -1020,6 +1042,198 @@ describe("Review", () => {
 
     await user.click(toggle);
     expect(toggle).toHaveAttribute("aria-label", "Sound on");
+  });
+
+  // --- Speech quota counter and warnings ---
+
+  it("shows the speech quota counter during training", async () => {
+    await addWord("hello", "привет");
+    await db.settings.put({ id: "app", tts_enabled: true, source_lang: "auto", target_lang: "ru", locale: "en", theme: "auto", skin: "default" });
+    vi.mocked(getQuota).mockResolvedValue({
+      translate: { used: 0, limit: 500, remaining: 500 },
+      tts: { used: 155, limit: 500, remaining: 345 },
+    });
+    // Cached playback so the counter is not decremented by the auto-play
+    vi.mocked(synthesizeSpeech).mockResolvedValue({ played: true, cached: true });
+
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <Review />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Start training" })).toBeInTheDocument();
+    });
+    await user.click(screen.getByRole("button", { name: "Start training" }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("tts-quota-counter")).toHaveTextContent("155/500");
+    });
+  });
+
+  it("hides the quota counter when TTS is disabled", async () => {
+    await addWord("hello", "привет");
+    await db.settings.put({ id: "app", tts_enabled: false, source_lang: "auto", target_lang: "ru", locale: "en", theme: "auto", skin: "default" });
+
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <Review />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Start training" })).toBeInTheDocument();
+    });
+    await user.click(screen.getByRole("button", { name: "Start training" }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("word-text")).toBeInTheDocument();
+    });
+    expect(screen.queryByTestId("tts-quota-counter")).not.toBeInTheDocument();
+  });
+
+  it("shows the quota-exceeded warning when the limit is reached", async () => {
+    await addWord("hello", "привет");
+    await db.settings.put({ id: "app", tts_enabled: true, source_lang: "auto", target_lang: "ru", locale: "en", theme: "auto", skin: "default" });
+    vi.mocked(getQuota).mockResolvedValue({
+      translate: { used: 0, limit: 500, remaining: 500 },
+      tts: { used: 500, limit: 500, remaining: 0 },
+    });
+
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <Review />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Start training" })).toBeInTheDocument();
+    });
+    await user.click(screen.getByRole("button", { name: "Start training" }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("tts-quota-warning")).toBeInTheDocument();
+    });
+    expect(screen.queryByTestId("tts-quota-counter")).not.toBeInTheDocument();
+  });
+
+  it("shows the offline warning during training when the network drops", async () => {
+    await addWord("hello", "привет");
+    await db.settings.put({ id: "app", tts_enabled: true, source_lang: "auto", target_lang: "ru", locale: "en", theme: "auto", skin: "default" });
+    vi.spyOn(navigator, "onLine", "get").mockReturnValue(true);
+
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <Review />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Start training" })).toBeInTheDocument();
+    });
+    await user.click(screen.getByRole("button", { name: "Start training" }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("word-text")).toBeInTheDocument();
+    });
+    expect(screen.queryByTestId("tts-offline-warning")).not.toBeInTheDocument();
+
+    // Network drops mid-session
+    act(() => {
+      window.dispatchEvent(new Event("offline"));
+    });
+
+    await waitFor(() => {
+      expect(screen.getByTestId("tts-offline-warning")).toBeInTheDocument();
+    });
+  });
+
+  it("decrements the quota counter after a non-cached playback", async () => {
+    await addWord("hello", "привет");
+    await db.settings.put({ id: "app", tts_enabled: true, source_lang: "auto", target_lang: "ru", locale: "en", theme: "auto", skin: "default" });
+    vi.mocked(getQuota).mockResolvedValue({
+      translate: { used: 0, limit: 500, remaining: 500 },
+      tts: { used: 0, limit: 500, remaining: 500 },
+    });
+    vi.mocked(synthesizeSpeech).mockResolvedValue({ played: true, cached: false });
+
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <Review />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Start training" })).toBeInTheDocument();
+    });
+    await user.click(screen.getByRole("button", { name: "Start training" }));
+
+    // The word direction is random, so assert the counter moved, not the exact value
+    await waitFor(() => {
+      const counter = screen.getByTestId("tts-quota-counter");
+      expect(counter).toHaveTextContent(/^[1-9]\d*\/500$/);
+    });
+  });
+
+  it("does not decrement the counter on a cached playback", async () => {
+    await addWord("hello", "привет");
+    await db.settings.put({ id: "app", tts_enabled: true, source_lang: "auto", target_lang: "ru", locale: "en", theme: "auto", skin: "default" });
+    vi.mocked(getQuota).mockResolvedValue({
+      translate: { used: 0, limit: 500, remaining: 500 },
+      tts: { used: 0, limit: 500, remaining: 500 },
+    });
+    vi.mocked(synthesizeSpeech).mockResolvedValue({ played: true, cached: true });
+
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <Review />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Start training" })).toBeInTheDocument();
+    });
+    await user.click(screen.getByRole("button", { name: "Start training" }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("tts-quota-counter")).toHaveTextContent("0/500");
+    });
+  });
+
+  it("zeroes the counter when the server reports the quota is exhausted", async () => {
+    await addWord("hello", "привет");
+    await db.settings.put({ id: "app", tts_enabled: true, source_lang: "auto", target_lang: "ru", locale: "en", theme: "auto", skin: "default" });
+    vi.mocked(getQuota).mockResolvedValue({
+      translate: { used: 0, limit: 500, remaining: 500 },
+      tts: { used: 0, limit: 500, remaining: 500 },
+    });
+    vi.mocked(synthesizeSpeech).mockImplementation(async (_text, _lang, onError) => {
+      onError?.("daily_quota_exceeded");
+      return { played: false, cached: false };
+    });
+
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <Review />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Start training" })).toBeInTheDocument();
+    });
+    await user.click(screen.getByRole("button", { name: "Start training" }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("tts-quota-warning")).toBeInTheDocument();
+    });
   });
 
   // --- Daily stats ---
