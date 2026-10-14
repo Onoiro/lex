@@ -408,10 +408,20 @@
   margin: 0 auto;
 }
 
-/* Stop button row at the very bottom of the training card */
+/* Stop button row at the very bottom of the training card.
+   The training screen does not scroll far enough to clear the floating
+   bottom nav, so the footer carries the clearance itself. The nav is a
+   pill about 4.25rem tall sitting 0.75rem above the safe area. */
 .lex-card-actions--footer {
-  padding-bottom: 1rem;
+  padding-bottom: 5.25rem;
   margin-top: 1rem;
+}
+
+@media (min-width: 768px) {
+  /* Desktop has no bottom nav — the footer needs no extra clearance. */
+  .lex-card-actions--footer {
+    padding-bottom: 1rem;
+  }
 }
 
 /* ── Add page ───────────────────────────────────────── */
