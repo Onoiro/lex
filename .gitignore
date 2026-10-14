@@ -93,4 +93,4 @@ nginx-lex-upstream.conf
 *.log
 
 # Logo (moved to static/)
-lex-logo.png
+lex-logo.pngdesign/screenshots/
