@@ -32,6 +32,7 @@
   /* Type scale — one step per level, no ad-hoc sizes in components.
      Manual values used before (0.8/0.85/0.9/0.95/1.05/1.1/1.4) map to
      the nearest step here. */
+  --lex-text-2xs: 0.6875rem;
   --lex-text-xs: 0.75rem;
   --lex-text-sm: 0.875rem;
   --lex-text-base: 1rem;
