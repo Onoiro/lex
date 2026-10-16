@@ -120,6 +120,8 @@
   "dictionary.col_edit": "Edit",
   "dictionary.confirm_delete": "Are you sure you want to delete the word '{word}'?",
   "dictionary.export": "Export",
+  "dictionary.export_error": "Could not save the file. Please try again.",
+  "dictionary.export_share_title": "Export dictionary",
   "dictionary.import": "Import",
   "dictionary.import_success": "Imported {imported} words, skipped duplicates: {skipped}, invalid: {invalid}.",
     "dictionary.import_error": "Import failed: invalid file format.",

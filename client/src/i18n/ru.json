@@ -120,6 +120,8 @@
   "dictionary.col_edit": "Редактировать",
   "dictionary.confirm_delete": "Точно удалить слово «{word}»?",
   "dictionary.export": "Экспорт",
+  "dictionary.export_error": "Не удалось сохранить файл. Попробуйте ещё раз.",
+  "dictionary.export_share_title": "Экспорт словаря",
   "dictionary.import": "Импорт",
   "dictionary.import_success": "Импортировано {imported} слов, пропущено дублей: {skipped}, некорректных: {invalid}.",
     "dictionary.import_error": "Ошибка импорта: неверный формат файла.",

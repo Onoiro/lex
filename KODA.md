@@ -5,7 +5,7 @@ Lex — local-first приложение-переводчик и помощни�
 
 **Демо:** [lextr.ru](https://lextr.ru)
 
-**Текущая версия:** 1.30.2
+**Текущая версия:** 1.30.3
 
 ## Архитектура
 
@@ -135,7 +135,7 @@ Nginx-конфиги: прод — `/etc/nginx/conf.d/lextr.ru.conf`, стейд
 │   │   ├── domain/            # srs.ts (SM-2), stats.ts, validators.ts, dictionarySort.ts, dailyStats.ts
 │   │   ├── i18n/              # index.ts, languages.ts, en.json, ru.json
 │   │   ├── pages/             # Home, Add, Review, Dictionary, Settings
-│   │   ├── services/          # translateApi.ts (proxy client), ttsApi.ts, dictionaryApi.ts, feedbackApi.ts, proxyClient.ts, theme.ts, keyboardInset.ts
+│   │   ├── services/          # translateApi.ts (proxy client), ttsApi.ts, dictionaryApi.ts, feedbackApi.ts, proxyClient.ts, theme.ts, keyboardInset.ts, exportFile.ts
 │   │   ├── styles/            # tokens.css (токены + 12 скинов), components.css (lex-* классы)
 │   │   ├── test/              # Component and service tests (Vitest)
 │   │   └── types/             # Word, LanguageSettings, DailyStats
@@ -217,6 +217,7 @@ Nginx-конфиги: прод — `/etc/nginx/conf.d/lextr.ru.conf`, стейд
 - **proxyClient.ts:** общий модуль прокси-клиента — `PROXY_URL`, `proxyHeaders()` (Content-Type + `X-App-Token`, когда задан `VITE_APP_TOKEN` + `X-App-Version` всегда + `X-Device-Id`, когда доступен localStorage). Все сервисы (translateApi, ttsApi, dictionaryApi, feedbackApi) используют `proxyHeaders()`. Токен вшивается при сборке через `VITE_APP_TOKEN` (build-time env, на сервер не попадает).
 - **Ежедневная статистика:** таблица `dailyStats` (Dexie v6, ключ — локальная дата `YYYY-MM-DD`). Запись инкрементальная: `recordAnswer` после каждого ответа в Review, `incrementNewWords` после добавления слова в Add. Репозиторий: `dailyStatsRepository.ts` (`recordAnswer`, `incrementNewWords`, `getRecentDays`, `getStreak`, `todayKey`). UI на странице Повтор: блок «Сегодня» (повторения, точность, время, новые слова, streak) на стартовом экране, «Сегодня всего» на paused/done, сворачиваемая история за 14 дней. Streak — дни с `reviewed > 0` или `new_words > 0`; если сегодня пусто, серия считается от вчера.
 - **Импорт словаря (hardening):** лимиты в `domain/validators.ts` — `MAX_IMPORT_FILE_SIZE` (10 МБ, проверка `file.size` ДО чтения файла) и `MAX_IMPORT_ENTRIES` (10 000, проверка после JSON.parse). Каждая запись проходит `sanitizeImportEntry` (domain/validators.ts): word/translation/note — через существующие валидаторы (невалидные → запись пропускается, счётчик `invalid`), числовые поля — санитизация с clamp/дефолтами (interval ≤ 3650, счётчики ≤ 1e6, times ≤ 3600 или null), языки/направление — дефолты при мусоре. `importWords` (wordRepository.ts): одна транзакция `db.transaction("rw", ...)` + `bulkAdd`, дедуп через Set (существующие слова одним `toArray()` + дубликаты внутри файла), результат `{imported, skipped, invalid}`. UI (Dictionary.tsx): сообщения `import_too_large` / `import_too_many`, в `import_success` показываются все три числа.
+- **Экспорт словаря:** `services/exportFile.ts` → `saveJsonFile(fileName, text, dialogTitle)`. На нативной платформе (`Capacitor.isNativePlatform()`) — `Filesystem.writeFile` в `Directory.Cache` (`Encoding.UTF8`) + `Filesystem.getUri` + `Share.share({ files: [uri], dialogTitle })` из `@capacitor/share`: пользователь сохраняет файл через системный диалог (Файлы/Drive/Telegram). В вебе и Tauri — `<a download>` + blob URL, `revokeObjectURL` ОБЯЗАТЕЛЬНО в `setTimeout(..., 1000)` (синхронный revoke отменяет загрузку). Плагин `@capacitor/filesystem` НЕ умеет скачивать: в Capacitor WebView нет `WebView.setDownloadListener`, поэтому клик по `<a download>` в APK молча не делает ничего (в `@capacitor/android` реализован только `onShowFileChooser` — поэтому импорт работает). `Filesystem.shareFile` появится только в 8.2.0 (в 8.1.5 его нет), поэтому используется `@capacitor/share`; FileProvider `${applicationId}.fileprovider` и `cache-path` уже объявлены в `AndroidManifest.xml` и `res/xml/file_paths.xml`. Оба плагина подключаются динамическим `import()` внутри нативной ветки — их код не попадает в главный бандл (в dist уходят только web-шимы ~9 КБ). Ошибки `saveJsonFile` показывать через `lex-alert--error` (`dictionary.export_error`).
 
 ### Proxy
 - **Proxy:** FastAPI, порт 8004. Скрывает Yandex API key. Rate limiting. Дневные символьные квоты (device/IP/anon, персистентные). Глобальный дневной бюджет. Проверка X-App-Token. CORS whitelist. Кэш переводов. TTS (text-to-speech). Feedback (Telegram Bot). Метрики, алерты и ежедневный отчёт (Telegram).
@@ -260,4 +261,4 @@ Nginx-конфиги: прод — `/etc/nginx/conf.d/lextr.ru.conf`, стейд
 - График активности за 14 дней на странице Повтор (данные dailyStats уже есть)
 
 ---
-**Последнее обновление:** 5 октября 2026
+**Последнее обновление:** 17 октября 2026

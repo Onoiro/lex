@@ -6,12 +6,18 @@ import { Dictionary } from "@/pages/Dictionary";
 import { setLocale } from "@/i18n";
 import { db } from "@/data/db";
 import { addWord, getWordCount } from "@/data/wordRepository";
+import { saveJsonFile } from "@/services/exportFile";
+
+// jsdom cannot run a real download, and on native the service calls
+// Capacitor plugins. The service itself is covered by exportFile.test.ts.
+vi.mock("@/services/exportFile", () => ({ saveJsonFile: vi.fn() }));
 
 describe("Dictionary", () => {
   beforeEach(async () => {
     setLocale("en");
     localStorage.removeItem("lex-dict-sort");
     await db.words.clear();
+    vi.mocked(saveJsonFile).mockReset().mockResolvedValue(undefined);
   });
 
   it("renders empty state when no words", async () => {
@@ -165,6 +171,53 @@ describe("Dictionary", () => {
     await waitFor(() => {
       expect(screen.getByText(/Export/)).toBeInTheDocument();
       expect(screen.getByText(/Import/)).toBeInTheDocument();
+    });
+  });
+
+  it("exports the dictionary through the file service", async () => {
+    await addWord("hello", "привет");
+
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <Dictionary />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText("hello")).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole("button", { name: /Export/ }));
+
+    await waitFor(() => {
+      expect(saveJsonFile).toHaveBeenCalledTimes(1);
+    });
+    const [fileName, json] = vi.mocked(saveJsonFile).mock.calls[0];
+    expect(fileName).toBe("lex-dictionary.json");
+    expect(JSON.parse(json)).toEqual([expect.objectContaining({ word: "hello" })]);
+    expect(screen.queryByTestId("export-error")).not.toBeInTheDocument();
+  });
+
+  it("shows an error when saving the file fails", async () => {
+    await addWord("hello", "привет");
+    vi.mocked(saveJsonFile).mockRejectedValueOnce(new Error("no storage"));
+
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <Dictionary />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText("hello")).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole("button", { name: /Export/ }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("export-error")).toHaveTextContent("Could not save the file");
     });
   });
 

@@ -7,6 +7,7 @@ import { computeRank } from "@/domain/srs";
 import { MAX_IMPORT_FILE_SIZE, MAX_IMPORT_ENTRIES } from "@/domain/validators";
 import { sortWords, loadSortState, saveSortState, nextSortDir } from "@/domain/dictionarySort";
 import type { SortBy, SortDir } from "@/domain/dictionarySort";
+import { saveJsonFile } from "@/services/exportFile";
 import { Mascot } from "@/components/Mascot";
 import {
   PencilIcon,
@@ -28,6 +29,7 @@ export function Dictionary() {
   const [words, setWords] = useState<Word[]>([]);
   const [search, setSearch] = useState("");
   const [importMsg, setImportMsg] = useState("");
+  const [exportError, setExportError] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < MOBILE_BREAKPOINT);
   const initialSort = useMemo(() => loadSortState(), []);
   const [sortBy, setSortBy] = useState<SortBy>(initialSort.sortBy);
@@ -81,16 +83,17 @@ export function Dictionary() {
   };
 
   const handleExport = async () => {
+    setExportError(false);
     const words = await exportWords();
-    const blob = new Blob([JSON.stringify(words, null, 2)], {
-      type: "application/json",
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "lex-dictionary.json";
-    a.click();
-    URL.revokeObjectURL(url);
+    try {
+      await saveJsonFile(
+        "lex-dictionary.json",
+        JSON.stringify(words, null, 2),
+        t("dictionary.export_share_title"),
+      );
+    } catch {
+      setExportError(true);
+    }
   };
 
   const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -182,6 +185,12 @@ export function Dictionary() {
           className="lex-hidden-input"
         />
       </div>
+
+      {exportError && (
+        <article className="lex-alert lex-alert--error" data-testid="export-error">
+          {t("dictionary.export_error")}
+        </article>
+      )}
 
       {importMsg && (
         <p className="lex-hint">{importMsg}</p>
